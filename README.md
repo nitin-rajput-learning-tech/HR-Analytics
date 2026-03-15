@@ -55,7 +55,34 @@ python -m hr_analytics.desktop
 
 ## Data Format
 
-The tool expects Excel workbooks with employee master data. Filenames should include the as-of date (e.g., `Employee report-as on 7th May 2025.xlsx`). The tool auto-detects column mappings and assigns compatibility levels.
+Use the included **`HR_Analytics_Employee_Template.xlsx`** as your starting point. It contains:
+
+- **Instructions** sheet — field reference with required/optional flags, data types, and examples
+- **Employee Data** sheet — pre-formatted with headers, data validation dropdowns (Employment Status, Gender), and 5 sample rows
+- **Blank Template** sheet — clean sheet with headers and validation only, ready for your data
+
+### Column Overview
+
+| Column | Required? | Description |
+|--------|-----------|-------------|
+| Employee Number | Yes | Unique employee ID |
+| Full Name | Yes | Employee's full name |
+| Department | Yes | Primary department |
+| Sub Department | Yes | Sub-division |
+| Job Title | Yes | Current role/designation |
+| Legal Entity | Yes | Employing legal entity |
+| Employment Status | Yes | "Working" or "Relieved" |
+| Date Joined | Yes | Start date |
+| Work Email | Yes | Work email address |
+| Reporting Manager | Yes | Direct manager name |
+| Last Working Day | No | Exit date (if applicable) |
+| Exit Requested On | No | Resignation date |
+| Current City | No | Employee location |
+| Work Phone | No | Phone number |
+| Gender | No | Male / Female / Other |
+| L2 Manager | No | Skip-level manager |
+
+Name your files with the as-of date for automatic detection: `Employee report-as on 7th Mar 2026.xlsx`
 
 ## License
 

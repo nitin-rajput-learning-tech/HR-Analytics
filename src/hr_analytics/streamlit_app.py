@@ -44,6 +44,7 @@ if __package__ in {None, ""}:
         MANAGER_HIERARCHY_FIELDS,
         MOVEMENT_GRAIN_OPTIONS,
         STRUCTURE_DIMENSIONS,
+        resource_path,
     )
     from hr_analytics.exports import dataframe_to_csv_bytes, dataframe_to_excel_bytes, persist_export
     from hr_analytics.repository import DatabaseLockedError, Repository
@@ -82,6 +83,7 @@ else:
         MANAGER_HIERARCHY_FIELDS,
         MOVEMENT_GRAIN_OPTIONS,
         STRUCTURE_DIMENSIONS,
+        resource_path,
     )
     from .exports import dataframe_to_csv_bytes, dataframe_to_excel_bytes, persist_export
     from .repository import DatabaseLockedError, Repository
@@ -1498,6 +1500,20 @@ def render_upload_page(
 ) -> None:
     st.subheader("Uploads & Archive")
     st.caption("Manual uploads publish new snapshots into the local archive after schema validation.")
+
+    template_path = resource_path("HR_Analytics_Employee_Template.xlsx")
+    if template_path.exists():
+        with st.expander("Download data template", expanded=False):
+            st.markdown(
+                "Use this Excel template to prepare your employee data. "
+                "It includes column headers, data validation, sample rows, and an instructions sheet."
+            )
+            st.download_button(
+                label="Download Employee Template (.xlsx)",
+                data=template_path.read_bytes(),
+                file_name="HR_Analytics_Employee_Template.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
 
     with st.expander("Upload a new workbook", expanded=True):
         uploaded = st.file_uploader("Employee report workbook", type=["xlsx"])
