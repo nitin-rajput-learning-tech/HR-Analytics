@@ -1,0 +1,29 @@
+# Virtual environments
+.venv_hr_analytics/
+.venv/
+
+# Workspace data
+.workspace/
+*.duckdb
+*.duckdb.wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Lock files
+.hr_analytics.lock

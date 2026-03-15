@@ -1,0 +1,32 @@
+[
+  {
+    "field_name": "sub_department",
+    "raw_value": "Sales and Distributions",
+    "canonical_value": "Sales & Distribution"
+  },
+  {
+    "field_name": "sub_department",
+    "raw_value": "Sales and Distribution",
+    "canonical_value": "Sales & Distribution"
+  },
+  {
+    "field_name": "sub_department",
+    "raw_value": "Sales & Distributions",
+    "canonical_value": "Sales & Distribution"
+  },
+  {
+    "field_name": "sub_department",
+    "raw_value": "NA",
+    "canonical_value": "Unspecified"
+  },
+  {
+    "field_name": "sub_department",
+    "raw_value": "__BLANK__",
+    "canonical_value": "Unspecified"
+  },
+  {
+    "field_name": "current_city",
+    "raw_value": "Miraroad",
+    "canonical_value": "Mira Road"
+  }
+]
