@@ -1,3 +1,10 @@
+import { AppStateProvider } from "./ui/state";
+import { AppShell } from "./ui/AppShell";
+
 export function App() {
-  return <h1>HR Analytics — scaffold OK</h1>;
+  return (
+    <AppStateProvider>
+      <AppShell />
+    </AppStateProvider>
+  );
 }
