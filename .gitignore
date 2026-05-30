@@ -27,3 +27,9 @@ Thumbs.db
 
 # Lock files
 .hr_analytics.lock
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+.vite/
