@@ -41,13 +41,21 @@ Open the **Branding** page to set the app name, primary/accent colours, logo and
 Requires Node.js 18+ (built with Node 24 / npm 11).
 
 ```bash
-npm install      # installs React, Plotly, SheetJS, Arquero, pako
-npm run dev      # local dev server with hot reload
-npm test         # run the unit suite (Vitest)
-npm run build    # produces a single self-contained dist/index.html
+npm install        # installs React, Plotly, SheetJS, Arquero, pako, esbuild-wasm
+npm test           # runs the unit suite (66 tests)
+npm run typecheck  # full TypeScript check (tsc --noEmit)
+npm run build      # produces a single self-contained dist/index.html
 ```
 
 Ship `dist/index.html` — that one file *is* the application. Open it from disk or a share; no further setup.
+
+### Why the build is esbuild-free
+
+Locked-down Windows (AppContainer / endpoint protection) often blocks the **native `esbuild` Go binary** from loading system DLLs (`winmm.dll`), which breaks `vite build` and `vitest` with a `runtime: panic before malloc heap initialized` crash. To stay portable, `npm run build` and `npm test` use **`esbuild-wasm`** — the same compiler compiled to WebAssembly, which runs inside Node and never touches a system DLL. Nothing native is required to build, test, or run.
+
+- `npm run build` → `scripts/build.mjs` (esbuild-wasm bundles + inlines into one HTML)
+- `npm test` → `scripts/test.mjs` (esbuild-wasm bundles the specs; a tiny vitest-compatible shim runs them in Node)
+- `npm run dev` / `build:vite` / `test:vitest` are kept for unrestricted environments where the native binary works (Vite dev server with HMR), but are **not required**.
 
 ## Using it
 

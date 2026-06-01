@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "typecheck": "tsc --noEmit",
     "dev": "vite",
-    "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "build:vite": "tsc -b && vite build",
+    "test:vitest": "vitest run"
   },
   "dependencies": {
     "arquero": "^8.0.3",
@@ -23,6 +25,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "esbuild-wasm": "^0.28.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.5",
     "vite-plugin-singlefile": "^2.1.0",
