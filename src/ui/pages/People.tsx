@@ -3,6 +3,7 @@ import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
 import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
+import { buildMovement } from "../../core/metrics/movement";
 import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
 
 export function People() {
@@ -12,9 +13,17 @@ export function People() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const snap = useMemo(() => store.getLatest("employee_master"), [store, version]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const empSnaps = useMemo(() => store.listByKind("employee_master"), [store, version]);
   const allRows = snap?.rows ?? [];
   const filtered = useMemo(() => filterRows(allRows, filters), [allRows, filters]);
-  const sections = useMemo(() => (snap ? buildPeople(filtered, snap.asOf) : []), [filtered, snap]);
+  const sections = useMemo(() => {
+    if (!snap) return [];
+    const people = buildPeople(filtered, snap.asOf);
+    const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
+    const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
+    return [...people, { key: "movement", label: movement.label, metrics: movement }];
+  }, [filtered, empSnaps, filters, snap]);
 
   if (!snap) {
     return (

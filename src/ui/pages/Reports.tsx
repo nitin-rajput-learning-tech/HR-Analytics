@@ -4,6 +4,7 @@ import { DomainView } from "../components/DomainView";
 import { overviewKpis } from "../../core/metrics/overview";
 import { buildNewsletter } from "../../reports/newsletter";
 import { buildFactsMarkdown } from "../../reports/factsPack";
+import { leaverEvents } from "../../core/metrics/movement";
 
 export function Reports() {
   const { store, branding, version } = useApp();
@@ -19,7 +20,13 @@ export function Reports() {
   }, [store, version]);
 
   const nl = useMemo(
-    () => buildNewsletter(store, { appName: branding.appName, activeHeadcount, generatedAtLabel }),
+    () =>
+      buildNewsletter(store, {
+        appName: branding.appName,
+        activeHeadcount,
+        generatedAtLabel,
+        leaverEvents: leaverEvents(store.listByKind("employee_master")),
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [store, version, branding.appName, activeHeadcount, generatedAtLabel],
   );

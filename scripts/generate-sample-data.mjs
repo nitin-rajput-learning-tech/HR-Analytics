@@ -93,12 +93,20 @@ function write(filename, headers, rows) {
   written.push(`${filename}  (${rows.length} rows)`);
 }
 
-// ---- 1. employee master ---------------------------------------------------
-write(
-  "Employee report as on 2026-05-05.xlsx",
-  ["Employee Number","Full Name","Legal Entity","Last Working Day","Current City","Work Phone","Work Email","Exit Requested On","Sub Department","Gender","Date Joined","Employment Status","Job Title","L2 Manager","Reporting Manager","Department"],
-  employees.map((e) => [e.num, e.fullName, e.entity, e.lwd, e.city, e.phone, e.email, e.exitReq, e.subDept, e.gender, e.doj, e.status, e.title, e.l2, e.mgr, e.dept]),
-);
+// ---- 1. employee master (two months so Movement & Forecast demonstrate) ---
+const EMP_HEADERS = ["Employee Number", "Full Name", "Legal Entity", "Last Working Day", "Current City", "Work Phone", "Work Email", "Exit Requested On", "Sub Department", "Gender", "Date Joined", "Employment Status", "Job Title", "L2 Manager", "Reporting Manager", "Department"];
+const empRow = (e) => [e.num, e.fullName, e.entity, e.lwd, e.city, e.phone, e.email, e.exitReq, e.subDept, e.gender, e.doj, e.status, e.title, e.l2, e.mgr, e.dept];
+// 8 recent active hires count as "joined in May"; 10 of the relieved "left in May".
+const joinedMayList = active.slice(0, 8);
+for (const e of joinedMayList) e.doj = "2026-05-02";
+const joinedMay = new Set(joinedMayList.map((e) => e.num));
+const leftMayList = employees.filter((e) => e.status === "Relieved").slice(0, 10);
+for (const e of leftMayList) e.lwd = "2026-05-" + pad(int(2, 27));
+const leftMay = new Set(leftMayList.map((e) => e.num));
+// April snapshot = May minus the May-joiners, with the May-leavers shown still Working.
+const april = employees.filter((e) => !joinedMay.has(e.num)).map((e) => (leftMay.has(e.num) ? { ...e, status: "Working", lwd: "" } : e));
+write("Employee report as on 2026-04-05.xlsx", EMP_HEADERS, april.map(empRow));
+write("Employee report as on 2026-05-05.xlsx", EMP_HEADERS, employees.map(empRow));
 
 // ---- 2. talent acquisition (requisitions) ---------------------------------
 const SOURCES = ["Referral", "Agency", "Portal", "Internal", "Direct"];
