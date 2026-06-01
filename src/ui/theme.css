@@ -187,6 +187,25 @@ a { color: var(--brand-accent); }
 .badge.sev-medium { background: var(--medium); }
 .badge.sev-low { background: var(--low); }
 
+/* insights banner — cross-tab "needs attention" summary */
+.insights { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 13px 16px; margin: 0 0 16px; box-shadow: var(--shadow-sm); }
+.insights-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.insights-title { font-weight: 800; color: var(--ink); font-size: 0.96rem; display: flex; align-items: baseline; gap: 9px; }
+.insights-count { font-weight: 600; font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.insights-dismiss { margin-left: auto; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); border-radius: 6px; width: 26px; height: 26px; cursor: pointer; line-height: 1; font-size: 0.8rem; }
+.insights-dismiss:hover { color: var(--text); border-color: var(--border-strong); }
+.insights-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.insight { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--border); border-left-width: 4px; border-radius: var(--radius-sm); padding: 10px 12px; }
+.insight.sev-high { border-left-color: var(--high); }
+.insight.sev-medium { border-left-color: var(--medium); }
+.insight.sev-low { border-left-color: var(--low); }
+.insight .badge { flex: none; margin-top: 1px; }
+.insight-body { min-width: 0; }
+.insight-body strong { font-size: 0.86rem; color: var(--ink); }
+.insight-detail { color: var(--text); font-size: 0.8rem; margin-top: 3px; }
+.insight-owner { flex: none; align-self: flex-start; color: var(--muted); font-size: 0.7rem; background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; }
+.insights-foot { color: var(--muted); font-size: 0.78rem; margin-top: 9px; }
+
 /* buttons / inputs */
 button.primary { background: var(--brand-accent); color: #fff; border: 0; border-radius: var(--radius-sm); padding: 9px 16px; cursor: pointer; font-weight: 600; font-size: 0.88rem; }
 button.primary:hover { filter: brightness(1.07); }

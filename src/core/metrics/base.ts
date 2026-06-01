@@ -49,6 +49,15 @@ export interface DomainMetrics {
   watchouts: MetricWatchout[];
 }
 
+const SEVERITY_RANK: Record<MetricWatchout["severity"], number> = { high: 3, medium: 2, low: 1 };
+
+// Order watch-outs most-severe first (stable within a severity) and optionally
+// cap the count — used to roll per-section watch-outs up into a single
+// "needs attention" summary.
+export function rankWatchouts(items: MetricWatchout[], limit = Infinity): MetricWatchout[] {
+  return [...items].sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]).slice(0, limit);
+}
+
 export function emptyDomain(kind: string, label: string, team: string): DomainMetrics {
   return {
     kind,

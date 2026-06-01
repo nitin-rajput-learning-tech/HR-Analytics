@@ -3,8 +3,10 @@ import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
 import { ViewsMenu } from "../components/ViewsMenu";
+import { InsightsBanner } from "../components/InsightsBanner";
 import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { decoratePeopleDeltas } from "../../core/metrics/compare";
+import { rankWatchouts } from "../../core/metrics/base";
 import { buildMovement } from "../../core/metrics/movement";
 import { filterRows, rowsToCsv } from "../../core/filters";
 
@@ -44,6 +46,10 @@ export function People() {
     return [...people, { key: "movement", label: movement.label, metrics: movement }];
   }, [filtered, empSnaps, filters, snap]);
 
+  // Roll every section's watch-outs up into a single cross-tab summary banner.
+  const allWatchouts = useMemo(() => sections.flatMap((s) => s.metrics.watchouts), [sections]);
+  const topWatchouts = useMemo(() => rankWatchouts(allWatchouts, 4), [allWatchouts]);
+
   // Drill-down: clicking a chart bar/slice adds that value to its filter field.
   const onDrill = useCallback((field: string, label: string) => {
     setFilters((f) => {
@@ -82,6 +88,7 @@ export function People() {
       </div>
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
+      <InsightsBanner items={topWatchouts} total={allWatchouts.length} />
       {sections.length === 0 ? (
         <p className="muted placeholder">No employees match the current filters.</p>
       ) : (
