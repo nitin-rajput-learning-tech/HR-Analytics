@@ -213,8 +213,10 @@ label { display: inline-block; margin: 4px 0; font-size: 0.88rem; }
 select, input[type="file"] { font: inherit; }
 .intake-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 14px 0 6px; }
 .intake-select { padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); min-width: 280px; }
-.intake-controls button, .reports-toolbar button { border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 0.86rem; }
-.intake-controls button:hover, .reports-toolbar button:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+/* Secondary toolbar buttons only — :not(.primary) so a filled .primary button
+   (same specificity as these selectors) keeps its accent fill + white text. */
+.intake-controls button:not(.primary), .reports-toolbar button:not(.primary) { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 0.86rem; }
+.intake-controls button:not(.primary):hover, .reports-toolbar button:not(.primary):hover { border-color: var(--brand-accent); color: var(--brand-accent); }
 .intake-desc { color: var(--text); margin: 6px 0 2px; }
 .intake-required { font-size: 0.8rem; margin: 0 0 12px; }
 .intake-upload { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: inline-block; box-shadow: var(--shadow-sm); }
