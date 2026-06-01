@@ -48,8 +48,21 @@ export function Chart({
     });
   }, [figure, spec.drill, spec.kind]);
 
+  function downloadPng() {
+    if (!ref.current) return;
+    void Plotly.toImage(ref.current, { format: "png", scale: 2 }).then((url) => {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (spec.title || "chart").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
+      a.click();
+    });
+  }
+
   return (
     <figure className={spec.drill && onDrill ? "chart drillable" : "chart"}>
+      <button className="chart-dl no-print" title="Download PNG" onClick={downloadPng}>
+        PNG
+      </button>
       <div ref={ref} className="chart-canvas" />
       {spec.caption ? (
         <figcaption>

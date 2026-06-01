@@ -9,11 +9,13 @@ declare module "plotly.js-dist-min" {
   export function newPlot(el: HTMLElement, data: PlotData[], layout?: PlotLayout, config?: PlotConfig): Promise<HTMLElement>;
   export function react(el: HTMLElement, data: PlotData[], layout?: PlotLayout, config?: PlotConfig): Promise<HTMLElement>;
   export function purge(el: HTMLElement): void;
+  export function toImage(el: HTMLElement, opts: { format?: string; width?: number; height?: number; scale?: number }): Promise<string>;
 
   const Plotly: {
     newPlot: typeof newPlot;
     react: typeof react;
     purge: typeof purge;
+    toImage: typeof toImage;
   };
   export default Plotly;
 }

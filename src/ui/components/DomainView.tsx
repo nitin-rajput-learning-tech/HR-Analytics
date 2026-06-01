@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Chart } from "./Chart";
+import { tableToCsv } from "../../core/filters";
 import type { DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../../core/metrics/base";
 
 export function KpiCard({ kpi }: { kpi: MetricKPI }) {
@@ -31,13 +32,28 @@ export function DataTable({ table }: { table: MetricTable }) {
   const toggleSort = (col: number) =>
     setSort((s) => (s && s.col === col ? (s.dir === 1 ? { col, dir: -1 } : null) : { col, dir: 1 }));
 
+  function downloadCsv() {
+    const blob = new Blob([tableToCsv(table.columns, rows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (table.title || "table").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="metric-table">
       <div className="mt-head">
         <h4>{table.title}</h4>
-        {table.rows.length > 10 ? (
-          <input className="table-search no-print" type="search" placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
-        ) : null}
+        <div className="mt-tools no-print">
+          {table.rows.length > 10 ? (
+            <input className="table-search" type="search" placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
+          ) : null}
+          <button className="table-csv" title="Download this table as CSV" onClick={downloadCsv}>
+            CSV
+          </button>
+        </div>
       </div>
       {table.caption ? <p className="caption">{table.caption}</p> : null}
       <div className="table-scroll">

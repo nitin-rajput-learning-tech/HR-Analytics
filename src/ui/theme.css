@@ -129,6 +129,13 @@ a { color: var(--brand-accent); }
 .chart figcaption { color: var(--muted); font-size: 0.76rem; padding: 2px 6px 8px; }
 .chart.drillable .chart-canvas { cursor: pointer; }
 .chart.drillable figcaption { color: var(--brand-accent); }
+.chart { position: relative; }
+.chart-dl { position: absolute; top: 8px; right: 10px; z-index: 2; border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 6px; font-size: 0.66rem; font-weight: 700; padding: 2px 7px; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
+.chart:hover .chart-dl { opacity: 1; }
+.chart-dl:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+.mt-tools { display: flex; align-items: center; gap: 8px; }
+.table-csv { border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 6px; font-size: 0.72rem; font-weight: 700; padding: 4px 9px; cursor: pointer; }
+.table-csv:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
 
 /* tables */
 .metric-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 17px; margin: 16px 0; box-shadow: var(--shadow-sm); }
