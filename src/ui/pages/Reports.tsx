@@ -58,7 +58,29 @@ export function Reports() {
           <p className="muted">No data yet. Publish workbooks on Data Intake; the newsletter fills in automatically.</p>
         ) : null}
 
-        <section className="exec-brief">
+        <nav className="nl-toc">
+          <h3>Contents</h3>
+          <ul>
+            <li>
+              <a href="#sec-exec">Executive Brief</a>
+            </li>
+            {nl.sections.map((s, i) => (
+              <li key={s.anchor}>
+                <a href={`#${s.anchor}`}>
+                  <span className="toc-num">{i + 1}</span>
+                  {s.label}
+                </a>
+              </li>
+            ))}
+            {nl.actionPlan.length > 0 ? (
+              <li>
+                <a href="#sec-actions">Prioritised Action Plan</a>
+              </li>
+            ) : null}
+          </ul>
+        </nav>
+
+        <section className="exec-brief" id="sec-exec">
           <h2>CHRO Executive Brief</h2>
           {nl.execBrief.headlineKpis.length > 0 ? (
             <div className="kpis">
@@ -99,15 +121,18 @@ export function Reports() {
           </div>
         </section>
 
-        {nl.sections.map((s) => (
-          <section className="nl-section" key={s.kind}>
-            <h2>{s.label}</h2>
+        {nl.sections.map((s, i) => (
+          <section className="nl-section" id={s.anchor} key={s.anchor}>
+            <h2>
+              <span className="sec-num">{i + 1}</span>
+              {s.label}
+            </h2>
             <DomainView domain={s} accent={branding.accent} />
           </section>
         ))}
 
         {nl.actionPlan.length > 0 ? (
-          <section className="action-plan">
+          <section className="action-plan" id="sec-actions">
             <h2>Prioritised Action Plan</h2>
             <ol>
               {nl.actionPlan.map((a) => (

@@ -13,10 +13,9 @@
 
 import type { DataSource } from "../core/store/types";
 import { buildAll, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
-import { overviewKpis } from "../core/metrics/overview";
+import { buildPeople } from "../core/metrics/people";
 import type { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../core/metrics/base";
 import type { LeaverEvent } from "../core/metrics/cross_functional";
-import * as N from "../core/narrative";
 
 export interface ActionItem {
   priority: number;
@@ -30,6 +29,7 @@ export interface ActionItem {
 
 export interface NewsletterSection {
   kind: string;
+  anchor: string;
   label: string;
   hasData: boolean;
   blurb: string;
@@ -97,6 +97,7 @@ function parsePct(value: string): number | null {
 function toSection(d: DomainMetrics): NewsletterSection {
   return {
     kind: d.kind,
+    anchor: `sec-${d.kind}`,
     label: d.label,
     hasData: d.hasData,
     blurb: d.blurb,
@@ -108,47 +109,48 @@ function toSection(d: DomainMetrics): NewsletterSection {
 }
 
 function peopleSection(store: DataSource): NewsletterSection {
-  const rows = store.getLatest("employee_master")?.rows ?? null;
-  if (!rows || rows.length === 0) {
+  const snap = store.getLatest("employee_master");
+  const base = { kind: "employee_master", anchor: "sec-employee_master", label: "People & Org" };
+  if (!snap || snap.rows.length === 0) {
     return {
-      kind: "employee_master",
-      label: "People & Org",
+      ...base,
       hasData: false,
       blurb:
         "Awaiting the first employee-master upload. Publish a monthly employee workbook " +
-        "from the Data Intake page to populate headcount, movement and tenure.",
+        "from the Data Intake page to populate headcount, tenure, diversity and more.",
       kpis: [],
       charts: [],
       tables: [],
       watchouts: [],
     };
   }
-  const o = overviewKpis(rows);
-  const kpis: MetricKPI[] = [
-    { label: "Active Headcount", value: N.humanizeInt(o.active), hint: `${N.formatPct(o.activeRatio)} of records` },
-    { label: "Total Records", value: N.humanizeInt(o.total) },
-    { label: "Relieved", value: N.humanizeInt(o.relieved), hint: N.formatPct(o.relievedRatio) },
-  ];
-  const watchouts: MetricWatchout[] = [];
-  if (o.activeRatio < 85 && o.total >= 20) {
-    watchouts.push({
-      severity: "low",
-      title: "Elevated relieved share in master",
-      detail: `${N.formatPct(o.relievedRatio)} of records are marked relieved.`,
-      actionHint: "Confirm the master reflects current active staff before downstream reporting.",
-      owner: "HR Operations",
-    });
-  }
-  return {
-    kind: "employee_master",
-    label: "People & Org",
-    hasData: true,
-    blurb: `${N.humanizeInt(o.active)} active of ${N.humanizeInt(o.total)} (${N.formatPct(o.activeRatio)}).`,
-    kpis,
-    charts: [],
-    tables: [],
-    watchouts,
-  };
+  // Pull the rich People analytics and curate a detailed-but-tight summary.
+  const people = buildPeople(snap.rows, snap.asOf);
+  const byKind: Record<string, DomainMetrics> = Object.fromEntries(people.map((s) => [s.metrics.kind, s.metrics]));
+  const ov = byKind["people_overview"];
+  const ten = byKind["people_tenure"];
+  const div = byKind["people_diversity"];
+  const hc = byKind["people_headcount"];
+  const pick = (m: DomainMetrics | undefined, label: string) => m?.kpis.find((k) => k.label === label);
+
+  const kpis = [
+    pick(ov, "Active Headcount"),
+    pick(ov, "Relieved"),
+    pick(ov, "Pending Exits"),
+    pick(ov, "Avg Tenure (active)"),
+    pick(div, "Female"),
+    pick(hc, "Departments"),
+  ].filter((k): k is MetricKPI => !!k);
+
+  const charts: ChartSpec[] = [];
+  if (ov?.charts[0]) charts.push(ov.charts[0]); // workforce status
+  if (hc?.charts[0]) charts.push(hc.charts[0]); // headcount by department
+  if (ten?.charts[0]) charts.push(ten.charts[0]); // tenure bands
+
+  const tables: MetricTable[] = hc?.tables.slice(0, 1) ?? [];
+  const watchouts: MetricWatchout[] = people.flatMap((s) => s.metrics.watchouts);
+
+  return { ...base, hasData: true, blurb: ov?.blurb ?? "", kpis, charts, tables, watchouts };
 }
 
 function pickHeadline(section: NewsletterSection): MetricKPI | null {
