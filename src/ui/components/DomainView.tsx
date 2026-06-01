@@ -12,24 +12,31 @@ export function KpiCard({ kpi }: { kpi: MetricKPI }) {
   );
 }
 
+const cellNum = (v: string | number) => (typeof v === "number" ? v : Number(String(v).replace(/[^0-9.\-]/g, "")));
+
 export function DataTable({ table }: { table: MetricTable }) {
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<{ col: number; dir: 1 | -1 } | null>(null);
   const query = q.trim().toLowerCase();
-  const rows = query
-    ? table.rows.filter((r) => r.some((c) => String(c).toLowerCase().includes(query)))
-    : table.rows;
+  let rows = query ? table.rows.filter((r) => r.some((c) => String(c).toLowerCase().includes(query))) : table.rows;
+  if (sort) {
+    const { col, dir } = sort;
+    rows = [...rows].sort((a, b) => {
+      const an = cellNum(a[col]);
+      const bn = cellNum(b[col]);
+      const numeric = Number.isFinite(an) && Number.isFinite(bn) && String(a[col]).trim() !== "" && String(b[col]).trim() !== "";
+      return (numeric ? an - bn : String(a[col]).localeCompare(String(b[col]))) * dir;
+    });
+  }
+  const toggleSort = (col: number) =>
+    setSort((s) => (s && s.col === col ? (s.dir === 1 ? { col, dir: -1 } : null) : { col, dir: 1 }));
+
   return (
     <div className="metric-table">
       <div className="mt-head">
         <h4>{table.title}</h4>
         {table.rows.length > 10 ? (
-          <input
-            className="table-search no-print"
-            type="search"
-            placeholder="Filter rows…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <input className="table-search no-print" type="search" placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
         ) : null}
       </div>
       {table.caption ? <p className="caption">{table.caption}</p> : null}
@@ -37,8 +44,11 @@ export function DataTable({ table }: { table: MetricTable }) {
         <table>
           <thead>
             <tr>
-              {table.columns.map((c) => (
-                <th key={c}>{c}</th>
+              {table.columns.map((c, ci) => (
+                <th key={c} className="sortable" onClick={() => toggleSort(ci)} title="Click to sort">
+                  {c}
+                  <span className="sort-ind">{sort && sort.col === ci ? (sort.dir === 1 ? " ▲" : " ▼") : ""}</span>
+                </th>
               ))}
             </tr>
           </thead>

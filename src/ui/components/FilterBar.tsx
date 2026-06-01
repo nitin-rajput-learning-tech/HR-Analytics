@@ -71,6 +71,23 @@ export function FilterBar({
           Export CSV
         </button>
       ) : null}
+
+      {active > 0 ? (
+        <div className="filter-chips">
+          {filters.search?.trim() ? (
+            <button className="chip" onClick={() => onChange({ ...filters, search: "" })}>
+              “{filters.search}” ✕
+            </button>
+          ) : null}
+          {FILTER_DIMENSIONS.flatMap((d) =>
+            (filters[d.field] ?? []).map((v) => (
+              <button key={d.field + v} className="chip" onClick={() => toggle(d.field, v)}>
+                {d.label}: {v} ✕
+              </button>
+            )),
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

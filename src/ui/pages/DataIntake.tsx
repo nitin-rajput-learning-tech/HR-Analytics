@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
+import { generateFunctionalDemo, generatePriorEmployeeMonth } from "../../core/intake/demoData";
 import { useApp } from "../state";
 
 // Team order, first-seen, for grouping the picker.
@@ -70,6 +71,23 @@ export function DataIntake() {
     e.target.value = "";
   }
 
+  function generateDemo() {
+    const emp = store.getLatest("employee_master");
+    if (!emp) {
+      setOk(false);
+      setMsg("Load an Employee Master first — demo functional data is generated from it.");
+      return;
+    }
+    const prior = generatePriorEmployeeMonth(emp.rows, emp.asOf);
+    const fns = generateFunctionalDemo(emp.rows, emp.asOf);
+    for (const s of [...(prior ? [prior] : []), ...fns]) {
+      store.add({ id: `${s.kind}:${s.asOf}`, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: s.rows });
+    }
+    bump();
+    setOk(true);
+    setMsg(`Generated demo data for ${fns.length} functional domains${prior ? ` + a prior employee month (${prior.asOf})` : ""}. Every dashboard, Movement & Forecast, and the newsletter are now populated.`);
+  }
+
   return (
     <div>
       <h2>Data Intake</h2>
@@ -118,6 +136,20 @@ export function DataIntake() {
         </label>
       </div>
       {msg ? <p className={ok ? "intake-ok" : "intake-err"}>{msg}</p> : null}
+
+      <div className="demo-box">
+        <div>
+          <strong>Demo functional data</strong>
+          <p className="muted" style={{ margin: "3px 0 0", fontSize: ".84rem", maxWidth: "62ch" }}>
+            No TA / PMS / Payroll / L&amp;D / Admin files yet? Generate realistic, organisation-consistent data from your
+            loaded Employee Master — keyed to your real employee numbers and departments — to populate every dashboard,
+            Movement &amp; Forecast, and the newsletter.
+          </p>
+        </div>
+        <button className="primary" onClick={generateDemo} disabled={!store.getLatest("employee_master")}>
+          Generate demo data
+        </button>
+      </div>
 
       <h3 style={{ marginTop: 28 }}>Loaded data</h3>
       {loaded.length === 0 ? (

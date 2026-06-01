@@ -53,7 +53,11 @@ export function deriveEmployeeEvents(snapshots: Snapshot[]): EmployeeEvent[] {
       if (!id || !isWorking(r)) continue;
       const curR = curMap.get(id);
       if (!curR || !isWorking(curR)) {
-        const date = curR && str(curR["last_working_day"]) ? str(curR["last_working_day"]) : cur.asOf;
+        // Date the exit within the snapshot window; only trust last_working_day
+        // if it actually falls in (prev, cur] — otherwise a stale historical LWD
+        // would scatter the exit into old months.
+        const lwd = curR ? str(curR["last_working_day"]) : "";
+        const date = lwd && lwd > prev.asOf && lwd <= cur.asOf ? lwd : cur.asOf;
         const src = curR ?? r;
         events.push({ employee_number: id, event_type: "leaver", event_date: date, department: str(src["department"]) || "Unspecified", legal_entity: str(src["legal_entity"]) || "Unspecified" });
       }
@@ -112,8 +116,10 @@ export function forecastWorkforce(currentActive: number, movement: MonthMovement
   const look = movement.slice(-6);
   const wj = weighted(look.map((m) => m.joiners));
   const wl = weighted(look.map((m) => m.leavers));
-  const sj = slope(look.map((m) => m.joiners));
-  const sl = slope(look.map((m) => m.leavers));
+  // A linear trend needs ≥3 points; with fewer, project flat (slope from 2
+  // points wildly over/undershoots).
+  const sj = look.length >= 3 ? slope(look.map((m) => m.joiners)) : 0;
+  const sl = look.length >= 3 ? slope(look.map((m) => m.leavers)) : 0;
   const months: Forecast["months"] = [];
   let active = currentActive;
   for (let h = 1; h <= horizon; h++) {
