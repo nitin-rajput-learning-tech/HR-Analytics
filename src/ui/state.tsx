@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import { MemoryStore } from "../core/store/memoryStore";
 import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/branding";
 import type { Filters } from "../core/filters";
+import type { SavedView } from "../workspace/workspace";
 
 interface AppState {
   store: MemoryStore;
@@ -17,6 +18,20 @@ interface AppState {
   peopleFilters: Filters;
   setPeopleFilters: React.Dispatch<React.SetStateAction<Filters>>;
   drillToPeople(field: string, label: string): void;
+  // Saved views — named page + filter presets, persisted with the workspace.
+  savedViews: SavedView[];
+  setSavedViews(v: SavedView[]): void;
+  saveView(name: string): void;
+  applyView(id: string): void;
+  deleteView(id: string): void;
+}
+
+function makeId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return "v" + Date.now() + Math.floor(Math.random() * 1e6);
+  }
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -27,6 +42,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [version, setVersion] = useState(0);
   const [page, setPage] = useState<string>("People Analytics");
   const [peopleFilters, setPeopleFilters] = useState<Filters>({});
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const setStore = useCallback((s: MemoryStore) => {
@@ -44,10 +60,25 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     });
     setPage("People Analytics");
   }, []);
+  const saveView = useCallback(
+    (name: string) => setSavedViews((vs) => [...vs, { id: makeId(), name, page, filters: peopleFilters }]),
+    [page, peopleFilters],
+  );
+  const applyView = useCallback(
+    (id: string) => {
+      const v = savedViews.find((x) => x.id === id);
+      if (v) {
+        setPeopleFilters(v.filters);
+        setPage(v.page);
+      }
+    },
+    [savedViews],
+  );
+  const deleteView = useCallback((id: string) => setSavedViews((vs) => vs.filter((x) => x.id !== id)), []);
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView }}
     >
       {children}
     </Ctx.Provider>

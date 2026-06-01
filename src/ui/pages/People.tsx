@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
+import { ViewsMenu } from "../components/ViewsMenu";
 import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { buildMovement } from "../../core/metrics/movement";
 import { filterRows, rowsToCsv } from "../../core/filters";
@@ -60,6 +61,7 @@ export function People() {
         <h2>People Analytics</h2>
         <p className="page-sub">Headcount, tenure, diversity, geography, span of control, attrition and data quality — filter or search to drill in.</p>
       </div>
+      <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
       {sections.length === 0 ? (
         <p className="muted placeholder">No employees match the current filters.</p>

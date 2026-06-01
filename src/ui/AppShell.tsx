@@ -18,7 +18,7 @@ export function AppShell() {
   const setPage = app.setPage;
 
   function onSave() {
-    const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString());
+    const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews);
     const blob = new Blob([new Uint8Array(bytes)], { type: "application/gzip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -31,9 +31,10 @@ export function AppShell() {
   async function onLoad(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { store, branding } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
+    const { store, branding, savedViews } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
     app.setStore(store);
     app.setBranding(branding);
+    app.setSavedViews(savedViews);
   }
 
   return (

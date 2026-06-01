@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
+import { ViewsMenu } from "../components/ViewsMenu";
 import { directorySection, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
 
@@ -40,6 +41,7 @@ export function Directory() {
         <h2>Employee Directory</h2>
         <p className="page-sub">Browse, search, sort and export the full employee list — filter to drill in.</p>
       </div>
+      <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
       <DomainView domain={metrics} accent={branding.accent} />
     </div>

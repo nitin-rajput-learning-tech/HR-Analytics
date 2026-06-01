@@ -24,4 +24,15 @@ describe("workspace round-trip", () => {
     expect(restored.branding.appName).toBe("Acme HR");
     expect(restored.store.getLatest("employee_master")!.rows[0].employee_number).toBe("AA1");
   });
+
+  it("round-trips saved views (and defaults to none for older files)", () => {
+    const store = new MemoryStore();
+    const views = [{ id: "v1", name: "Tech only", page: "People Analytics", filters: { department: ["Tech"] } }];
+    const restored = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING, "now", views));
+    expect(restored.savedViews).toHaveLength(1);
+    expect(restored.savedViews[0].name).toBe("Tech only");
+    expect(restored.savedViews[0].filters.department).toEqual(["Tech"]);
+    // older workspace (no savedViews arg) -> empty list
+    expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).savedViews).toEqual([]);
+  });
 });
