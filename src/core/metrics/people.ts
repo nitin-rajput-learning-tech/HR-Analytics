@@ -422,6 +422,49 @@ function dataQualitySection(rows: Row[]): DomainMetrics {
   };
 }
 
+// ---------------------------------------------------------------- directory
+const DIRECTORY_CAP = 1000;
+const DIRECTORY_COLS: [string, string][] = [
+  ["employee_number", "Employee #"],
+  ["full_name", "Name"],
+  ["department", "Department"],
+  ["sub_department", "Sub-dept"],
+  ["job_title", "Job Title"],
+  ["current_city", "Location"],
+  ["employment_status", "Status"],
+  ["date_joined", "Date Joined"],
+  ["reporting_manager", "Reporting Manager"],
+];
+
+export function directorySection(rows: Row[]): DomainMetrics {
+  const active = rows.filter(isWorking).length;
+  const shown = rows.slice(0, DIRECTORY_CAP);
+  const tableRows = shown.map((r) => DIRECTORY_COLS.map(([k]) => str(r[k]) || "—")) as (string | number)[][];
+  return {
+    kind: "people_directory",
+    label: "Directory",
+    hasData: rows.length > 0,
+    blurb: `${rows.length.toLocaleString("en-IN")} matching employee(s) — ${active.toLocaleString("en-IN")} active. Search, sort and export from the table below (or the filter bar's Export CSV).`,
+    kpis: [
+      { label: "Matching", value: N.humanizeInt(rows.length) },
+      { label: "Active", value: N.humanizeInt(active) },
+    ],
+    charts: [],
+    tables: [
+      {
+        title: "Employee directory",
+        caption:
+          rows.length > DIRECTORY_CAP
+            ? `Showing the first ${DIRECTORY_CAP} of ${rows.length.toLocaleString("en-IN")} — narrow with the filters/search above, or use Export CSV for the full set.`
+            : `${rows.length.toLocaleString("en-IN")} employee(s).`,
+        columns: DIRECTORY_COLS.map((c) => c[1]),
+        rows: tableRows,
+      },
+    ],
+    watchouts: [],
+  };
+}
+
 export function buildPeople(rows: Row[] | null | undefined, asOf: string | null): PeopleSection[] {
   if (!rows || rows.length === 0) return [];
   const refMs = dayMs(asOf);

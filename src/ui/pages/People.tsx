@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
-import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
+import { buildPeople, EMPLOYEE_FIELDS, directorySection } from "../../core/metrics/people";
 import { buildMovement } from "../../core/metrics/movement";
 import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
 
@@ -22,7 +22,11 @@ export function People() {
     const people = buildPeople(filtered, snap.asOf);
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
-    return [...people, { key: "movement", label: movement.label, metrics: movement }];
+    return [
+      ...people,
+      { key: "directory", label: "Directory", metrics: directorySection(filtered) },
+      { key: "movement", label: movement.label, metrics: movement },
+    ];
   }, [filtered, empSnaps, filters, snap]);
 
   if (!snap) {

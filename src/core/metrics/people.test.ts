@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPeople } from "./people";
+import { buildPeople, directorySection } from "./people";
 import type { Row } from "../ingest/types";
 
 function roster(): Row[] {
@@ -64,5 +64,22 @@ describe("buildPeople", () => {
 
   it("returns nothing for an empty roster", () => {
     expect(buildPeople([], "2026-05-05")).toHaveLength(0);
+  });
+});
+
+describe("directorySection", () => {
+  const rows = roster();
+  it("lists matching employees with the standard columns", () => {
+    const d = directorySection(rows);
+    expect(d.kind).toBe("people_directory");
+    expect(d.tables[0].columns).toContain("Employee #");
+    expect(d.tables[0].columns).toContain("Reporting Manager");
+    expect(d.tables[0].rows).toHaveLength(rows.length);
+  });
+  it("reports matching + active counts and reflects a filtered subset", () => {
+    const full = directorySection(rows);
+    const filtered = directorySection(rows.filter((r) => r.department === "Tech"));
+    expect(full.kpis.find((k) => k.label === "Matching")!.value).toBe(String(rows.length));
+    expect(filtered.tables[0].rows.length).toBeLessThan(full.tables[0].rows.length);
   });
 });
