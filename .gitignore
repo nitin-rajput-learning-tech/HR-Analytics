@@ -33,3 +33,7 @@ node_modules/
 dist/
 *.local
 .vite/
+
+# Local verification artifacts (CJS harness build + sandbox node harnesses)
+build-tmp/
+verify*.cjs
