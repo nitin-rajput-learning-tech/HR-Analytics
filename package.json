@@ -8,6 +8,7 @@
     "serve": "node scripts/serve.mjs",
     "test": "node scripts/test.mjs",
     "typecheck": "tsc --noEmit",
+    "sample-data": "node scripts/generate-sample-data.mjs",
     "dev": "vite",
     "preview": "vite preview",
     "build:vite": "tsc -b && vite build",

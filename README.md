@@ -49,6 +49,8 @@ npm run build      # produces a single self-contained dist/index.html
 
 Ship `dist/index.html` — that one file *is* the application. Open it from a share; no further setup.
 
+**Try it with sample data:** `npm run sample-data` writes synthetic workbooks to `sample-data/`. Open the app and **Load workspace** → `sample-data/Airpay-HR-sample-workspace.json.gz` to populate every dashboard and the newsletter instantly. See [sample-data/README.md](sample-data/README.md).
+
 ### Running it
 
 | How you open it | Origin | Works fully? |
