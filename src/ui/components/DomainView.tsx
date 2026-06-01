@@ -8,6 +8,7 @@ export function KpiCard({ kpi }: { kpi: MetricKPI }) {
     <div className="kpi">
       <div className="label">{kpi.label}</div>
       <div className="value">{kpi.value}</div>
+      {kpi.delta ? <div className={`delta ${kpi.deltaTone ?? "neutral"}`}>{kpi.delta}</div> : null}
       {kpi.hint ? <div className="hint">{kpi.hint}</div> : null}
     </div>
   );

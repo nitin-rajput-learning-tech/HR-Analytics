@@ -4,8 +4,20 @@ import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
 import { ViewsMenu } from "../components/ViewsMenu";
 import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
+import { decoratePeopleDeltas } from "../../core/metrics/compare";
 import { buildMovement } from "../../core/metrics/movement";
 import { filterRows, rowsToCsv } from "../../core/filters";
+
+// Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
+// the raw period label (or a generic fallback) so delta chips read naturally.
+function prettyPeriod(label: string | null): string {
+  if (!label) return "prior period";
+  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(label.trim());
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  }
+  return label;
+}
 
 export function People() {
   const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();
@@ -19,7 +31,14 @@ export function People() {
   const filtered = useMemo(() => filterRows(allRows, filters), [allRows, filters]);
   const sections = useMemo(() => {
     if (!snap) return [];
-    const people = buildPeople(filtered, snap.asOf);
+    const current = buildPeople(filtered, snap.asOf);
+    // Month-over-month KPI deltas: rebuild the prior snapshot (same filters, its
+    // own as-of) and diff by label. empSnaps is sorted ascending by asOf, so the
+    // prior period is the second-to-last entry.
+    const priorSnap = empSnaps.length >= 2 ? empSnaps[empSnaps.length - 2] : null;
+    const priorPeople = priorSnap ? buildPeople(filterRows(priorSnap.rows, filters), priorSnap.asOf) : null;
+    const priorLabel = priorSnap ? prettyPeriod(priorSnap.periodLabel) : "";
+    const people = decoratePeopleDeltas(current, priorPeople, priorLabel);
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
     return [...people, { key: "movement", label: movement.label, metrics: movement }];

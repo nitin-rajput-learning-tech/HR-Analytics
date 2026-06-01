@@ -9,6 +9,9 @@ export interface MetricKPI {
   value: string;
   hint?: string;
   delta?: string | null;
+  // Sentiment of the delta vs the prior period, for colour only ("good" = green,
+  // "bad" = red, "neutral" = muted). Set by the period-comparison decorator.
+  deltaTone?: "good" | "bad" | "neutral";
 }
 
 export interface MetricTable {
