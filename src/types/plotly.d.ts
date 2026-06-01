@@ -1,0 +1,19 @@
+// Minimal ambient declaration for the prebuilt Plotly bundle. The dist-min
+// package ships no types; we only use the imperative figure API (react/purge),
+// so a narrow surface keeps the rest of the app strictly typed.
+declare module "plotly.js-dist-min" {
+  type PlotData = Record<string, unknown>;
+  type PlotLayout = Record<string, unknown>;
+  type PlotConfig = Record<string, unknown>;
+
+  export function newPlot(el: HTMLElement, data: PlotData[], layout?: PlotLayout, config?: PlotConfig): Promise<HTMLElement>;
+  export function react(el: HTMLElement, data: PlotData[], layout?: PlotLayout, config?: PlotConfig): Promise<HTMLElement>;
+  export function purge(el: HTMLElement): void;
+
+  const Plotly: {
+    newPlot: typeof newPlot;
+    react: typeof react;
+    purge: typeof purge;
+  };
+  export default Plotly;
+}

@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import "./theme.css";
 import { useApp } from "./state";
 import { Overview } from "./pages/Overview";
+import { FunctionAnalytics } from "./pages/FunctionAnalytics";
+import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 
-const PAGES = ["Overview", "Data Intake", "Branding"] as const;
+const PAGES = ["Overview", "Function Analytics", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -34,7 +36,7 @@ export function AppShell() {
 
   return (
     <div className="app">
-      <nav className="sidebar">
+      <nav className="sidebar no-print">
         <div className="brandbar">{app.branding.appName}</div>
         {app.branding.logoDataUri && (
           <img src={app.branding.logoDataUri} alt="" style={{ height: 32, margin: "8px 0" }} />
@@ -66,9 +68,13 @@ export function AppShell() {
       </nav>
       <main className="content">
         {page === "Overview" && <Overview />}
+        {page === "Function Analytics" && <FunctionAnalytics />}
+        {page === "Newsletter" && <Reports />}
         {page === "Data Intake" && <DataIntake />}
         {page === "Branding" && <BrandingPage />}
-        <footer style={{ marginTop: 32, color: "#667085", fontSize: ".82rem" }}>{app.branding.footer}</footer>
+        <footer className="no-print" style={{ marginTop: 32, color: "#667085", fontSize: ".82rem" }}>
+          {app.branding.footer}
+        </footer>
       </main>
     </div>
   );

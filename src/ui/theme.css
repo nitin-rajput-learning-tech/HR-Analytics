@@ -13,3 +13,74 @@ body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
 .kpi .value { font-size:1.6rem; font-weight:800; }
 button.primary { background: var(--brand-accent); color:#fff; border:0; border-radius:8px; padding:8px 14px; cursor:pointer; }
 label { display: inline-block; margin: 4px 0; }
+
+/* shared */
+.kpi .hint { color:#98a2b3; font-size:.72rem; margin-top:4px; }
+.muted { color:#667085; }
+.placeholder { background:#fff; border:1px dashed rgba(21,32,51,.18); border-radius:12px; padding:18px; }
+.blurb { color:#344054; font-size:.96rem; margin:.2rem 0 1rem; }
+h2 { font-size:1.3rem; } h3.domain-title { color:var(--brand-primary); margin:1.2rem 0 .4rem; }
+
+/* tabs */
+.tabs { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 6px; }
+.tab { background:#fff; border:1px solid rgba(21,32,51,.12); border-radius:999px; padding:6px 14px; cursor:pointer; font-size:.84rem; color:#344054; }
+.tab.active { background:var(--brand-accent); color:#fff; border-color:var(--brand-accent); }
+
+/* charts */
+.charts { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:16px; margin:16px 0; }
+.chart { background:#fff; border:1px solid rgba(21,32,51,.08); border-radius:12px; padding:8px 10px; margin:0; }
+.chart-canvas { width:100%; height:300px; }
+.chart figcaption { color:#667085; font-size:.76rem; padding:4px 6px 6px; }
+
+/* tables */
+.metric-table { background:#fff; border:1px solid rgba(21,32,51,.08); border-radius:12px; padding:14px 16px; margin:16px 0; }
+.metric-table h4 { margin:0 0 4px; }
+.metric-table .caption { color:#667085; font-size:.78rem; margin:0 0 10px; }
+.table-scroll { overflow-x:auto; }
+.metric-table table { border-collapse:collapse; width:100%; font-size:.86rem; }
+.metric-table th, .metric-table td { text-align:left; padding:7px 10px; border-bottom:1px solid rgba(21,32,51,.07); white-space:nowrap; }
+.metric-table th { color:#667085; text-transform:uppercase; font-size:.7rem; letter-spacing:.04em; }
+
+/* watch-outs */
+.watchouts { margin:16px 0; }
+.watchouts h4 { margin:0 0 8px; }
+.watchout { background:#fff; border:1px solid rgba(21,32,51,.08); border-left-width:4px; border-radius:10px; padding:10px 14px; margin-bottom:10px; }
+.watchout.sev-high { border-left-color:#d92d20; }
+.watchout.sev-medium { border-left-color:#f79009; }
+.watchout.sev-low { border-left-color:#9aa4b2; }
+.watchout-head { display:flex; align-items:center; gap:8px; }
+.watchout-head .owner { margin-left:auto; color:#667085; font-size:.74rem; }
+.watchout-detail { color:#344054; font-size:.88rem; margin-top:4px; }
+.watchout-action { color:#475467; font-size:.84rem; margin-top:4px; font-style:italic; }
+.badge { text-transform:uppercase; font-size:.64rem; font-weight:700; color:#fff; border-radius:6px; padding:2px 7px; }
+.badge.sev-high { background:#d92d20; } .badge.sev-medium { background:#f79009; } .badge.sev-low { background:#9aa4b2; }
+
+/* newsletter */
+.reports-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.reports-toolbar .spacer { flex:1; }
+.reports-toolbar button { border:1px solid rgba(21,32,51,.14); background:#fff; border-radius:8px; padding:8px 14px; cursor:pointer; }
+.reports-toolbar button.primary { border-color:var(--brand-accent); }
+.newsletter { background:#fff; border:1px solid rgba(21,32,51,.08); border-radius:14px; padding:28px 32px; max-width:980px; }
+.nl-header { border-bottom:3px solid var(--brand-accent); padding-bottom:12px; margin-bottom:18px; }
+.nl-header h1 { color:var(--brand-primary); margin:.2rem 0; font-size:1.8rem; }
+.nl-logo { height:40px; margin-bottom:6px; }
+.nl-meta { color:#667085; font-size:.84rem; }
+.exec-brief { background:#f8fafc; border:1px solid rgba(21,32,51,.06); border-radius:12px; padding:16px 18px; margin-bottom:20px; }
+.brief-cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:12px; }
+.brief-cols h3 { margin:0 0 6px; font-size:.96rem; }
+.brief-cols ul { margin:0; padding-left:18px; } .brief-cols li { margin-bottom:5px; font-size:.9rem; }
+.nl-section { margin:22px 0; padding-top:8px; border-top:1px solid rgba(21,32,51,.06); }
+.nl-section h2 { color:var(--brand-primary); }
+.action-plan ol { padding-left:20px; } .action-plan li { margin-bottom:10px; }
+.action-plan .ap-meta { color:#667085; font-size:.8rem; } .action-plan .ap-action { color:#475467; font-size:.86rem; margin-top:2px; }
+.nl-footer { margin-top:24px; padding-top:12px; border-top:1px solid rgba(21,32,51,.08); color:#98a2b3; font-size:.8rem; }
+
+/* print: show only the newsletter, full width, no chrome */
+@media print {
+  .no-print { display:none !important; }
+  .app { display:block; }
+  .content { padding:0; }
+  .newsletter { border:0; border-radius:0; max-width:none; padding:0; }
+  .nl-section, .exec-brief, .metric-table, .chart, .watchout { break-inside:avoid; }
+  body { background:#fff; }
+}
