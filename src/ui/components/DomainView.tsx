@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Chart } from "./Chart";
 import type { DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../../core/metrics/base";
 
@@ -12,9 +13,25 @@ export function KpiCard({ kpi }: { kpi: MetricKPI }) {
 }
 
 export function DataTable({ table }: { table: MetricTable }) {
+  const [q, setQ] = useState("");
+  const query = q.trim().toLowerCase();
+  const rows = query
+    ? table.rows.filter((r) => r.some((c) => String(c).toLowerCase().includes(query)))
+    : table.rows;
   return (
     <div className="metric-table">
-      <h4>{table.title}</h4>
+      <div className="mt-head">
+        <h4>{table.title}</h4>
+        {table.rows.length > 10 ? (
+          <input
+            className="table-search no-print"
+            type="search"
+            placeholder="Filter rows…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        ) : null}
+      </div>
       {table.caption ? <p className="caption">{table.caption}</p> : null}
       <div className="table-scroll">
         <table>
@@ -26,7 +43,7 @@ export function DataTable({ table }: { table: MetricTable }) {
             </tr>
           </thead>
           <tbody>
-            {table.rows.map((row, ri) => (
+            {rows.map((row, ri) => (
               <tr key={ri}>
                 {row.map((cell, ci) => (
                   <td key={ci}>{typeof cell === "number" ? cell.toLocaleString("en-IN") : cell}</td>
@@ -36,6 +53,11 @@ export function DataTable({ table }: { table: MetricTable }) {
           </tbody>
         </table>
       </div>
+      {query ? (
+        <div className="mt-foot">
+          {rows.length.toLocaleString("en-IN")} of {table.rows.length.toLocaleString("en-IN")} rows
+        </div>
+      ) : null}
     </div>
   );
 }

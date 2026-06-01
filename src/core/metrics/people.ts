@@ -16,7 +16,7 @@ export interface PeopleSection {
   metrics: DomainMetrics;
 }
 
-const EMPLOYEE_FIELDS: { name: string; label: string }[] = [
+export const EMPLOYEE_FIELDS: { name: string; label: string }[] = [
   { name: "employee_number", label: "Employee Number" },
   { name: "full_name", label: "Full Name" },
   { name: "legal_entity", label: "Legal Entity" },
