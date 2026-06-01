@@ -46,11 +46,28 @@ for (const f of result.outputFiles) {
   else if (f.path.endsWith(".css")) css = f.text;
 }
 
+// The bundle contains HTML-sensitive byte sequences (xlsx ships "<!--"/"-->"
+// markers, Plotly an innerHTML="<script>" string). Inlining JS as raw <script>
+// text means the HTML tokenizer scans it in "script data" state and these
+// sequences derail parsing (script-data-escaped state, early tag close) →
+// truncated JS → "Invalid regular expression: missing /". Escaping individual
+// sequences is whack-a-mole. Instead, base64-encode the bundle: base64 contains
+// no "<", so the HTML parser cannot mis-tokenize it. A tiny ASCII bootstrap
+// decodes it (UTF-8 safe) and runs it via a DOM-injected <script>, which the JS
+// engine parses directly — never through the HTML script-data tokenizer.
+const safeCss = css.replace(/<\/style/gi, "<\\/style").replace(/<!--/g, "<\\!--");
+const b64 = Buffer.from(js, "utf8").toString("base64");
+const bootstrap =
+  `(function(){var b="${b64}";var s=atob(b),n=s.length,u=new Uint8Array(n);` +
+  `for(var i=0;i<n;i++)u[i]=s.charCodeAt(i);` +
+  `var el=document.createElement("script");el.textContent=new TextDecoder("utf-8").decode(u);` +
+  `document.body.appendChild(el);})();`;
+
 const tpl = await readFile("index.html", "utf8");
 const html = tpl
   .replace(/\s*<script[^>]*src="\/src\/main\.tsx"[^>]*><\/script>/, "")
-  .replace("</head>", `    <style>${css}</style>\n  </head>`)
-  .replace("</body>", `    <script>${js}</script>\n  </body>`);
+  .replace("</head>", `    <style>${safeCss}</style>\n  </head>`)
+  .replace("</body>", `    <script>${bootstrap}</script>\n  </body>`);
 
 await mkdir("dist", { recursive: true });
 await writeFile("dist/index.html", html, "utf8");
