@@ -47,7 +47,19 @@ npm run typecheck  # full TypeScript check (tsc --noEmit)
 npm run build      # produces a single self-contained dist/index.html
 ```
 
-Ship `dist/index.html` — that one file *is* the application. Open it from disk or a share; no further setup.
+Ship `dist/index.html` — that one file *is* the application. Open it from a share; no further setup.
+
+### Running it
+
+| How you open it | Origin | Works fully? |
+|---|---|---|
+| SharePoint / any web host | `https://` | ✅ Yes — recommended for the team |
+| `npm run serve` then http://localhost:4173 | `http://` | ✅ Yes — recommended for local use/testing |
+| Double-click the file | `file://` | ⚠️ Viewing & analytics work, but Chrome **blocks `blob:` downloads from `file://`**, so *Download template / facts pack / Save workspace* silently do nothing |
+
+The `file://` limitation is a Chrome security policy, not an app bug — uploads and all dashboards/newsletter work there, but **template/workspace downloads need a real origin**. For local use run `npm run serve` (serves the built file at `http://localhost:4173`); for the team, host `index.html` on SharePoint/https where downloads work normally.
+
+> Tip: uploads are matched to a period from the **filename** — include a date (e.g. `Employee report as on 2026-03-31.xlsx`, `TA_requisitions_2026-05.xlsx`). A file with no recognizable date is rejected with an on-screen message.
 
 ### Why the build is esbuild-free
 
