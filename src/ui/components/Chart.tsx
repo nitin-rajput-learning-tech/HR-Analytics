@@ -12,14 +12,16 @@ import type { ChartSpec } from "../../core/metrics/base";
 export function Chart({
   spec,
   accent,
+  dark,
   onDrill,
 }: {
   spec: ChartSpec;
   accent?: string;
+  dark?: boolean;
   onDrill?: (field: string, label: string) => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const figure = useMemo(() => toPlotly(spec, accent ? { accent } : {}), [spec, accent]);
+  const figure = useMemo(() => toPlotly(spec, { ...(accent ? { accent } : {}), dark }), [spec, accent, dark]);
   // Latest handler via ref so the (stable) click listener always calls current.
   const drillRef = useRef(onDrill);
   drillRef.current = onDrill;

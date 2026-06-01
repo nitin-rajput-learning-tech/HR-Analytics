@@ -43,7 +43,7 @@ export function Directory() {
       </div>
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
-      <DomainView domain={metrics} accent={branding.accent} />
+      <DomainView domain={metrics} accent={branding.accent} dark={branding.theme === "dark"} />
     </div>
   );
 }

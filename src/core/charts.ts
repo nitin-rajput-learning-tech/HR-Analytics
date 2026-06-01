@@ -29,36 +29,43 @@ function seriesPalette(accent: string): string[] {
   return [accent, ...rest];
 }
 
-function baseLayout(spec: ChartSpec, colors: ChartColors): Record<string, unknown> {
+function baseLayout(spec: ChartSpec, text: string): Record<string, unknown> {
   return {
-    title: { text: spec.title, font: { size: 15, color: colors.primary } },
+    title: { text: spec.title, font: { size: 15, color: text } },
     margin: { l: 60, r: 20, t: 46, b: 44 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
-    font: { family: FONT, color: colors.primary, size: 12 },
+    font: { family: FONT, color: text, size: 12 },
     showlegend: false,
     autosize: true,
   };
 }
 
-export function toPlotly(spec: ChartSpec, brand: Partial<ChartColors> = {}): PlotlyFigure {
-  const colors: ChartColors = { ...DEFAULT_COLORS, ...brand };
+export function toPlotly(spec: ChartSpec, brand: Partial<ChartColors> & { dark?: boolean } = {}): PlotlyFigure {
+  const colors: ChartColors = {
+    primary: brand.primary ?? DEFAULT_COLORS.primary,
+    accent: brand.accent ?? DEFAULT_COLORS.accent,
+  };
+  // On a dark background the brand primary (often a dark navy) is unreadable, so
+  // chart text + grid switch to light variants.
+  const text = brand.dark ? "#e6ebf4" : colors.primary;
+  const grid = brand.dark ? "rgba(148,163,184,0.18)" : GRID;
   const series = seriesPalette(colors.accent);
   const config = { displayModeBar: false, responsive: true };
-  const layout = baseLayout(spec, colors);
+  const layout = baseLayout(spec, text);
 
   switch (spec.kind) {
     case "bar":
       return {
         data: [{ type: "bar", x: spec.labels, y: spec.values, marker: { color: colors.accent } }],
-        layout: { ...layout, xaxis: { automargin: true }, yaxis: { gridcolor: GRID, zeroline: false } },
+        layout: { ...layout, xaxis: { automargin: true }, yaxis: { gridcolor: grid, zeroline: false } },
         config,
       };
     case "barh":
       return {
         data: [{ type: "bar", orientation: "h", y: spec.labels, x: spec.values, marker: { color: colors.accent } }],
         // autorange reversed -> first (largest, since metrics sort desc) sits on top.
-        layout: { ...layout, yaxis: { automargin: true, autorange: "reversed" }, xaxis: { gridcolor: GRID, zeroline: false } },
+        layout: { ...layout, yaxis: { automargin: true, autorange: "reversed" }, xaxis: { gridcolor: grid, zeroline: false } },
         config,
       };
     case "line":
@@ -73,7 +80,7 @@ export function toPlotly(spec: ChartSpec, brand: Partial<ChartColors> = {}): Plo
             marker: { color: colors.accent, size: 6 },
           },
         ],
-        layout: { ...layout, xaxis: { automargin: true }, yaxis: { gridcolor: GRID, zeroline: false } },
+        layout: { ...layout, xaxis: { automargin: true }, yaxis: { gridcolor: grid, zeroline: false } },
         config,
       };
     case "pie":

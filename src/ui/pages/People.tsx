@@ -74,7 +74,7 @@ export function People() {
               </button>
             ))}
           </div>
-          <DomainView domain={current.metrics} accent={branding.accent} onDrill={onDrill} />
+          <DomainView domain={current.metrics} accent={branding.accent} dark={branding.theme === "dark"} onDrill={onDrill} />
         </>
       )}
     </div>

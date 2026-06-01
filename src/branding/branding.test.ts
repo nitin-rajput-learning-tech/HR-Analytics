@@ -7,13 +7,18 @@ describe("branding", () => {
     expect(DEFAULT_BRANDING.primary).toMatch(/^#[0-9a-fA-F]{6}$/);
   });
 
-  it("applies branding to CSS variables on a target element", () => {
+  it("applies branding colours + theme to a target element", () => {
     const seen: Record<string, string> = {};
-    const el = { style: { setProperty: (k: string, v: string) => { seen[k] = v; } } };
-    const brand: Branding = { ...DEFAULT_BRANDING, primary: "#123456", accent: "#abcdef", appName: "Acme HR" };
+    const attrs: Record<string, string> = {};
+    const el = {
+      style: { setProperty: (k: string, v: string) => { seen[k] = v; } },
+      setAttribute: (k: string, v: string) => { attrs[k] = v; },
+    };
+    const brand: Branding = { ...DEFAULT_BRANDING, primary: "#123456", accent: "#abcdef", appName: "Acme HR", theme: "dark" };
     applyBranding(brand, el);
     expect(seen["--brand-primary"]).toBe("#123456");
     expect(seen["--brand-accent"]).toBe("#abcdef");
+    expect(attrs["data-theme"]).toBe("dark");
   });
 
   it("round-trips a theme file (export then import)", () => {

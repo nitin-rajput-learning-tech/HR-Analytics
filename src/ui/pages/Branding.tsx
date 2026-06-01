@@ -87,6 +87,18 @@ export function BrandingPage() {
           </div>
 
           <div className="brand-row">
+            <label>Theme</label>
+            <div className="theme-toggle">
+              <button className={branding.theme === "dark" ? "" : "active"} onClick={() => set({ theme: "light" })}>
+                ☀ Light
+              </button>
+              <button className={branding.theme === "dark" ? "active" : ""} onClick={() => set({ theme: "dark" })}>
+                ☾ Dark
+              </button>
+            </div>
+          </div>
+
+          <div className="brand-row">
             <label>Logo</label>
             <div className="logo-picker">
               {branding.logoDataUri ? <img src={branding.logoDataUri} alt="logo" className="logo-preview" /> : <div className="logo-empty">No logo</div>}

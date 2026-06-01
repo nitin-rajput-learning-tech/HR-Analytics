@@ -110,10 +110,12 @@ export function Watchouts({ items }: { items: MetricWatchout[] }) {
 export function DomainView({
   domain,
   accent,
+  dark,
   onDrill,
 }: {
   domain: DomainMetrics;
   accent?: string;
+  dark?: boolean;
   onDrill?: (field: string, label: string) => void;
 }) {
   if (!domain.hasData) {
@@ -132,7 +134,7 @@ export function DomainView({
       {domain.charts.length > 0 ? (
         <div className="charts">
           {domain.charts.map((c, i) => (
-            <Chart key={c.title + i} spec={c} accent={accent} onDrill={onDrill} />
+            <Chart key={c.title + i} spec={c} accent={accent} dark={dark} onDrill={onDrill} />
           ))}
         </div>
       ) : null}

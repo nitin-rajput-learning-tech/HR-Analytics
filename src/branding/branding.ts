@@ -1,9 +1,12 @@
+export type ThemeMode = "light" | "dark";
+
 export interface Branding {
   appName: string;
   logoDataUri: string | null;
   primary: string;
   accent: string;
   footer: string;
+  theme?: ThemeMode;
 }
 
 export const DEFAULT_BRANDING: Branding = {
@@ -12,15 +15,18 @@ export const DEFAULT_BRANDING: Branding = {
   primary: "#1f2937",
   accent: "#2563eb",
   footer: "Generated locally — your data never leaves this browser.",
+  theme: "light",
 };
 
 interface CssTarget {
   style: { setProperty(k: string, v: string): void };
+  setAttribute(k: string, v: string): void;
 }
 
 export function applyBranding(b: Branding, target: CssTarget = document.documentElement): void {
   target.style.setProperty("--brand-primary", b.primary);
   target.style.setProperty("--brand-accent", b.accent);
+  target.setAttribute("data-theme", b.theme === "dark" ? "dark" : "light");
 }
 
 const THEME_FORMAT = "hr-analytics-theme";

@@ -44,7 +44,7 @@ export function FunctionAnalytics() {
         ))}
       </div>
       <h3 className="domain-title">{domain.label}</h3>
-      <DomainView domain={domain} accent={branding.accent} onDrill={drillToPeople} />
+      <DomainView domain={domain} accent={branding.accent} dark={branding.theme === "dark"} onDrill={drillToPeople} />
       <p className="muted" style={{ fontSize: ".82rem", marginTop: 8 }}>Tip: click a department bar to drill into People Analytics filtered to that team.</p>
     </div>
   );

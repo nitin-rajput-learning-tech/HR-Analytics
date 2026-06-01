@@ -60,6 +60,13 @@ export function AppShell() {
         </div>
         <div className="side-foot">
           <hr />
+          <button
+            className="theme-quick"
+            onClick={() => app.setBranding({ ...app.branding, theme: app.branding.theme === "dark" ? "light" : "dark" })}
+            title="Toggle light / dark theme"
+          >
+            {app.branding.theme === "dark" ? "☀ Light mode" : "☾ Dark mode"}
+          </button>
           <div className="muted-label">Workspace</div>
           <button className="primary" style={{ width: "100%", marginTop: 6 }} onClick={onSave}>
             Save workspace
