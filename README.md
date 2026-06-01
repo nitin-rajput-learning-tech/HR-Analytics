@@ -1,89 +1,103 @@
-# HR Analytics — Portable Workforce Analytics
+# HR Analytics — White-Label Workforce Analytics Suite
 
-A self-contained desktop application for workforce analytics. Upload Excel employee master reports and get interactive dashboards covering headcount, attrition, movement trends, diversity metrics, and predictive forecasting.
+A self-contained, **browser-based** HR analytics suite that any organisation can rebrand and run with **zero infrastructure**. Drop in monthly workbooks for any HR function and get interactive dashboards plus an auto-generated, board-ready **CHRO newsletter** — with a prioritised, owner-tagged action plan.
 
-## Features
+> **Private by design.** The app is a single static HTML file. There is no server, no login, no telemetry, and no cloud. Every byte of data stays in the browser tab. Trust model: whoever holds the file (and the saved workspace) holds the data.
 
-- **Excel Ingestion** — Auto-detect employee master sheets with schema compatibility scoring
-- **Historical Snapshots** — Track workforce changes across monthly/quarterly reports
-- **Interactive Dashboards** — 8 pages: Overview, Org Structure, Manager View, Movement & Attrition, Predictive Analysis, Diversity & Geography, Data Quality, Uploads
-- **Export** — Download filtered data as CSV or Excel
-- **Portable** — Runs locally with no cloud dependencies; all data stays on your machine
+---
 
-## Requirements
+## Why it exists
 
-- Python 3.11+
-- Windows 10/11
+Most HR analytics tooling needs IT to provision servers, databases or installers — and HR data is exactly the data you least want leaving the building. This product compiles to **one `dist/index.html`** you can:
 
-## Quick Start
+- open by double-clicking (`file://`), or
+- drop on a SharePoint / network share for the team, or
+- host on any static web server.
 
-### Option A: Batch Launcher (recommended)
+No Python, no `.exe`, no native dependencies — so the antivirus / AppContainer restrictions that block desktop installers and Python DLLs don't apply.
 
-Double-click `Run_HR_Analytics.bat` — it will create a virtual environment, install dependencies, and launch the app automatically.
+## What it covers
 
-### Option B: Manual Setup
+Seven data domains, each with its own intake template and graceful "awaiting data" placeholders so partial data still produces a useful report:
+
+| Domain | What it drives |
+|---|---|
+| **People & Org** (employee master) | Headcount, active ratio — the spine every domain joins to |
+| **Talent Acquisition** | Funnel, offer-accept rate, requisition aging, source mix |
+| **Performance (PMS)** | Review/goal completion, rating distribution, 9-box, PIP |
+| **Payroll & Cost** | Cost/head, variable & overtime mix, statutory on-time compliance |
+| **Learning & Development** | Completion, coverage vs headcount, spend, mandatory-training gaps |
+| **HR Operations (Admin)** | Asset allocation, contract-renewal pipeline, on/off-boarding |
+| **Cross-Functional Risk** | Compound-risk scoring, attrition economics, regrettable-exit detection |
+
+The **CHRO Newsletter** rolls all of the above into an executive brief (headline KPIs, wins, top risks), one section per function, and a single prioritised action plan. The narrative is **100% deterministic and rule-based — no AI/LLM is involved**, so the same data always yields the same report and nothing is ever sent to a third party.
+
+## White-labelling
+
+Open the **Branding** page to set the app name, primary/accent colours, logo and footer. Branding flows through the whole UI, the charts and the newsletter, and is saved inside the workspace file. Export/import a theme as JSON to share a brand kit across the team.
+
+## Quick start
+
+Requires Node.js 18+ (built with Node 24 / npm 11).
 
 ```bash
-python -m venv .venv_hr_analytics
-.venv_hr_analytics\Scripts\activate
-pip install -r requirements.txt
-set PYTHONPATH=src
-set HR_ANALYTICS_WORKSPACE=.workspace
-python -m hr_analytics.desktop
+npm install      # installs React, Plotly, SheetJS, Arquero, pako
+npm run dev      # local dev server with hot reload
+npm test         # run the unit suite (Vitest)
+npm run build    # produces a single self-contained dist/index.html
 ```
 
-## Project Structure
+Ship `dist/index.html` — that one file *is* the application. Open it from disk or a share; no further setup.
+
+## Using it
+
+1. **Branding** — set your organisation's name, colours and logo (optional).
+2. **Data Intake** — pick a domain, click **Download template** to get a pre-formatted `.xlsx` (Data + Data Dictionary + README sheets), fill it, and upload. The "Loaded data" panel shows what's in.
+3. **Function Analytics** — per-function dashboards (KPIs, charts, tables, watch-outs) that update as you upload.
+4. **Newsletter** — the assembled CHRO report. **Print / Save as PDF** for distribution, or download the Markdown **facts pack**.
+5. **Save workspace** — download a gzipped `.json.gz` containing all uploaded data + branding. Load it later (or on another machine) to pick up exactly where you left off.
+
+Name files with the period for automatic as-of detection (e.g. `TA_requisitions_2026-05.xlsx`); the template's README sheet states each domain's convention.
+
+## Architecture
+
+The analytics engine is **pure, presentation-agnostic data** — fully unit-tested independently of the UI:
 
 ```
-├── src/hr_analytics/       # Application source code
-│   ├── adapters/           # Data source adapters (Excel, Keka stub)
-│   ├── analytics.py        # KPI computation & forecasting
-│   ├── bootstrap.py        # Initial data loading
-│   ├── constants.py        # Configuration & theme
-│   ├── desktop.py          # PyWebView desktop shell
-│   ├── exports.py          # CSV/Excel export
-│   ├── models.py           # Data models
-│   ├── normalization.py    # Text normalization
-│   ├── repository.py       # DuckDB data layer
-│   ├── streamlit_app.py    # Streamlit UI (8 pages)
-│   └── workspace.py        # Workspace management
-├── config/                 # Column mappings & value aliases
-├── tests/                  # Test suite
-├── requirements.txt        # Python dependencies
-└── Run_HR_Analytics.bat    # One-click launcher
+src/
+├── core/
+│   ├── datasets.ts            # Dataset-kind registry (single source of truth, 13 schemas)
+│   ├── ingest/                # Workbook parsing, coercion, period detection
+│   ├── store/                 # In-memory snapshot store (DataSource)
+│   ├── narrative.ts           # Deterministic number→prose helpers (no LLM)
+│   ├── charts.ts              # ChartSpec → Plotly figure (brand-aware)
+│   ├── intake/template.ts     # Schema → downloadable .xlsx template (AoA)
+│   └── metrics/               # One pure compute() per domain → DomainMetrics
+│       ├── overview, talent_acquisition, pms, payroll, ld, admin
+│       ├── cross_functional   # compound risk, attrition economics, regrettable exits
+│       └── index.ts           # per-domain dispatcher (per-domain as-of dates)
+├── reports/
+│   ├── newsletter.ts          # Assembles the CHRO Newsletter model
+│   └── factsPack.ts           # Newsletter → Markdown rollup
+├── ui/                        # React: AppShell, pages, components (Chart, DomainView)
+├── branding/                  # Brand model + CSS variable application
+└── workspace/                 # Gzipped JSON save/load
 ```
 
-## Data Format
+**Tech stack:** React 18 + TypeScript + Vite (single-file via `vite-plugin-singlefile`), Plotly.js (charts), SheetJS (Excel I/O), Arquero (tabular ops), pako (gzip). Tests: Vitest.
 
-Use the included **`HR_Analytics_Employee_Template.xlsx`** as your starting point. It contains:
+Each `metrics/*.compute()` is a pure function over the latest snapshot rows returning a `DomainMetrics` (KPIs, chart specs, tables, severity-ranked watch-outs). The newsletter and dashboards both render the same objects, which is why the whole engine is testable without a DOM.
 
-- **Instructions** sheet — field reference with required/optional flags, data types, and examples
-- **Employee Data** sheet — pre-formatted with headers, data validation dropdowns (Employment Status, Gender), and 5 sample rows
-- **Blank Template** sheet — clean sheet with headers and validation only, ready for your data
+## Data & privacy
 
-### Column Overview
+- All processing is in-browser; no network calls are made with your data.
+- The workspace file is the only persistence — you control where it lives.
+- There is no authentication layer by design (offline, single-file). Protect the file and workspace like any sensitive spreadsheet.
 
-| Column | Required? | Description |
-|--------|-----------|-------------|
-| Employee Number | Yes | Unique employee ID |
-| Full Name | Yes | Employee's full name |
-| Department | Yes | Primary department |
-| Sub Department | Yes | Sub-division |
-| Job Title | Yes | Current role/designation |
-| Legal Entity | Yes | Employing legal entity |
-| Employment Status | Yes | "Working" or "Relieved" |
-| Date Joined | Yes | Start date |
-| Work Email | Yes | Work email address |
-| Reporting Manager | Yes | Direct manager name |
-| Last Working Day | No | Exit date (if applicable) |
-| Exit Requested On | No | Resignation date |
-| Current City | No | Employee location |
-| Work Phone | No | Phone number |
-| Gender | No | Male / Female / Other |
-| L2 Manager | No | Skip-level manager |
+## Legacy
 
-Name your files with the as-of date for automatic detection: `Employee report-as on 7th Mar 2026.xlsx`
+The original Python/Streamlit desktop implementation is preserved under [`legacy/python/`](legacy/python/) for reference. The browser product supersedes it.
 
 ## License
 
-MIT
+Proprietary — All rights reserved. See [LICENSE](LICENSE).
