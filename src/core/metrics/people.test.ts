@@ -62,6 +62,12 @@ describe("buildPeople", () => {
     expect(kpi("people_attrition", "Pending Exits")).toBe("5");
   });
 
+  it("tags dimension charts with a drill field for drill-down", () => {
+    expect(byKind["people_headcount"].charts.find((c) => c.title === "Active headcount by department")?.drill).toBe("department");
+    expect(byKind["people_geography"].charts[0].drill).toBe("current_city");
+    expect(byKind["people_managers"].charts[0].drill).toBe("reporting_manager");
+  });
+
   it("returns nothing for an empty roster", () => {
     expect(buildPeople([], "2026-05-05")).toHaveLength(0);
   });

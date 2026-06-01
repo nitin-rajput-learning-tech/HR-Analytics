@@ -91,7 +91,15 @@ export function Watchouts({ items }: { items: MetricWatchout[] }) {
   );
 }
 
-export function DomainView({ domain, accent }: { domain: DomainMetrics; accent?: string }) {
+export function DomainView({
+  domain,
+  accent,
+  onDrill,
+}: {
+  domain: DomainMetrics;
+  accent?: string;
+  onDrill?: (field: string, label: string) => void;
+}) {
   if (!domain.hasData) {
     return <p className="muted placeholder">{domain.blurb}</p>;
   }
@@ -108,7 +116,7 @@ export function DomainView({ domain, accent }: { domain: DomainMetrics; accent?:
       {domain.charts.length > 0 ? (
         <div className="charts">
           {domain.charts.map((c, i) => (
-            <Chart key={c.title + i} spec={c} accent={accent} />
+            <Chart key={c.title + i} spec={c} accent={accent} onDrill={onDrill} />
           ))}
         </div>
       ) : null}

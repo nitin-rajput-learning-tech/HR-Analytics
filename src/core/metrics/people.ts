@@ -96,7 +96,7 @@ function overviewSection(rows: Row[], refMs: number | null): DomainMetrics {
   ];
   const byDept = topEntries(countByDim(active, "department"), 12);
   if (byDept.length) {
-    charts.push({ title: "Active headcount by department", caption: "Top departments by active staff.", kind: "barh", labels: byDept.map((e) => e[0]), values: byDept.map((e) => e[1]) });
+    charts.push({ title: "Active headcount by department", caption: "Top departments by active staff.", kind: "barh", labels: byDept.map((e) => e[0]), values: byDept.map((e) => e[1]), drill: "department" });
   }
   return {
     kind: "people_overview", label: "Overview", hasData: total > 0,
@@ -123,8 +123,8 @@ function headcountSection(rows: Row[]): DomainMetrics {
   ];
   const deptRows = topEntries(byDept, 20);
   const charts: ChartSpec[] = [
-    { title: "Active headcount by department", caption: "Active staff per department.", kind: "barh", labels: deptRows.map((e) => e[0]), values: deptRows.map((e) => e[1]) },
-    { title: "Headcount by legal entity", caption: "Active staff split by entity.", kind: "pie", labels: topEntries(byEntity, 8).map((e) => e[0]), values: topEntries(byEntity, 8).map((e) => e[1]) },
+    { title: "Active headcount by department", caption: "Active staff per department.", kind: "barh", labels: deptRows.map((e) => e[0]), values: deptRows.map((e) => e[1]), drill: "department" },
+    { title: "Headcount by legal entity", caption: "Active staff split by entity.", kind: "pie", labels: topEntries(byEntity, 8).map((e) => e[0]), values: topEntries(byEntity, 8).map((e) => e[1]), drill: "legal_entity" },
   ];
   const topTitles = topEntries(byTitle, 12);
   if (topTitles.length) charts.push({ title: "Top job titles", caption: "Most common active roles.", kind: "barh", labels: topTitles.map((e) => e[0]), values: topTitles.map((e) => e[1]) });
@@ -232,7 +232,7 @@ function diversitySection(rows: Row[]): DomainMetrics {
   const deptRows = [...deptAgg.entries()].sort((a, b) => b[1].n - a[1].n)
     .map(([d, a]) => [d, a.n, a.f, `${N.formatPct(N.pct(a.f, a.n))}`] as (string | number)[]);
   const shareByDept = [...deptAgg.entries()].filter(([, a]) => a.n >= 5).sort((a, b) => (a[1].f / a[1].n) - (b[1].f / b[1].n));
-  if (shareByDept.length) charts.push({ title: "Female share by department", caption: "Lowest representation first (≥5 staff).", kind: "barh", labels: shareByDept.slice(0, 12).map((e) => e[0]), values: shareByDept.slice(0, 12).map((e) => Math.round((e[1].f / e[1].n) * 1000) / 10) });
+  if (shareByDept.length) charts.push({ title: "Female share by department", caption: "Lowest representation first (≥5 staff).", kind: "barh", labels: shareByDept.slice(0, 12).map((e) => e[0]), values: shareByDept.slice(0, 12).map((e) => Math.round((e[1].f / e[1].n) * 1000) / 10), drill: "department" });
 
   const watchouts: MetricWatchout[] = [];
   for (const [d, a] of deptAgg) {
@@ -268,7 +268,7 @@ function geographySection(rows: Row[]): DomainMetrics {
     kind: "people_geography", label: "Geography", hasData: true,
     blurb: `Active staff spread across ${byCity.size} location(s).`,
     kpis,
-    charts: [{ title: "Headcount by location", caption: "Active staff per city (top 15).", kind: "barh", labels: cityRows.map((e) => e[0]), values: cityRows.map((e) => e[1]) }],
+    charts: [{ title: "Headcount by location", caption: "Active staff per city (top 15).", kind: "barh", labels: cityRows.map((e) => e[0]), values: cityRows.map((e) => e[1]), drill: "current_city" }],
     tables: [{ title: "Locations", caption: "Active staff by city.", columns: ["City", "Active"], rows: cityRows.map((e) => [e[0], e[1]] as (string | number)[]) }],
     watchouts: [],
   };
@@ -304,7 +304,7 @@ function managersSection(rows: Row[], refMs: number | null): DomainMetrics {
   ];
   const top = managers.sort((a, b) => b[1].size - a[1].size).slice(0, 15);
   const tableRows = top.map(([m, a]) => [m, a.size, a.pending, `${N.formatPct(N.pct(a.early, a.size))}`] as (string | number)[]);
-  const charts: ChartSpec[] = [{ title: "Largest teams", caption: "Span of control (top 15 managers).", kind: "barh", labels: top.map((e) => e[0]), values: top.map((e) => e[1].size) }];
+  const charts: ChartSpec[] = [{ title: "Largest teams", caption: "Span of control (top 15 managers).", kind: "barh", labels: top.map((e) => e[0]), values: top.map((e) => e[1].size), drill: "reporting_manager" }];
 
   const watchouts: MetricWatchout[] = [];
   for (const [m, a] of large) {
@@ -350,7 +350,7 @@ function attritionSection(rows: Row[], refMs: number | null): DomainMetrics {
     const pendByDept = countByDim(pending, "department");
     const activeByDept = countByDim(active, "department");
     const pr = topEntries(pendByDept, 12);
-    charts.push({ title: "Pending exits by department", caption: "Upcoming exits (active, future LWD).", kind: "barh", labels: pr.map((e) => e[0]), values: pr.map((e) => e[1]) });
+    charts.push({ title: "Pending exits by department", caption: "Upcoming exits (active, future LWD).", kind: "barh", labels: pr.map((e) => e[0]), values: pr.map((e) => e[1]), drill: "department" });
     for (const [d, p] of pendByDept) {
       const a = activeByDept.get(d) ?? 0;
       if (a < 8) continue;
@@ -368,7 +368,7 @@ function attritionSection(rows: Row[], refMs: number | null): DomainMetrics {
   }
   if (relieved.length) {
     const relByDept = topEntries(countByDim(relieved, "department"), 12);
-    charts.push({ title: "Relieved by department (in file)", caption: "Historical exits present in this snapshot.", kind: "barh", labels: relByDept.map((e) => e[0]), values: relByDept.map((e) => e[1]) });
+    charts.push({ title: "Relieved by department (in file)", caption: "Historical exits present in this snapshot.", kind: "barh", labels: relByDept.map((e) => e[0]), values: relByDept.map((e) => e[1]), drill: "department" });
   }
   const pendTable = pending
     .map((r) => [str(r["employee_number"]), dim(r, "department"), str(r["job_title"]), str(r["last_working_day"])] as (string | number)[])

@@ -24,6 +24,7 @@ export interface ChartSpec {
   kind: ChartKind;
   labels: string[]; // x categories / pie names / funnel stages
   values: number[]; // y values aligned to labels
+  drill?: string; // optional filter field a click on a bar/slice maps to (e.g. "department")
 }
 
 export interface MetricWatchout {

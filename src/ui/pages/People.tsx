@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
@@ -28,6 +28,14 @@ export function People() {
       { key: "movement", label: movement.label, metrics: movement },
     ];
   }, [filtered, empSnaps, filters, snap]);
+
+  // Drill-down: clicking a chart bar/slice adds that value to its filter field.
+  const onDrill = useCallback((field: string, label: string) => {
+    setFilters((f) => {
+      const cur = (f as Record<string, string[] | undefined>)[field] ?? [];
+      return cur.includes(label) ? f : { ...f, [field]: [...cur, label] };
+    });
+  }, []);
 
   if (!snap) {
     return (
@@ -69,7 +77,7 @@ export function People() {
               </button>
             ))}
           </div>
-          <DomainView domain={current.metrics} accent={branding.accent} />
+          <DomainView domain={current.metrics} accent={branding.accent} onDrill={onDrill} />
         </>
       )}
     </div>
