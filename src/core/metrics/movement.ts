@@ -107,9 +107,11 @@ function slope(values: number[]): number {
 }
 
 export interface Forecast {
-  months: { label: string; net: number; projectedActive: number }[];
+  months: { label: string; net: number; projectedActive: number; lower: number; upper: number }[];
   projectedActive: number;
   projectedNet: number;
+  lower: number; // downside endpoint (joiners −10%, leavers +10%)
+  upper: number; // upside endpoint (joiners +10%, leavers −10%)
 }
 
 export function forecastWorkforce(currentActive: number, movement: MonthMovement[], horizon = 6): Forecast {
@@ -122,14 +124,19 @@ export function forecastWorkforce(currentActive: number, movement: MonthMovement
   const sl = look.length >= 3 ? slope(look.map((m) => m.leavers)) : 0;
   const months: Forecast["months"] = [];
   let active = currentActive;
+  let lo = currentActive;
+  let hi = currentActive;
   for (let h = 1; h <= horizon; h++) {
     const j = Math.max(0, Math.round(wj + sj * h));
     const l = Math.max(0, Math.round(wl + sl * h));
     const net = j - l;
     active += net;
-    months.push({ label: `+${h}m`, net, projectedActive: active });
+    // ±10% scenario envelope (upside: more joiners, fewer leavers; downside: reverse).
+    hi += Math.round(j * 1.1) - Math.round(l * 0.9);
+    lo += Math.round(j * 0.9) - Math.round(l * 1.1);
+    months.push({ label: `+${h}m`, net, projectedActive: active, lower: lo, upper: hi });
   }
-  return { months, projectedActive: active, projectedNet: active - currentActive };
+  return { months, projectedActive: active, projectedNet: active - currentActive, lower: lo, upper: hi };
 }
 
 // Adapter for cross-functional attrition (leaver events with dept).
@@ -170,7 +177,7 @@ export function buildMovement(snapshots: Snapshot[], opts: { activeHeadcount?: n
     { label: "Leavers (last month)", value: N.humanizeInt(last?.leavers ?? 0) },
     { label: "Net (last month)", value: (last && last.net >= 0 ? "+" : "") + N.humanizeInt(last?.net ?? 0) },
     { label: "Annualised Attrition", value: N.formatPct(annualisedAttrition * 100), hint: `${totalLeavers} exits over ${months} mo` },
-    { label: "Projected Active (+6m)", value: N.humanizeInt(forecast.projectedActive), hint: `${forecast.projectedNet >= 0 ? "+" : ""}${forecast.projectedNet} vs now` },
+    { label: "Projected Active (+6m)", value: N.humanizeInt(forecast.projectedActive), hint: `${forecast.projectedNet >= 0 ? "+" : ""}${forecast.projectedNet} vs now · range ${N.humanizeInt(forecast.lower)}–${N.humanizeInt(forecast.upper)}` },
   ];
 
   const charts: ChartSpec[] = [
@@ -185,6 +192,12 @@ export function buildMovement(snapshots: Snapshot[], opts: { activeHeadcount?: n
       caption: "Joiners, leavers and net change per month (derived from snapshot diffs).",
       columns: ["Month", "Joiners", "Leavers", "Net"],
       rows: movement.map((m) => [m.label, m.joiners, m.leavers, (m.net >= 0 ? "+" : "") + m.net] as (string | number)[]),
+    },
+    {
+      title: "Headcount forecast (with range)",
+      caption: "Recency-weighted projection with a ±10% scenario band (low = fewer joiners / more leavers, high = the reverse).",
+      columns: ["Horizon", "Projected", "Low", "High"],
+      rows: forecast.months.map((m) => [m.label, m.projectedActive, m.lower, m.upper] as (string | number)[]),
     },
   ];
 

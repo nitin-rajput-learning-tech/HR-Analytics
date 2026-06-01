@@ -46,8 +46,11 @@ describe("movement", () => {
     expect(buildMovement([m1, m2], { activeHeadcount: 10 }).hasData).toBe(true);
     expect(buildMovement([m1], {}).hasData).toBe(false);
   });
-  it("forecasts the requested horizon", () => {
+  it("forecasts the requested horizon with a confidence band", () => {
     const f = forecastWorkforce(100, monthlyMovement(deriveEmployeeEvents([m1, m2])), 6);
     expect(f.months).toHaveLength(6);
+    expect(f.lower).toBeLessThanOrEqual(f.projectedActive);
+    expect(f.upper).toBeGreaterThanOrEqual(f.projectedActive);
+    expect(f.months[5].lower).toBeLessThanOrEqual(f.months[5].upper);
   });
 });

@@ -63,6 +63,7 @@ export function compute(input: PayrollInput): DomainMetrics {
         kind: "barh",
         labels: sorted.map((e) => e[0]),
         values: sorted.map((e) => e[1]),
+        drill: "department",
       });
     }
   } else if (hasRecord) {

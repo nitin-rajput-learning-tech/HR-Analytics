@@ -13,7 +13,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function FunctionAnalytics() {
-  const { store, branding, version } = useApp();
+  const { store, branding, version, drillToPeople } = useApp();
   const [tab, setTab] = useState<Tab>(DOMAIN_ORDER[0]);
 
   // Active headcount feeds L&D coverage; derived during render (not in an effect).
@@ -44,7 +44,8 @@ export function FunctionAnalytics() {
         ))}
       </div>
       <h3 className="domain-title">{domain.label}</h3>
-      <DomainView domain={domain} accent={branding.accent} />
+      <DomainView domain={domain} accent={branding.accent} onDrill={drillToPeople} />
+      <p className="muted" style={{ fontSize: ".82rem", marginTop: 8 }}>Tip: click a department bar to drill into People Analytics filtered to that team.</p>
     </div>
   );
 }

@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import React from "react";
 import "./theme.css";
 import { useApp } from "./state";
 import { People } from "./pages/People";
+import { Directory } from "./pages/Directory";
 import { FunctionAnalytics } from "./pages/FunctionAnalytics";
 import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 
-const PAGES = ["People Analytics", "Function Analytics", "Newsletter", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "Directory", "Function Analytics", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
   const app = useApp();
-  const [page, setPage] = useState<Page>("People Analytics");
+  const page = app.page as Page;
+  const setPage = app.setPage;
 
   function onSave() {
     const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString());
@@ -70,6 +72,7 @@ export function AppShell() {
       </nav>
       <main className="content">
         {page === "People Analytics" && <People />}
+        {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}
         {page === "Newsletter" && <Reports />}
         {page === "Data Intake" && <DataIntake />}

@@ -2,14 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
-import { buildPeople, EMPLOYEE_FIELDS, directorySection } from "../../core/metrics/people";
+import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { buildMovement } from "../../core/metrics/movement";
-import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
+import { filterRows, rowsToCsv } from "../../core/filters";
 
 export function People() {
-  const { store, branding, version } = useApp();
+  const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();
   const [tab, setTab] = useState(0);
-  const [filters, setFilters] = useState<Filters>({});
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const snap = useMemo(() => store.getLatest("employee_master"), [store, version]);
@@ -22,11 +21,7 @@ export function People() {
     const people = buildPeople(filtered, snap.asOf);
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
-    return [
-      ...people,
-      { key: "directory", label: "Directory", metrics: directorySection(filtered) },
-      { key: "movement", label: movement.label, metrics: movement },
-    ];
+    return [...people, { key: "movement", label: movement.label, metrics: movement }];
   }, [filtered, empSnaps, filters, snap]);
 
   // Drill-down: clicking a chart bar/slice adds that value to its filter field.

@@ -264,13 +264,20 @@ select, input[type="file"] { font: inherit; }
 .exec-brief, .nl-section, .action-plan { scroll-margin-top: 16px; }
 .nl-section h2 { display: flex; align-items: center; gap: 11px; }
 
+@page { margin: 14mm; }
 @media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .no-print { display: none !important; }
   .app { display: block; }
   .content { padding: 0; max-width: none; }
   .newsletter { border: 0; border-radius: 0; max-width: none; padding: 0; box-shadow: none; }
-  .nl-section, .exec-brief, .metric-table, .chart, .watchout { break-inside: avoid; }
+  /* one function/section per page; keep blocks intact */
+  .nl-section, .action-plan { break-before: page; }
+  .nl-toc, .exec-brief, .nl-section, .metric-table, .chart, .watchout, .kpi, .action-plan li { break-inside: avoid; }
+  .charts { display: block; } /* avoid wide 2-col charts overflowing the page */
+  .charts .chart { margin-bottom: 12px; }
   body { background: #fff; }
+  h2, h3 { break-after: avoid; }
 }
 
 @media (max-width: 860px) {

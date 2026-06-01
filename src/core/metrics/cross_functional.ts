@@ -233,6 +233,7 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
       kind: "barh",
       labels: scoreRows.slice(0, 10).map((r) => r.dept),
       values: scoreRows.slice(0, 10).map((r) => r.score),
+      drill: "department",
     });
     for (const row of highRisk.slice(0, 3)) {
       const drivers: string[] = [];
