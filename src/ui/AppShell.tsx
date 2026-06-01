@@ -8,6 +8,7 @@ import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { CommandPalette } from "./components/CommandPalette";
+import { ToastHost, toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
@@ -30,15 +31,23 @@ export function AppShell() {
     a.download = "hr-workspace.json.gz";
     a.click();
     URL.revokeObjectURL(url);
+    toast("Workspace saved", "success");
   }
 
   async function onLoad(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { store, branding, savedViews } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
-    app.setStore(store);
-    app.setBranding(branding);
-    app.setSavedViews(savedViews);
+    try {
+      const { store, branding, savedViews } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
+      app.setStore(store);
+      app.setBranding(branding);
+      app.setSavedViews(savedViews);
+      const emp = store.getLatest("employee_master")?.rows.length ?? 0;
+      toast(emp ? `Workspace loaded — ${emp.toLocaleString("en-IN")} employees` : "Workspace loaded", "success");
+    } catch {
+      toast("Couldn't read that workspace file", "error");
+    }
+    e.target.value = "";
   }
 
   return (
@@ -102,6 +111,7 @@ export function AppShell() {
         </footer>
       </main>
       <CommandPalette onSaveWorkspace={onSave} />
+      <ToastHost />
     </div>
   );
 }

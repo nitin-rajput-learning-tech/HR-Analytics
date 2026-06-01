@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { MemoryStore } from "../core/store/memoryStore";
 import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/branding";
+import { toast } from "./toast";
 import type { Filters } from "../core/filters";
 import type { SavedView } from "../workspace/workspace";
 
@@ -61,7 +62,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setPage("People Analytics");
   }, []);
   const saveView = useCallback(
-    (name: string) => setSavedViews((vs) => [...vs, { id: makeId(), name, page, filters: peopleFilters }]),
+    (name: string) => {
+      setSavedViews((vs) => [...vs, { id: makeId(), name, page, filters: peopleFilters }]);
+      toast(`Saved view “${name}”`, "success");
+    },
     [page, peopleFilters],
   );
   const applyView = useCallback(
@@ -70,11 +74,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (v) {
         setPeopleFilters(v.filters);
         setPage(v.page);
+        toast(`Applied view “${v.name}”`);
       }
     },
     [savedViews],
   );
-  const deleteView = useCallback((id: string) => setSavedViews((vs) => vs.filter((x) => x.id !== id)), []);
+  const deleteView = useCallback((id: string) => {
+    setSavedViews((vs) => vs.filter((x) => x.id !== id));
+    toast("View deleted");
+  }, []);
 
   return (
     <Ctx.Provider
