@@ -7,7 +7,11 @@ import { FunctionAnalytics } from "./pages/FunctionAnalytics";
 import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
+import { CommandPalette } from "./components/CommandPalette";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
+
+const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
+const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
 const PAGES = ["People Analytics", "Directory", "Function Analytics", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
@@ -61,6 +65,14 @@ export function AppShell() {
         <div className="side-foot">
           <hr />
           <button
+            className="cmdk-trigger"
+            onClick={() => window.dispatchEvent(new CustomEvent("cmdk:open"))}
+            title="Open command palette"
+          >
+            <span>Commands</span>
+            <kbd>{CMDK_LABEL}</kbd>
+          </button>
+          <button
             className="theme-quick"
             onClick={() => app.setBranding({ ...app.branding, theme: app.branding.theme === "dark" ? "light" : "dark" })}
             title="Toggle light / dark theme"
@@ -89,6 +101,7 @@ export function AppShell() {
           {app.branding.footer}
         </footer>
       </main>
+      <CommandPalette onSaveWorkspace={onSave} />
     </div>
   );
 }
