@@ -24,16 +24,19 @@ export function coerce(dtype: DType, value: unknown): string | number | boolean 
   return s === "" ? null : s;
 }
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
 function coerceDate(value: unknown): string | null {
-  let d: Date | null = null;
+  // Date objects come from SheetJS cellDates as local-midnight of the sheet's
+  // naive date — use LOCAL components so a date can't shift a day across the
+  // timezone offset. String inputs (e.g. ISO "2024-01-15") are parsed as UTC.
   if (value instanceof Date) {
-    d = value;
-  } else {
-    const s = String(value).trim();
-    if (s === "") return null;
-    const parsed = new Date(s);
-    if (!Number.isNaN(parsed.getTime())) d = parsed;
+    if (Number.isNaN(value.getTime())) return null;
+    return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
   }
-  if (!d || Number.isNaN(d.getTime())) return null;
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  const s = String(value).trim();
+  if (s === "") return null;
+  const parsed = new Date(s);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return `${parsed.getUTCFullYear()}-${pad2(parsed.getUTCMonth() + 1)}-${pad2(parsed.getUTCDate())}`;
 }

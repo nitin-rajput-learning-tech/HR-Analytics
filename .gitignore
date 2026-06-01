@@ -37,3 +37,6 @@ dist/
 # Local verification artifacts (CJS harness build + sandbox node harnesses)
 build-tmp/
 verify*.cjs
+
+# Real / private data (PII) — never commit
+private/

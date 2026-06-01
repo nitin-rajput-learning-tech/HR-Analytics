@@ -67,9 +67,11 @@ const EMPLOYEE_COLUMNS = [
 
 const titleCase = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+const EMPLOYEE_DATE_FIELDS = new Set(["last_working_day", "exit_requested_on", "date_joined"]);
+
 export const EMPLOYEE_MASTER = new DatasetSchema(
   "employee_master", "Employee Master", "Core People", "as_of",
-  EMPLOYEE_COLUMNS.map((n) => f(n, titleCase(n))),
+  EMPLOYEE_COLUMNS.map((n) => f(n, titleCase(n), EMPLOYEE_DATE_FIELDS.has(n) ? "date" : "string")),
   ["employee_number"], {}, "Employee report ... as on <date>.xlsx",
   "Monthly employee roster — the spine every other domain joins to.",
 );

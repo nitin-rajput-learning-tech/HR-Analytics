@@ -26,6 +26,7 @@ export function DataIntake() {
   const [kind, setKind] = useState<string>("employee_master");
   const [msg, setMsg] = useState<string>("");
   const [ok, setOk] = useState<boolean | null>(null);
+  const [asOfOverride, setAsOfOverride] = useState<string>("");
 
   const schema = getSchema(kind);
 
@@ -43,7 +44,7 @@ export function DataIntake() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema);
+      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined);
       if (cand.status === "imported" && cand.asOf) {
         store.add({
           id: `${cand.kind}:${cand.asOf}`,
@@ -56,7 +57,8 @@ export function DataIntake() {
         });
         bump();
         setOk(true);
-        setMsg(`Imported ${cand.rowCount} rows into ${schema.label} (as of ${cand.asOf}). ${cand.notes.join(" ")}`.trim());
+        const note = asOfOverride ? "As-of date set manually." : cand.notes.join(" ");
+        setMsg(`Imported ${cand.rowCount} rows into ${schema.label} (as of ${cand.asOf}). ${note}`.trim());
       } else {
         setOk(false);
         setMsg(`Could not import as ${schema.label}: ${cand.notes.join(" ") || "no recognisable rows found."}`);
@@ -92,10 +94,18 @@ export function DataIntake() {
             ))}
           </select>
         </label>
+        <label>
+          As-of date <span style={{ color: "var(--faint)" }}>(optional)</span>
+          <br />
+          <input type="date" value={asOfOverride} onChange={(e) => setAsOfOverride(e.target.value)} className="intake-select" style={{ minWidth: 0 }} />
+        </label>
         <button onClick={() => downloadTemplate(schema)}>Download template</button>
       </div>
 
       <p className="intake-desc">{schema.description}</p>
+      <p className="muted intake-required" style={{ marginBottom: 4 }}>
+        Set the as-of date if the filename has no date (e.g. "…as on 5th May.xlsx") — it overrides filename detection.
+      </p>
       <p className="muted intake-required">
         Required columns: {schema.fields.filter((fld) => fld.required).map((fld) => fld.label).join(", ") || "none"}
       </p>
