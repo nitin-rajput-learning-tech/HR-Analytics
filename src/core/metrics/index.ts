@@ -13,16 +13,7 @@ import * as admin from "./admin";
 import * as crossFunctional from "./cross_functional";
 import type { LeaverEvent } from "./cross_functional";
 
-export const DOMAIN_ORDER = ["talent_acquisition", "performance", "learning", "payroll", "operations"] as const;
-export type DomainKey = (typeof DOMAIN_ORDER)[number];
-
-export const DOMAIN_LABELS: Record<DomainKey, string> = {
-  talent_acquisition: "Talent Acquisition",
-  performance: "Performance (PMS)",
-  learning: "Learning & Development",
-  payroll: "Payroll & Cost",
-  operations: "HR Operations",
-};
+export type DomainKey = "talent_acquisition" | "performance" | "learning" | "payroll" | "operations";
 
 function rowsOf(store: DataSource, kind: string): Row[] | null {
   return store.getLatest(kind)?.rows ?? null;
@@ -31,43 +22,60 @@ function asOfOf(store: DataSource, kind: string): string | null {
   return store.getLatest(kind)?.asOf ?? null;
 }
 
-export function buildDomain(
-  store: DataSource,
-  key: DomainKey,
-  opts: { activeHeadcount?: number } = {},
-): DomainMetrics {
-  const activeHeadcount = opts.activeHeadcount ?? 0;
-  switch (key) {
-    case "talent_acquisition":
-      return ta.compute(rowsOf(store, "ta_requisition"), asOfOf(store, "ta_requisition"));
-    case "performance":
-      return pms.compute(rowsOf(store, "pms_review"), asOfOf(store, "pms_review"));
-    case "learning":
-      return ld.compute({
-        enrollmentRows: rowsOf(store, "ld_enrollment"),
-        programRows: rowsOf(store, "ld_program"),
-        activeHeadcount,
-        asOf: asOfOf(store, "ld_enrollment"),
-      });
-    case "payroll":
-      return payroll.compute({
-        recordRows: rowsOf(store, "payroll_record"),
-        aggregateRows: rowsOf(store, "payroll_aggregate"),
-        statutoryRows: rowsOf(store, "payroll_statutory"),
-        asOf: asOfOf(store, "payroll_aggregate"),
-      });
-    case "operations":
-      return admin.compute({
-        assetRows: rowsOf(store, "admin_asset"),
-        contractRows: rowsOf(store, "admin_contract"),
-        lifecycleRows: rowsOf(store, "admin_lifecycle"),
-        asOf: asOfOf(store, "admin_contract"),
-      });
-  }
+// Single source of truth for the functional domains. To add a domain: add a
+// metrics module and one entry here — DOMAIN_ORDER, DOMAIN_LABELS and the
+// dispatcher all derive from this, so they can't drift out of sync.
+interface DomainDef {
+  label: string;
+  requiredKinds: string[]; // domain has data if ANY of these kinds is loaded
+  build: (store: DataSource, opts: { activeHeadcount: number }) => DomainMetrics;
+}
+
+const DOMAIN_REGISTRY: Record<DomainKey, DomainDef> = {
+  talent_acquisition: {
+    label: "Talent Acquisition",
+    requiredKinds: ["ta_requisition"],
+    build: (s) => ta.compute(rowsOf(s, "ta_requisition"), asOfOf(s, "ta_requisition")),
+  },
+  performance: {
+    label: "Performance (PMS)",
+    requiredKinds: ["pms_review"],
+    build: (s) => pms.compute(rowsOf(s, "pms_review"), asOfOf(s, "pms_review")),
+  },
+  learning: {
+    label: "Learning & Development",
+    requiredKinds: ["ld_enrollment", "ld_program"],
+    build: (s, o) => ld.compute({ enrollmentRows: rowsOf(s, "ld_enrollment"), programRows: rowsOf(s, "ld_program"), activeHeadcount: o.activeHeadcount, asOf: asOfOf(s, "ld_enrollment") }),
+  },
+  payroll: {
+    label: "Payroll & Cost",
+    requiredKinds: ["payroll_aggregate", "payroll_record", "payroll_statutory"],
+    build: (s) => payroll.compute({ recordRows: rowsOf(s, "payroll_record"), aggregateRows: rowsOf(s, "payroll_aggregate"), statutoryRows: rowsOf(s, "payroll_statutory"), asOf: asOfOf(s, "payroll_aggregate") }),
+  },
+  operations: {
+    label: "HR Operations",
+    requiredKinds: ["admin_asset", "admin_contract", "admin_lifecycle"],
+    build: (s) => admin.compute({ assetRows: rowsOf(s, "admin_asset"), contractRows: rowsOf(s, "admin_contract"), lifecycleRows: rowsOf(s, "admin_lifecycle"), asOf: asOfOf(s, "admin_contract") }),
+  },
+};
+
+export const DOMAIN_ORDER = Object.keys(DOMAIN_REGISTRY) as DomainKey[];
+export const DOMAIN_LABELS = Object.fromEntries(
+  (Object.entries(DOMAIN_REGISTRY) as [DomainKey, DomainDef][]).map(([k, d]) => [k, d.label]),
+) as Record<DomainKey, string>;
+
+export function buildDomain(store: DataSource, key: DomainKey, opts: { activeHeadcount?: number } = {}): DomainMetrics {
+  return DOMAIN_REGISTRY[key].build(store, { activeHeadcount: opts.activeHeadcount ?? 0 });
 }
 
 export function buildAll(store: DataSource, opts: { activeHeadcount?: number } = {}): DomainMetrics[] {
   return DOMAIN_ORDER.map((k) => buildDomain(store, k, opts));
+}
+
+// Domains with at least one of their dataset kinds loaded — lets callers skip
+// domains that have no data yet rather than render empty shells.
+export function availableDomains(store: DataSource): DomainKey[] {
+  return DOMAIN_ORDER.filter((k) => DOMAIN_REGISTRY[k].requiredKinds.some((kind) => store.hasKind(kind)));
 }
 
 // Cross-functional risk is a cross-cut over the employee master + the functional
