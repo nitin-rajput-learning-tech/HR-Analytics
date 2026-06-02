@@ -1,6 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FILTER_DIMENSIONS, facets, activeFilterCount, type Filters, type FilterField } from "../../core/filters";
 import type { Row } from "../../core/ingest/types";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 export function FilterBar({
   rows,
@@ -21,6 +23,25 @@ export function FilterBar({
   );
   const active = activeFilterCount(filters);
 
+  // Debounce search so each keystroke doesn't re-filter + recompute the whole
+  // dashboard (matters at enterprise scale). The input stays instantly
+  // responsive via local state; propagation is deferred. A ref holds the latest
+  // filters so a concurrent facet toggle isn't stomped by a late search fire.
+  const [q, setQ] = useState(filters.search ?? "");
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    setQ(filters.search ?? "");
+    window.clearTimeout(timer.current);
+  }, [filters.search]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  function onSearchInput(val: string) {
+    setQ(val);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => onChange({ ...filtersRef.current, search: val }), SEARCH_DEBOUNCE_MS);
+  }
+
   function toggle(field: FilterField, value: string) {
     const cur = filters[field] ?? [];
     const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
@@ -34,8 +55,8 @@ export function FilterBar({
         type="search"
         aria-label="Search employees by name, ID, email or title"
         placeholder="Search name, ID, email, title…"
-        value={filters.search ?? ""}
-        onChange={(e) => onChange({ ...filters, search: e.target.value })}
+        value={q}
+        onChange={(e) => onSearchInput(e.target.value)}
       />
       {FILTER_DIMENSIONS.map((d) => {
         const sel = filters[d.field] ?? [];
