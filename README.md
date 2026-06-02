@@ -1,5 +1,7 @@
 # HR Analytics — White-Label Workforce Analytics Suite
 
+[![CI](https://github.com/nitin-rajput-learning-tech/HR-Analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/nitin-rajput-learning-tech/HR-Analytics/actions/workflows/ci.yml)
+
 A self-contained, **browser-based** HR analytics suite that any organisation can rebrand and run with **zero infrastructure**. Drop in monthly workbooks for any HR function and get interactive dashboards plus an auto-generated, board-ready **CHRO newsletter** — with a prioritised, owner-tagged action plan.
 
 > **Private by design.** The app is a single static HTML file. There is no server, no login, no telemetry, and no cloud. Every byte of data stays in the browser tab. Trust model: whoever holds the file (and the saved workspace) holds the data.
