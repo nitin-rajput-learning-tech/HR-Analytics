@@ -54,31 +54,31 @@ export function BrandingPage() {
       <div className="brand-grid">
         <div className="brand-controls">
           <div className="brand-row">
-            <label>App name</label>
-            <input className="brand-text" value={branding.appName} onChange={(e) => set({ appName: e.target.value })} />
+            <label htmlFor="brand-appname">App name</label>
+            <input id="brand-appname" className="brand-text" value={branding.appName} onChange={(e) => set({ appName: e.target.value })} />
           </div>
 
           <div className="brand-row">
-            <label>Primary colour</label>
+            <label htmlFor="brand-primary-hex">Primary colour</label>
             <div className="color-input">
-              <input type="color" value={HEX.test(branding.primary) ? branding.primary : "#000000"} onChange={(e) => set({ primary: e.target.value })} />
-              <input className="hex" type="text" maxLength={7} placeholder="#1f2937" value={branding.primary} onChange={(e) => set({ primary: normHex(e.target.value) })} />
+              <input type="color" aria-label="Primary colour picker" value={HEX.test(branding.primary) ? branding.primary : "#000000"} onChange={(e) => set({ primary: e.target.value })} />
+              <input id="brand-primary-hex" aria-label="Primary colour hex" className="hex" type="text" maxLength={7} placeholder="#1f2937" value={branding.primary} onChange={(e) => set({ primary: normHex(e.target.value) })} />
               {!HEX.test(branding.primary) ? <span className="hex-warn">invalid hex</span> : null}
             </div>
           </div>
 
           <div className="brand-row">
-            <label>Accent colour</label>
+            <label htmlFor="brand-accent-hex">Accent colour</label>
             <div className="color-input">
-              <input type="color" value={HEX.test(branding.accent) ? branding.accent : "#000000"} onChange={(e) => set({ accent: e.target.value })} />
-              <input className="hex" type="text" maxLength={7} placeholder="#2563eb" value={branding.accent} onChange={(e) => set({ accent: normHex(e.target.value) })} />
+              <input type="color" aria-label="Accent colour picker" value={HEX.test(branding.accent) ? branding.accent : "#000000"} onChange={(e) => set({ accent: e.target.value })} />
+              <input id="brand-accent-hex" aria-label="Accent colour hex" className="hex" type="text" maxLength={7} placeholder="#2563eb" value={branding.accent} onChange={(e) => set({ accent: normHex(e.target.value) })} />
               {!HEX.test(branding.accent) ? <span className="hex-warn">invalid hex</span> : null}
             </div>
           </div>
 
           <div className="brand-row">
-            <label>Footer text</label>
-            <input className="brand-text" value={branding.footer} onChange={(e) => set({ footer: e.target.value })} />
+            <label htmlFor="brand-footer">Footer text</label>
+            <input id="brand-footer" className="brand-text" value={branding.footer} onChange={(e) => set({ footer: e.target.value })} />
           </div>
 
           <div className="brand-row">
@@ -97,7 +97,7 @@ export function BrandingPage() {
             <label>Logo</label>
             <div className="logo-picker">
               {branding.logoDataUri ? <img src={branding.logoDataUri} alt="logo" className="logo-preview" /> : <div className="logo-empty">No logo</div>}
-              <input type="file" accept="image/*" onChange={onLogo} />
+              <input type="file" accept="image/*" aria-label="Upload logo image" onChange={onLogo} />
               {branding.logoDataUri ? (
                 <button className="link-btn" onClick={() => set({ logoDataUri: null })}>
                   Remove
@@ -121,7 +121,7 @@ export function BrandingPage() {
           <div className="brand-actions">
             <button onClick={exportTheme}>Export theme</button>
             <button onClick={() => importRef.current?.click()}>Import theme</button>
-            <input ref={importRef} type="file" accept=".json" style={{ display: "none" }} onChange={onImport} />
+            <input ref={importRef} type="file" accept=".json" aria-label="Import theme JSON file" style={{ display: "none" }} onChange={onImport} />
             <button className="link-btn" onClick={() => setBranding(DEFAULT_BRANDING)}>
               Reset to default
             </button>

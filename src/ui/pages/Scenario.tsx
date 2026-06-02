@@ -163,7 +163,7 @@ export function Scenario() {
             <button className="table-csv" title="Export this scenario as CSV" onClick={downloadScenarioCsv}>Export CSV</button>
           </div>
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll" tabIndex={0}>
           <table>
             <thead>
               <tr><th>Department</th><th>Baseline</th><th>Scenario</th><th>Δ</th></tr>

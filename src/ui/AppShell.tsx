@@ -219,6 +219,7 @@ export function AppShell() {
         </div>
       </nav>
       <main className="content" id="main-content" tabIndex={-1}>
+        <h1 className="sr-only">{app.branding.appName} — {page}</h1>
         {app.ready && app.mode === "demo" ? (
           <div className="demo-banner no-print" role="status">
             <span>

@@ -42,7 +42,7 @@ export function DataTable({ table }: { table: MetricTable }) {
   return (
     <div className="metric-table">
       <div className="mt-head">
-        <h4>{table.title}</h4>
+        <h3>{table.title}</h3>
         <div className="mt-tools no-print">
           {table.rows.length > 10 ? (
             <input className="table-search" type="search" aria-label={`Filter ${table.title} rows`} placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -53,7 +53,7 @@ export function DataTable({ table }: { table: MetricTable }) {
         </div>
       </div>
       {table.caption ? <p className="caption">{table.caption}</p> : null}
-      <div className="table-scroll">
+      <div className="table-scroll" tabIndex={0} aria-label={table.title || "Data table"}>
         <table>
           <thead>
             <tr>
@@ -88,7 +88,7 @@ export function DataTable({ table }: { table: MetricTable }) {
 export function Watchouts({ items }: { items: MetricWatchout[] }) {
   return (
     <div className="watchouts">
-      <h4>Watch-outs</h4>
+      <h3>Watch-outs</h3>
       {items.map((w, i) => (
         <div className={`watchout sev-${w.severity}`} key={i}>
           <div className="watchout-head">

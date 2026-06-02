@@ -60,8 +60,8 @@ export function Reports() {
           <p className="muted">No data yet. Publish workbooks on Data Intake; the newsletter fills in automatically.</p>
         ) : null}
 
-        <nav className="nl-toc">
-          <h3>Contents</h3>
+        <nav className="nl-toc" aria-label="Newsletter contents">
+          <h2>Contents</h2>
           <ul>
             <li>
               <a href="#sec-exec">Executive Brief</a>

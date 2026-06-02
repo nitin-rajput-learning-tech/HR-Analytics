@@ -200,7 +200,7 @@ export function DataIntake() {
               ) : null}
 
               <div className="metric-table">
-                <div className="table-scroll">
+                <div className="table-scroll" tabIndex={0}>
                   <table>
                     <thead>
                       <tr>{preview.availableColumns.map((c) => <th key={c}>{getSchema(preview.kind).field(c)?.label ?? c}</th>)}</tr>
@@ -279,7 +279,7 @@ export function DataIntake() {
         <p className="muted">Nothing uploaded yet.</p>
       ) : (
         <div className="metric-table">
-          <div className="table-scroll">
+          <div className="table-scroll" tabIndex={0}>
             <table>
               <thead>
                 <tr>
