@@ -12,6 +12,7 @@
     "sbom": "npm sbom --sbom-format cyclonedx",
     "verify": "npm run typecheck && npm test && npm run build && npm run check:size",
     "sample-data": "node scripts/generate-sample-data.mjs",
+    "sample-workspace": "node scripts/build-sample-workspace.mjs",
     "embed-demo": "node scripts/embed-demo.mjs",
     "dev": "vite",
     "preview": "vite preview",
