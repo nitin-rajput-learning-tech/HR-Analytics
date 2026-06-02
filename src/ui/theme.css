@@ -340,6 +340,9 @@ select, input[type="file"] { font: inherit; }
 .ws-pass:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 1px; }
 .ws-autosave { margin-top: 11px; font-size: 0.72rem; color: var(--faint); line-height: 1.5; }
 .ws-autosave .link-btn { font-size: 0.72rem; }
+.ws-autosave .ws-warn { margin-top: 5px; color: #b45309; line-height: 1.45; }
+.ws-autosave .ws-warn .link-btn { color: inherit; text-decoration: underline; }
+[data-theme="dark"] .ws-autosave .ws-warn { color: #fbbf24; }
 
 /* Demo-mode banner (top of content) + Data Intake demo notice. */
 .demo-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 22px; padding: 13px 18px; border: 1px solid var(--border-strong); border-left: 4px solid var(--brand-accent); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 0.9rem; box-shadow: var(--shadow-sm); }

@@ -4,6 +4,7 @@ import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/bran
 import { toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 import { persistWorkspace, loadPersisted, clearPersisted } from "../workspace/autosave";
+import { requestPersistentStorage } from "../workspace/storage";
 import { demoWorkspaceBytes } from "../demo/demo";
 import type { Filters } from "../core/filters";
 import type { SavedView, AuditEntry } from "../workspace/workspace";
@@ -174,6 +175,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }, 800);
     return () => window.clearTimeout(id);
   }, [store, version, branding, savedViews, auditLog, mode]);
+
+  // Once the user has their own data, ask the browser to keep it durable so the
+  // local database isn't evicted under storage pressure. Idempotent; no-ops
+  // where the Storage API is unavailable.
+  useEffect(() => {
+    if (ready && mode === "live") void requestPersistentStorage();
+  }, [ready, mode]);
 
   // Add one dataset snapshot. The first add while in demo mode swaps the demo
   // showroom for a clean live workspace holding just the user's own data.

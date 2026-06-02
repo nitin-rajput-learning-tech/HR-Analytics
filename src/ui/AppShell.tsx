@@ -14,6 +14,8 @@ import { downloadBlob } from "./download";
 import { ToastHost, toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 import { encryptWorkspace, decryptWorkspace, isEncryptedWorkspace } from "../workspace/crypto";
+import { getStorageStatus, formatBytes } from "../workspace/storage";
+import { loadPersisted } from "../workspace/autosave";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
@@ -36,6 +38,28 @@ export function AppShell() {
   const [encErr, setEncErr] = React.useState("");
   const encModalRef = React.useRef<HTMLDivElement>(null);
   useFocusTrap(encModalRef, encOpen);
+
+  // Live-mode storage status (durable? how much stored?) for the sidebar note.
+  // Re-read on data changes; also after a short delay so the debounced autosave
+  // write has landed before we estimate usage.
+  const [storage, setStorage] = React.useState<{ supported: boolean; persisted: boolean; savedBytes: number | null } | null>(null);
+  React.useEffect(() => {
+    if (app.mode !== "live") {
+      setStorage(null);
+      return;
+    }
+    let cancelled = false;
+    // Durability (persisted/supported) from the Storage API; the displayed size
+    // is the EXACT gzipped workspace we persisted, not navigator.storage.estimate
+    // (which is padded for privacy and counts all origin storage).
+    const read = async () => {
+      const [s, bytes] = await Promise.all([getStorageStatus(), loadPersisted()]);
+      if (!cancelled) setStorage({ supported: s.supported, persisted: s.persisted, savedBytes: bytes ? bytes.length : null });
+    };
+    void read();
+    const t = window.setTimeout(() => { void read(); }, 1300);
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [app.mode, app.version]);
 
   async function onSave() {
     if (encrypt && !passphrase.trim()) {
@@ -171,7 +195,8 @@ export function AppShell() {
           <div className="ws-autosave">
             {app.mode === "live" ? (
               <>
-                ↻ Saved on this device ·{" "}
+                ↻ Saved on this device{storage?.persisted ? " · durable" : ""}
+                {storage && storage.savedBytes != null && storage.savedBytes > 0 ? ` · ${formatBytes(storage.savedBytes)}` : ""} ·{" "}
                 <button
                   className="link-btn"
                   onClick={() => {
@@ -180,6 +205,12 @@ export function AppShell() {
                 >
                   Clear my data
                 </button>
+                {storage && storage.supported && !storage.persisted ? (
+                  <div className="ws-warn">
+                    ⚠ This browser may clear local data —{" "}
+                    <button className="link-btn" onClick={onSave}>save a backup</button>.
+                  </div>
+                ) : null}
               </>
             ) : (
               <>🔬 Demo data — upload your own in Data Intake to begin.</>
