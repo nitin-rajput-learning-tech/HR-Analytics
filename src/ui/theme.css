@@ -335,6 +335,30 @@ select, input[type="file"] { font: inherit; }
 .enc-err { color: var(--high); font-size: 0.82rem; margin: 8px 0 0; }
 .enc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
+/* import preview (Data Intake) */
+.import-preview { border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); padding: 16px 18px; margin: 14px 0 4px; box-shadow: var(--shadow-sm); }
+.ip-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.ip-head h3 { margin: 0; }
+.ip-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; border-radius: 999px; padding: 3px 10px; color: #fff; }
+.ip-badge.ok { background: #16a34a; }
+.ip-badge.err { background: var(--high); }
+.ip-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.88rem; color: var(--muted); margin-bottom: 8px; }
+.ip-summary strong { color: var(--ink); }
+.ip-good { color: #16a34a; font-weight: 600; }
+.ip-warn { color: var(--medium); font-weight: 700; }
+.ip-missing { font-size: 0.8rem; margin: 0 0 10px; }
+.ip-issues { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.ip-issues-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.ip-issues ul { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.ip-issues li { display: flex; align-items: baseline; gap: 8px; padding: 5px 2px; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--text); }
+.ip-issue-kind { flex: none; font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; border-radius: 5px; padding: 1px 7px; color: #fff; }
+.ip-issue-kind.k-missing_required { background: var(--high); }
+.ip-issue-kind.k-invalid_enum { background: var(--medium); }
+.ip-issue-kind.k-bad_type { background: #7c3aed; }
+.ip-issue-row { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.78rem; }
+.ip-note { font-size: 0.8rem; margin: 8px 0 0; }
+.ip-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
 /* activity / audit log (Data Intake) */
 .audit-log { list-style: none; margin: 8px 0 0; padding: 0; max-width: 720px; }
 .audit-log li { display: flex; align-items: baseline; gap: 12px; padding: 7px 2px; border-bottom: 1px solid var(--border); font-size: 0.86rem; }

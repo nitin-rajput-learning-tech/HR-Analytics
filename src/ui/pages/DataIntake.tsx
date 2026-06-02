@@ -4,6 +4,8 @@ import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth } from "../../core/intake/demoData";
+import { issuesToCsv } from "../../core/ingest/validate";
+import type { SnapshotCandidate } from "../../core/ingest/types";
 import { useApp } from "../state";
 
 // Team order, first-seen, for grouping the picker.
@@ -34,6 +36,7 @@ export function DataIntake() {
   const [msg, setMsg] = useState<string>("");
   const [ok, setOk] = useState<boolean | null>(null);
   const [asOfOverride, setAsOfOverride] = useState<string>("");
+  const [preview, setPreview] = useState<SnapshotCandidate | null>(null);
 
   const schema = getSchema(kind);
 
@@ -47,35 +50,53 @@ export function DataIntake() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version]);
 
+  // Parse the file and stage it for review — nothing is committed to the store
+  // until the user confirms in the preview panel.
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setMsg("");
+    setOk(null);
     try {
       const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined);
-      if (cand.status === "imported" && cand.asOf) {
-        store.add({
-          id: `${cand.kind}:${cand.asOf}`,
-          kind: cand.kind,
-          asOf: cand.asOf,
-          periodLabel: cand.periodLabel,
-          sourceFile: cand.sourceFile,
-          compatibility: cand.compatibility,
-          rows: cand.rows,
-        });
-        bump();
-        setOk(true);
-        logAudit(`Published ${schema.label}`, `${cand.rowCount} rows · as of ${cand.asOf}`);
-        const note = asOfOverride ? "As-of date set manually." : cand.notes.join(" ");
-        setMsg(`Imported ${cand.rowCount} rows into ${schema.label} (as of ${cand.asOf}). ${note}`.trim());
-      } else {
-        setOk(false);
-        setMsg(`Could not import as ${schema.label}: ${cand.notes.join(" ") || "no recognisable rows found."}`);
-      }
+      setPreview(cand);
     } catch (err) {
+      setPreview(null);
       setOk(false);
       setMsg(`Failed to read file: ${err instanceof Error ? err.message : String(err)}`);
     }
     e.target.value = "";
+  }
+
+  // Commit the previewed snapshot to the store.
+  function confirmImport() {
+    if (!preview || preview.status !== "imported" || !preview.asOf) return;
+    store.add({
+      id: `${preview.kind}:${preview.asOf}`,
+      kind: preview.kind,
+      asOf: preview.asOf,
+      periodLabel: preview.periodLabel,
+      sourceFile: preview.sourceFile,
+      compatibility: preview.compatibility,
+      rows: preview.rows,
+    });
+    bump();
+    const label = getSchema(preview.kind).label;
+    logAudit(`Published ${label}`, `${preview.rowCount} rows · as of ${preview.asOf}${preview.rowsWithIssues ? ` · ${preview.rowsWithIssues} flagged` : ""}`);
+    setOk(true);
+    setMsg(`Imported ${preview.rowCount.toLocaleString("en-IN")} rows into ${label} (as of ${preview.asOf}).`);
+    setPreview(null);
+  }
+
+  function downloadIssues() {
+    if (!preview || !preview.issues.length) return;
+    const blob = new Blob([issuesToCsv(preview.issues)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${preview.kind}-import-issues.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function generateDemo() {
@@ -100,8 +121,8 @@ export function DataIntake() {
     <div>
       <h2>Data Intake</h2>
       <p className="muted">
-        Pick the domain, upload its workbook (.xlsx), and the dashboards + newsletter update automatically. Need the
-        format? Download the template — it carries the exact columns, a data dictionary and a README.
+        Pick the domain, upload its workbook (<strong>.xlsx</strong> or <strong>.csv</strong>), review the preview, then
+        import. Need the format? Download the template — it carries the exact columns, a data dictionary and a README.
       </p>
 
       <div className="intake-controls">
@@ -138,12 +159,96 @@ export function DataIntake() {
 
       <div className="intake-upload">
         <label>
-          Upload {schema.label} (.xlsx)
+          Upload {schema.label} (.xlsx / .csv)
           <br />
-          <input type="file" accept=".xlsx" onChange={onFile} />
+          <input type="file" accept=".xlsx,.csv" onChange={onFile} />
         </label>
       </div>
       {msg ? <p className={ok ? "intake-ok" : "intake-err"}>{msg}</p> : null}
+
+      {preview ? (
+        <div className="import-preview">
+          <div className="ip-head">
+            <h3>Preview — {getSchema(preview.kind).label}</h3>
+            <span className={preview.status === "imported" ? "ip-badge ok" : "ip-badge err"}>
+              {preview.status === "imported" ? "Ready to import" : "Rejected"}
+            </span>
+          </div>
+
+          {preview.status === "imported" ? (
+            <>
+              <div className="ip-summary">
+                <span><strong>{preview.rowCount.toLocaleString("en-IN")}</strong> rows</span>
+                <span>as of <strong>{preview.asOf}</strong></span>
+                <span><strong>{preview.availableColumns.length}</strong> columns matched</span>
+                <span className={preview.rowsWithIssues ? "ip-warn" : "ip-good"}>
+                  {preview.rowsWithIssues ? `${preview.rowsWithIssues.toLocaleString("en-IN")} row(s) with issues` : "no validation issues"}
+                </span>
+              </div>
+              {preview.missingColumns.length ? (
+                <p className="muted ip-missing">
+                  Not in file: {preview.missingColumns.map((c) => getSchema(preview.kind).field(c)?.label ?? c).join(", ")}
+                </p>
+              ) : null}
+
+              <div className="metric-table">
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>{preview.availableColumns.map((c) => <th key={c}>{getSchema(preview.kind).field(c)?.label ?? c}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.slice(0, 8).map((row, ri) => (
+                        <tr key={ri}>
+                          {preview.availableColumns.map((c) => (
+                            <td key={c}>{row[c] === null || row[c] === "" ? "—" : String(row[c])}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {preview.rowCount > 8 ? <p className="caption">Showing 8 of {preview.rowCount.toLocaleString("en-IN")} rows.</p> : null}
+              </div>
+
+              {preview.issues.length ? (
+                <div className="ip-issues">
+                  <div className="ip-issues-head">
+                    <strong>Validation issues ({preview.issues.length.toLocaleString("en-IN")})</strong>
+                    <button className="table-csv" onClick={downloadIssues}>Download issues (CSV)</button>
+                  </div>
+                  <ul>
+                    {preview.issues.slice(0, 12).map((iss, k) => (
+                      <li key={k}>
+                        <span className={`ip-issue-kind k-${iss.kind}`}>{iss.kind.replace(/_/g, " ")}</span>
+                        <span className="ip-issue-row">Row {iss.row}</span>
+                        {iss.message}
+                      </li>
+                    ))}
+                  </ul>
+                  {preview.issues.length > 12 ? (
+                    <p className="muted">+{(preview.issues.length - 12).toLocaleString("en-IN")} more — download the CSV for the full list.</p>
+                  ) : null}
+                  <p className="muted ip-note">Flagged rows still import — fix them at source and re-upload, or import as-is.</p>
+                </div>
+              ) : null}
+
+              <div className="ip-actions">
+                <button onClick={() => setPreview(null)}>Cancel</button>
+                <button className="primary" onClick={confirmImport}>Import {preview.rowCount.toLocaleString("en-IN")} rows</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="intake-err">Could not import as {getSchema(preview.kind).label}: {preview.notes.join(" ") || "no recognisable rows found."}</p>
+              <p className="muted">Check that the file uses the template columns and that the period/as-of date is set.</p>
+              <div className="ip-actions">
+                <button onClick={() => setPreview(null)}>Dismiss</button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div className="demo-box">
         <div>

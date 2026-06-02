@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { DatasetSchema } from "../datasets";
 import { coerce } from "./coerce";
 import { parsePeriod } from "./period";
+import { validateRows } from "./validate";
 import type { Row, SnapshotCandidate } from "./types";
 
 export async function parseWorkbook(
@@ -40,13 +41,16 @@ export async function parseWorkbook(
   const available = new Set(headerToField.filter((c): c is string => !!c && canonical.has(c)));
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[best.sheet], { header: 1, blankrows: false });
   const rows: Row[] = [];
+  const rawRows: Record<string, unknown>[] = []; // pre-coercion values, for validation
   for (let r = best.headerRow + 1; r < aoa.length; r++) {
     const values = (aoa[r] || []) as unknown[];
     const row: Row = Object.fromEntries(schema.columnNames.map((n) => [n, null]));
+    const raw: Record<string, unknown> = {};
     let hasData = false;
     best.headers.forEach((_, ci) => {
       const field = headerToField[ci];
       if (!field || !canonical.has(field)) return;
+      raw[field] = values[ci];
       const c = coerce(dtypeByField.get(field)!, values[ci]);
       row[field] = c;
       if (c !== null && c !== "") hasData = true;
@@ -54,7 +58,9 @@ export async function parseWorkbook(
     if (!hasData) continue;
     if (schema.keyFields.length && !schema.keyFields.some((k) => row[k] !== null && row[k] !== "")) continue;
     rows.push(row);
+    rawRows.push(raw);
   }
+  const { issues, rowsWithIssues } = validateRows(schema, rawRows, available);
 
   const missing = schema.columnNames.filter((c) => !available.has(c));
   const compatibility = determineCompatibility(available, schema);
@@ -72,6 +78,8 @@ export async function parseWorkbook(
     status,
     rows,
     notes: status === "imported" ? [period.note] : [period.note, "Rejected — missing required columns or period."],
+    issues,
+    rowsWithIssues,
   };
 }
 
@@ -107,5 +115,7 @@ function reject(
     status: "rejected",
     rows: [],
     notes: [msg],
+    issues: [],
+    rowsWithIssues: 0,
   };
 }

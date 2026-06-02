@@ -1,3 +1,5 @@
+import type { RowIssue } from "./validate";
+
 export type Row = Record<string, string | number | boolean | null>;
 
 export interface SnapshotCandidate {
@@ -13,4 +15,8 @@ export interface SnapshotCandidate {
   status: "imported" | "rejected";
   rows: Row[];
   notes: string[];
+  // Row-level validation findings (enum / required / type). Advisory — flagged
+  // rows still import, but the user sees them in the pre-import preview.
+  issues: RowIssue[];
+  rowsWithIssues: number;
 }
