@@ -3,7 +3,7 @@ import { MemoryStore } from "../core/store/memoryStore";
 import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/branding";
 import { toast } from "./toast";
 import type { Filters } from "../core/filters";
-import type { SavedView } from "../workspace/workspace";
+import type { SavedView, AuditEntry } from "../workspace/workspace";
 
 interface AppState {
   store: MemoryStore;
@@ -25,7 +25,14 @@ interface AppState {
   saveView(name: string): void;
   applyView(id: string): void;
   deleteView(id: string): void;
+  // Local, workspace-embedded activity log (no PII) — records that data actions
+  // happened (save/load/publish), surfaced read-only and persisted on save.
+  auditLog: AuditEntry[];
+  setAuditLog(l: AuditEntry[]): void;
+  logAudit(action: string, detail?: string): void;
 }
+
+const AUDIT_CAP = 250;
 
 function makeId(): string {
   try {
@@ -44,6 +51,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [page, setPage] = useState<string>("People Analytics");
   const [peopleFilters, setPeopleFilters] = useState<Filters>({});
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+
+  const logAudit = useCallback((action: string, detail?: string) => {
+    setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
+  }, []);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const setStore = useCallback((s: MemoryStore) => {
@@ -86,7 +98,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit }}
     >
       {children}
     </Ctx.Provider>

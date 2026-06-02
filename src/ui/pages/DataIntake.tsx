@@ -22,8 +22,14 @@ function downloadTemplate(schema: DatasetSchema) {
   XLSX.writeFile(wb, `${schema.kind}_template.xlsx`);
 }
 
+// Compact local time for the activity log (falls back to the raw ISO string).
+function fmtTs(ts: string): string {
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? ts : d.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export function DataIntake() {
-  const { store, bump, version } = useApp();
+  const { store, bump, version, auditLog, logAudit } = useApp();
   const [kind, setKind] = useState<string>("employee_master");
   const [msg, setMsg] = useState<string>("");
   const [ok, setOk] = useState<boolean | null>(null);
@@ -58,6 +64,7 @@ export function DataIntake() {
         });
         bump();
         setOk(true);
+        logAudit(`Published ${schema.label}`, `${cand.rowCount} rows · as of ${cand.asOf}`);
         const note = asOfOverride ? "As-of date set manually." : cand.notes.join(" ");
         setMsg(`Imported ${cand.rowCount} rows into ${schema.label} (as of ${cand.asOf}). ${note}`.trim());
       } else {
@@ -85,6 +92,7 @@ export function DataIntake() {
     }
     bump();
     setOk(true);
+    logAudit("Generated demo data", `${fns.length} functional domains${prior ? " + prior month" : ""}`);
     setMsg(`Generated demo data for ${fns.length} functional domains${prior ? ` + a prior employee month (${prior.asOf})` : ""}. Every dashboard, Movement & Forecast, and the newsletter are now populated.`);
   }
 
@@ -177,6 +185,25 @@ export function DataIntake() {
             </table>
           </div>
         </div>
+      )}
+
+      <h3 style={{ marginTop: 28 }}>Activity log</h3>
+      <p className="muted" style={{ marginTop: 0, fontSize: ".84rem", maxWidth: "62ch" }}>
+        A local record of data actions (save, load, publish) — stored inside the workspace, never sent anywhere. Useful
+        for an audit trail of what happened to this dataset.
+      </p>
+      {auditLog.length === 0 ? (
+        <p className="muted">No activity recorded yet.</p>
+      ) : (
+        <ul className="audit-log">
+          {[...auditLog].reverse().slice(0, 25).map((e, i) => (
+            <li key={auditLog.length - i}>
+              <span className="audit-ts">{fmtTs(e.ts)}</span>
+              <span className="audit-action">{e.action}</span>
+              {e.detail ? <span className="audit-detail">{e.detail}</span> : null}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

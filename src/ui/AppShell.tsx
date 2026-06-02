@@ -23,7 +23,7 @@ export function AppShell() {
   const setPage = app.setPage;
 
   function onSave() {
-    const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews);
+    const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog);
     const blob = new Blob([new Uint8Array(bytes)], { type: "application/gzip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -31,6 +31,8 @@ export function AppShell() {
     a.download = "hr-workspace.json.gz";
     a.click();
     URL.revokeObjectURL(url);
+    const emp = app.store.getLatest("employee_master")?.rows.length ?? 0;
+    app.logAudit("Saved workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${app.store.allSnapshots().length} snapshot(s)`);
     toast("Workspace saved", "success");
   }
 
@@ -38,11 +40,13 @@ export function AppShell() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { store, branding, savedViews } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
+      const { store, branding, savedViews, auditLog } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
       app.setStore(store);
       app.setBranding(branding);
       app.setSavedViews(savedViews);
+      app.setAuditLog(auditLog);
       const emp = store.getLatest("employee_master")?.rows.length ?? 0;
+      app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);
       toast(emp ? `Workspace loaded — ${emp.toLocaleString("en-IN")} employees` : "Workspace loaded", "success");
     } catch {
       toast("Couldn't read that workspace file", "error");
