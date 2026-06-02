@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import * as N from "../../core/narrative";
 import { activeByDept, costByDeptFromAggregate, computeScenario, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
+import { tableToCsv } from "../../core/filters";
 
 function describeOp(o: ScenarioOp): string {
   if (o.kind === "hire") return `Hire ${o.count} → ${o.dept}`;
@@ -56,6 +57,30 @@ export function Scenario() {
     setOps((prev) => [...prev, { id: "op" + ++idRef.current, kind, dept: d, count: c, ...(kind === "move" ? { toDept: t } : {}) }]);
   }
   const removeOp = (id: string) => setOps((prev) => prev.filter((o) => o.id !== id));
+
+  // Export the scenario (the ops + headcount/cost summary + per-department impact)
+  // as CSV so a planned what-if can be shared or attached to a proposal.
+  function downloadScenarioCsv() {
+    const opsLine = ops.length ? ops.map(describeOp).join("; ") : "(baseline — no changes)";
+    const summary = tableToCsv(
+      ["Metric", "Baseline", "Scenario", "Delta"],
+      [
+        ["Active headcount", result.baseHeadcount, result.scenarioHeadcount, result.headcountDelta],
+        ...(result.baseCost !== null && result.scenarioCost !== null
+          ? [["Monthly cost (INR)", Math.round(result.baseCost), Math.round(result.scenarioCost), Math.round(result.costDelta ?? 0)] as (string | number)[]]
+          : []),
+      ],
+    );
+    const depts = tableToCsv(["Department", "Baseline", "Scenario", "Delta"], result.depts.map((d) => [d.dept, d.base, d.scenario, d.delta]));
+    const csv = `Scenario: ${opsLine}\n\n${summary}\n\n${depts}\n`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "scenario-plan.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const costBasisNote =
     result.costBasis === "payroll"
@@ -137,7 +162,12 @@ export function Scenario() {
       ) : null}
 
       <div className="metric-table">
-        <div className="mt-head"><h4>Department impact</h4></div>
+        <div className="mt-head">
+          <h4>Department impact</h4>
+          <div className="mt-tools no-print">
+            <button className="table-csv" title="Export this scenario as CSV" onClick={downloadScenarioCsv}>Export CSV</button>
+          </div>
+        </div>
         <div className="table-scroll">
           <table>
             <thead>
