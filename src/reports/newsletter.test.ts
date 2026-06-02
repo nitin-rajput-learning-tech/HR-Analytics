@@ -56,7 +56,7 @@ function populated(): MemoryStore {
 }
 
 describe("buildNewsletter", () => {
-  it("assembles 7 sections in CHRO order", () => {
+  it("assembles 8 sections in CHRO order", () => {
     const nl = buildNewsletter(populated(), { appName: "Acme HR", periodLabel: "May 2026" });
     expect(nl.sections.map((s) => s.kind)).toEqual([
       "employee_master",
@@ -65,6 +65,7 @@ describe("buildNewsletter", () => {
       "ld_enrollment",
       "payroll_record",
       "admin_asset",
+      "engagement",
       "cross_functional",
     ]);
     expect(nl.title).toBe("Acme HR — HR Newsletter");

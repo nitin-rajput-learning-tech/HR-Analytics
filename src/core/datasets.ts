@@ -295,6 +295,24 @@ export const ADMIN_LIFECYCLE = new DatasetSchema(
   "Onboarding/offboarding checklist completion and asset recovery.",
 );
 
+// --------------------------------------------------------------- Engagement
+export const ENGAGEMENT_SURVEY = new DatasetSchema(
+  "engagement_survey", "Engagement — Survey", "Engagement", "month",
+  [
+    f("survey_period", "Survey Period", "string", { required: true, example: "2026-Q2" }),
+    f("department", "Department", "string", { required: true, example: "Technology" }),
+    f("recommend_score", "Recommend Score (0-10)", "integer", { required: true, example: "9", note: "eNPS: 9-10 promoter, 7-8 passive, 0-6 detractor." }),
+    f("manager_score", "Manager Effectiveness (1-5)", "number", { example: "4" }),
+    f("growth_score", "Growth & Development (1-5)", "number", { example: "3" }),
+    f("comp_score", "Compensation Fairness (1-5)", "number", { example: "3" }),
+    f("worklife_score", "Work-Life Balance (1-5)", "number", { example: "4" }),
+  ],
+  ["survey_period", "department"],
+  { enps: "recommend_score", nps: "recommend_score", recommend: "recommend_score", manager: "manager_score", growth: "growth_score" },
+  "Engagement_YYYY-MM.xlsx",
+  "Anonymous engagement-survey responses (one row per response). Drives eNPS and driver scores by team — no individual is identifiable.",
+);
+
 // --------------------------------------------------------------- Planning
 export const HEADCOUNT_PLAN = new DatasetSchema(
   "headcount_plan", "Planning — Headcount Plan", "Planning", "month",
@@ -313,7 +331,8 @@ export const HEADCOUNT_PLAN = new DatasetSchema(
 // --------------------------------------------------------------- registry
 export const ALL_SCHEMAS: readonly DatasetSchema[] = [
   EMPLOYEE_MASTER, TA_REQUISITION, TA_AGGREGATE, PMS_REVIEW, PAYROLL_RECORD, PAYROLL_AGGREGATE,
-  PAYROLL_STATUTORY, LD_PROGRAM, LD_ENROLLMENT, ADMIN_ASSET, ADMIN_CONTRACT, ADMIN_LIFECYCLE, HEADCOUNT_PLAN,
+  PAYROLL_STATUTORY, LD_PROGRAM, LD_ENROLLMENT, ADMIN_ASSET, ADMIN_CONTRACT, ADMIN_LIFECYCLE,
+  ENGAGEMENT_SURVEY, HEADCOUNT_PLAN,
 ];
 
 export const DATASET_SCHEMAS: Record<string, DatasetSchema> = Object.fromEntries(

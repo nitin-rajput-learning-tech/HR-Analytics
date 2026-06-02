@@ -10,10 +10,11 @@ import * as pms from "./pms";
 import * as payroll from "./payroll";
 import * as ld from "./ld";
 import * as admin from "./admin";
+import * as engagement from "./engagement";
 import * as crossFunctional from "./cross_functional";
 import type { LeaverEvent } from "./cross_functional";
 
-export type DomainKey = "talent_acquisition" | "performance" | "learning" | "payroll" | "operations";
+export type DomainKey = "talent_acquisition" | "performance" | "learning" | "payroll" | "operations" | "engagement";
 
 function rowsOf(store: DataSource, kind: string): Row[] | null {
   return store.getLatest(kind)?.rows ?? null;
@@ -56,6 +57,11 @@ const DOMAIN_REGISTRY: Record<DomainKey, DomainDef> = {
     label: "HR Operations",
     requiredKinds: ["admin_asset", "admin_contract", "admin_lifecycle"],
     build: (s) => admin.compute({ assetRows: rowsOf(s, "admin_asset"), contractRows: rowsOf(s, "admin_contract"), lifecycleRows: rowsOf(s, "admin_lifecycle"), asOf: asOfOf(s, "admin_contract") }),
+  },
+  engagement: {
+    label: "Engagement",
+    requiredKinds: ["engagement_survey"],
+    build: (s) => engagement.compute(rowsOf(s, "engagement_survey"), asOfOf(s, "engagement_survey")),
   },
 };
 

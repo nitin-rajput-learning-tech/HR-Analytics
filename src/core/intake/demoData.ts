@@ -186,6 +186,22 @@ export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoS
   for (const e of relieved.slice(0, 10)) life.push({ employee_number: str(e["employee_number"]), type: "Offboarding", start_date: asOf, checklist_complete: chance(0.7) ? "Y" : "N", pending_items: chance(0.6) ? "" : "FnF pending", asset_recovered: chance(0.6) ? "Y" : "N" });
   out.push({ kind: "admin_lifecycle", asOf, periodLabel: month, rows: life });
 
+  // --- Engagement survey (anonymous, by department) — eNPS + driver scores,
+  // with per-team "mood" variance and comp as a typically-weaker driver.
+  const period = `${asOf.slice(0, 4)}-Q2`;
+  const engagement: Row[] = [];
+  for (const d of depts) {
+    const heads = active.filter((r) => (str(r["department"]) || "Unspecified") === d).length;
+    const responses = Math.round(heads * (0.5 + rnd() * 0.4)); // 50–90% response rate
+    const mood = -1 + rnd() * 2; // -1..1 team sentiment bias
+    const drv = (bias = 0) => Math.max(1, Math.min(5, Math.round((3.4 + mood * 0.8 + bias + (rnd() * 1.6 - 0.8)) * 10) / 10));
+    for (let i = 0; i < responses; i++) {
+      const rec = Math.max(0, Math.min(10, Math.round(7 + mood * 1.5 + (rnd() * 3 - 1.5))));
+      engagement.push({ survey_period: period, department: d, recommend_score: rec, manager_score: drv(), growth_score: drv(-0.2), comp_score: drv(-0.5), worklife_score: drv(0.2) });
+    }
+  }
+  out.push({ kind: "engagement_survey", asOf, periodLabel: period, rows: engagement });
+
   return out;
 }
 

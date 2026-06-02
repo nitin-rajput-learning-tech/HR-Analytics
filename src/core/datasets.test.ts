@@ -2,13 +2,14 @@ import { describe, it, expect } from "vitest";
 import { ALL_SCHEMAS, getSchema, allTeams, GENERIC_KINDS } from "./datasets";
 
 describe("dataset registry parity", () => {
-  it("contains all 13 kinds, employee_master + 12 generic", () => {
+  it("contains all 14 kinds, employee_master + 13 generic", () => {
     const kinds = ALL_SCHEMAS.map((s) => s.kind);
     expect(kinds).toContain("employee_master");
-    expect(kinds.length).toBe(13);
-    expect(new Set(kinds).size).toBe(13);
+    expect(kinds).toContain("engagement_survey");
+    expect(kinds.length).toBe(14);
+    expect(new Set(kinds).size).toBe(14);
     expect(GENERIC_KINDS).not.toContain("employee_master");
-    expect(GENERIC_KINDS.length).toBe(12);
+    expect(GENERIC_KINDS.length).toBe(13);
   });
 
   it("every key field and alias maps to a real field", () => {
@@ -27,6 +28,6 @@ describe("dataset registry parity", () => {
   });
 
   it("teams exclude the employee master", () => {
-    expect(allTeams()).toEqual(["Talent Acquisition", "Performance", "Payroll", "L&D", "HR Admin", "Planning"]);
+    expect(allTeams()).toEqual(["Talent Acquisition", "Performance", "Payroll", "L&D", "HR Admin", "Engagement", "Planning"]);
   });
 });

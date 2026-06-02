@@ -9,7 +9,7 @@ function snap(kind: string, asOf: string, rows: Row[]) {
 
 describe("domain registry", () => {
   it("derives DOMAIN_ORDER and labels from one source of truth", () => {
-    expect(DOMAIN_ORDER).toEqual(["talent_acquisition", "performance", "learning", "payroll", "operations"]);
+    expect(DOMAIN_ORDER).toEqual(["talent_acquisition", "performance", "learning", "payroll", "operations", "engagement"]);
     expect(Object.keys(DOMAIN_LABELS).sort()).toEqual([...DOMAIN_ORDER].sort());
     expect(DOMAIN_LABELS.talent_acquisition).toBe("Talent Acquisition");
   });
