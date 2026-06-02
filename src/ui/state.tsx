@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { MemoryStore } from "../core/store/memoryStore";
 import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/branding";
 import { toast } from "./toast";
+import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
+import { persistWorkspace, loadPersisted, clearPersisted } from "../workspace/autosave";
 import type { Filters } from "../core/filters";
 import type { SavedView, AuditEntry } from "../workspace/workspace";
 
@@ -30,6 +32,8 @@ interface AppState {
   auditLog: AuditEntry[];
   setAuditLog(l: AuditEntry[]): void;
   logAudit(action: string, detail?: string): void;
+  // The session auto-saves to IndexedDB (survives refresh); clear it to reset.
+  clearSession(): void;
 }
 
 const AUDIT_CAP = 250;
@@ -96,9 +100,59 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     toast("View deleted");
   }, []);
 
+  // --- Session persistence (survive browser refresh) -----------------------
+  const hydrated = useRef(false);
+
+  // Restore the last session from IndexedDB on first mount.
+  useEffect(() => {
+    let cancelled = false;
+    loadPersisted().then((bytes) => {
+      if (cancelled) return;
+      if (bytes) {
+        try {
+          const r = loadWorkspace(bytes);
+          setStore(r.store);
+          setBranding(r.branding);
+          setSavedViews(r.savedViews);
+          setAuditLog(r.auditLog);
+        } catch {
+          /* corrupt persisted session — start fresh */
+        }
+      }
+      hydrated.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [setStore, setBranding]);
+
+  // Auto-save to IndexedDB on change (debounced). Only after hydration, so an
+  // empty initial render never overwrites a saved session.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const id = window.setTimeout(() => {
+      try {
+        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog));
+      } catch {
+        /* persistence is best-effort */
+      }
+    }, 800);
+    return () => window.clearTimeout(id);
+  }, [store, version, branding, savedViews, auditLog]);
+
+  const clearSession = useCallback(() => {
+    void clearPersisted();
+    setStore(new MemoryStore());
+    setBranding(DEFAULT_BRANDING);
+    setSavedViews([]);
+    setAuditLog([]);
+    setPeopleFilters({});
+    toast("Saved session cleared");
+  }, [setStore, setBranding]);
+
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, clearSession }}
     >
       {children}
     </Ctx.Provider>

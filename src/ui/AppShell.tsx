@@ -167,6 +167,17 @@ export function AppShell() {
             <br />
             <input type="file" accept=".gz,.json,.enc" onChange={onLoad} style={{ marginTop: 4, fontSize: ".78rem" }} />
           </label>
+          <div className="ws-autosave">
+            ↻ Auto-saved in this browser ·{" "}
+            <button
+              className="link-btn"
+              onClick={() => {
+                if (window.confirm("Clear the auto-saved session in this browser? Save/export a workspace first if you want a backup.")) app.clearSession();
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </div>
       </nav>
       <main className="content" id="main-content" tabIndex={-1}>
