@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import { DatasetSchema } from "../datasets";
 import { coerce } from "./coerce";
 import { parsePeriod } from "./period";
-import { validateRows } from "./validate";
+import { validateRows, checkReferentialIntegrity } from "./validate";
 import type { Row, SnapshotCandidate } from "./types";
 
 export async function parseWorkbook(
@@ -10,6 +10,7 @@ export async function parseWorkbook(
   fileName: string,
   schema: DatasetSchema,
   overrideAsOf?: string,
+  knownEmployeeIds?: Set<string> | null,
 ): Promise<SnapshotCandidate> {
   const wb = XLSX.read(data, { type: "array", cellDates: true });
   const alias = schema.aliasMap();
@@ -60,7 +61,10 @@ export async function parseWorkbook(
     rows.push(row);
     rawRows.push(raw);
   }
-  const { issues, rowsWithIssues } = validateRows(schema, rawRows, available);
+  const { issues: valIssues } = validateRows(schema, rawRows, available);
+  const refIssues = checkReferentialIntegrity(schema, rawRows, knownEmployeeIds);
+  const issues = [...valIssues, ...refIssues].sort((a, b) => a.row - b.row);
+  const rowsWithIssues = new Set(issues.map((i) => i.row)).size;
 
   const missing = schema.columnNames.filter((c) => !available.has(c));
   const compatibility = determineCompatibility(available, schema);

@@ -384,6 +384,7 @@ select, input[type="file"] { font: inherit; }
 .ip-issue-kind.k-missing_required { background: var(--high); }
 .ip-issue-kind.k-invalid_enum { background: var(--medium); }
 .ip-issue-kind.k-bad_type { background: #7c3aed; }
+.ip-issue-kind.k-orphan_fk { background: #0891b2; }
 .ip-issue-row { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.78rem; }
 .ip-note { font-size: 0.8rem; margin: 8px 0 0; }
 .ip-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

@@ -58,7 +58,9 @@ export function DataIntake() {
     setMsg("");
     setOk(null);
     try {
-      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined);
+      const empRows = store.getLatest("employee_master")?.rows ?? [];
+      const knownIds = new Set(empRows.map((r) => String(r.employee_number ?? "").trim()).filter(Boolean));
+      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined, knownIds);
       setPreview(cand);
     } catch (err) {
       setPreview(null);

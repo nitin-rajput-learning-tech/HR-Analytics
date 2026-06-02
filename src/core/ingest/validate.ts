@@ -6,7 +6,10 @@
 import type { DatasetSchema } from "../datasets";
 import { coerce } from "./coerce";
 
-export type IssueKind = "missing_required" | "invalid_enum" | "bad_type";
+export type IssueKind = "missing_required" | "invalid_enum" | "bad_type" | "orphan_fk";
+
+// Fields that reference an employee in the master (foreign keys).
+const EMPLOYEE_FK_FIELDS = ["employee_number", "assigned_employee_number"];
 
 export interface RowIssue {
   row: number; // 1-based position among the imported rows
@@ -81,6 +84,30 @@ export function validateRows(
     issues.push(...rowIssues);
   });
   return { issues, rowsWithIssues: bad.size };
+}
+
+// Referential integrity: flag rows whose employee foreign key isn't present in
+// the employee master, instead of silently joining to nothing. Skips the master
+// itself (where employee_number is the PK) and is a no-op when no known IDs are
+// supplied (e.g. the master hasn't been loaded yet).
+export function checkReferentialIntegrity(
+  schema: DatasetSchema,
+  rawRows: Record<string, unknown>[],
+  knownEmployeeIds: Set<string> | null | undefined,
+): RowIssue[] {
+  if (schema.kind === "employee_master" || !knownEmployeeIds || knownEmployeeIds.size === 0) return [];
+  const fkFields = schema.fields.filter((f) => EMPLOYEE_FK_FIELDS.includes(f.name));
+  if (fkFields.length === 0) return [];
+  const issues: RowIssue[] = [];
+  rawRows.forEach((raw, i) => {
+    for (const f of fkFields) {
+      const v = raw[f.name] == null ? "" : String(raw[f.name]).trim();
+      if (v && !knownEmployeeIds.has(v)) {
+        issues.push({ row: i + 1, field: f.name, label: f.label, value: truncate(v), kind: "orphan_fk", message: `${f.label} "${truncate(v)}" is not in the employee master` });
+      }
+    }
+  });
+  return issues;
 }
 
 // Render issues to a CSV the user can download and hand back to the data owner.

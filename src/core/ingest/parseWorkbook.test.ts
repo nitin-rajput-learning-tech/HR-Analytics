@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as XLSX from "xlsx";
 import { parseWorkbook } from "./parseWorkbook";
-import { TA_REQUISITION } from "../datasets";
+import { TA_REQUISITION, PMS_REVIEW } from "../datasets";
 
 function buildXlsx(headers: string[], rows: unknown[][]): ArrayBuffer {
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -41,6 +41,19 @@ describe("parseWorkbook (TA)", () => {
   it("rejects an unrelated sheet", async () => {
     const cand = await parseWorkbook(buildXlsx(["totally", "unrelated"], [[1, 2]]), "x_2026-05.xlsx", TA_REQUISITION);
     expect(cand.status).toBe("rejected");
+  });
+
+  it("flags an orphan employee FK against the known master IDs", async () => {
+    const cand = await parseWorkbook(
+      buildXlsx(["Employee Number", "Review Cycle"], [["AA0001", "FY26-H1"], ["ZZ9999", "FY26-H1"]]),
+      "PMS_cycle_FY26-H1.xlsx",
+      PMS_REVIEW,
+      "2026-05-31",
+      new Set(["AA0001"]),
+    );
+    const orphan = cand.issues.filter((i) => i.kind === "orphan_fk");
+    expect(orphan).toHaveLength(1);
+    expect(orphan[0].message).toContain("ZZ9999");
   });
 
   it("parses a .csv file and surfaces row-level validation issues", async () => {

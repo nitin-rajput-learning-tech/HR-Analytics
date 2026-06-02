@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { validateRows, issuesToCsv } from "./validate";
-import { TA_REQUISITION, PMS_REVIEW } from "../datasets";
+import { validateRows, issuesToCsv, checkReferentialIntegrity } from "./validate";
+import { TA_REQUISITION, PMS_REVIEW, ADMIN_ASSET } from "../datasets";
 
 const present = new Set(TA_REQUISITION.columnNames);
 
@@ -56,6 +56,23 @@ describe("validateRows", () => {
     expect(validateRows(PMS_REVIEW, [{ employee_number: "AA1", cycle: "FY26", goals_set: "Y" }], cols).rowsWithIssues).toBe(0);
     const bad = validateRows(PMS_REVIEW, [{ employee_number: "AA1", cycle: "FY26", goals_set: "maybe" }], cols);
     expect(bad.issues.some((i) => i.field === "goals_set" && i.kind === "invalid_enum")).toBe(true);
+  });
+
+  it("flags employee foreign keys absent from the master (orphan_fk)", () => {
+    const known = new Set(["AA0001", "AA0002"]);
+    const rows = [{ employee_number: "AA0001" }, { employee_number: "ZZ9999" }, { employee_number: "" }];
+    const issues = checkReferentialIntegrity(PMS_REVIEW, rows, known);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].kind).toBe("orphan_fk");
+    expect(issues[0].row).toBe(2);
+    expect(issues[0].message).toContain("ZZ9999");
+  });
+
+  it("checks the assigned-employee FK on assets, and is a no-op without known IDs", () => {
+    const rows = [{ asset_id: "A1", assigned_employee_number: "GHOST" }];
+    expect(checkReferentialIntegrity(ADMIN_ASSET, rows, new Set(["AA0001"]))).toHaveLength(1);
+    expect(checkReferentialIntegrity(ADMIN_ASSET, rows, null)).toHaveLength(0);
+    expect(checkReferentialIntegrity(ADMIN_ASSET, rows, new Set())).toHaveLength(0);
   });
 
   it("renders issues to CSV with a header row", () => {
