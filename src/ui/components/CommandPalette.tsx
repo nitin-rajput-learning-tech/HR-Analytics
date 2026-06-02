@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import { rankCommands, type Command } from "../commands";
 
-const PAGES = ["People Analytics", "Directory", "Function Analytics", "Newsletter", "Data Intake", "Branding"];
+const PAGES = ["People Analytics", "Directory", "Function Analytics", "Scenario", "Newsletter", "Data Intake", "Branding"];
 
 // Global command palette (⌘/Ctrl-K). Owns its open state; other components can
 // open it by dispatching a "cmdk:open" window event (see the sidebar button).

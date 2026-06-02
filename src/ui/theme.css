@@ -344,6 +344,26 @@ select, input[type="file"] { font: inherit; }
 .enc-err { color: var(--high); font-size: 0.82rem; margin: 8px 0 0; }
 .enc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
+/* scenario planner */
+.scn-builder { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 14px; }
+.scn-builder select, .scn-builder input { padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 0.86rem; }
+.scn-count { width: 84px; }
+.scn-arrow { color: var(--muted); font-weight: 700; }
+.scn-ops { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.scn-op { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-left-width: 3px; border-radius: 999px; padding: 5px 6px 5px 13px; font-size: 0.84rem; font-weight: 600; }
+.scn-op.k-hire { border-left-color: #16a34a; }
+.scn-op.k-cut { border-left-color: var(--high); }
+.scn-op.k-move { border-left-color: var(--brand-accent); }
+.scn-op-del { border: 0; background: var(--surface); color: var(--muted); border-radius: 50%; width: 20px; height: 20px; cursor: pointer; line-height: 1; font-size: 0.72rem; }
+.scn-op-del:hover { color: var(--high); }
+.scn-basis { font-size: 0.82rem; margin: 6px 0 10px; }
+.scn-assumed { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--muted); margin-bottom: 14px; }
+.scn-assumed input { width: 120px; padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; }
+.scn-up { color: #15803d; font-weight: 700; }
+.scn-down { color: #b91c1c; font-weight: 700; }
+[data-theme="dark"] .scn-up { color: #4ade80; }
+[data-theme="dark"] .scn-down { color: #f87171; }
+
 /* import preview (Data Intake) */
 .import-preview { border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); padding: 16px 18px; margin: 14px 0 4px; box-shadow: var(--shadow-sm); }
 .ip-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
