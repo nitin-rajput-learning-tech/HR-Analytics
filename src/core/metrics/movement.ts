@@ -105,14 +105,25 @@ function slope(values: number[]): number {
   values.forEach((v, i) => { num += (i - xMean) * (v - yMean); den += (i - xMean) ** 2; });
   return den ? num / den : 0;
 }
+// Sample standard deviation; 0 with fewer than 2 points (no basis for spread).
+function stddev(values: number[]): number {
+  const n = values.length;
+  if (n < 2) return 0;
+  const mean = values.reduce((s, v) => s + v, 0) / n;
+  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1);
+  return Math.sqrt(variance);
+}
 
 export interface Forecast {
   months: { label: string; net: number; projectedActive: number; lower: number; upper: number }[];
   projectedActive: number;
   projectedNet: number;
-  lower: number; // downside endpoint (joiners −10%, leavers +10%)
-  upper: number; // upside endpoint (joiners +10%, leavers −10%)
+  lower: number; // downside endpoint of the uncertainty band
+  upper: number; // upside endpoint of the uncertainty band
+  sigma: number; // std-dev of recent monthly net movement (0 if <2 months)
 }
+
+const BAND_Z = 1; // ±1σ band (~68% under a normal random-walk assumption)
 
 export function forecastWorkforce(currentActive: number, movement: MonthMovement[], horizon = 6): Forecast {
   const look = movement.slice(-6);
@@ -122,21 +133,29 @@ export function forecastWorkforce(currentActive: number, movement: MonthMovement
   // points wildly over/undershoots).
   const sj = look.length >= 3 ? slope(look.map((m) => m.joiners)) : 0;
   const sl = look.length >= 3 ? slope(look.map((m) => m.leavers)) : 0;
+  // Uncertainty band from the volatility of monthly NET movement. Modelling net
+  // change as a random walk, the spread of the cumulative projection grows as
+  // σ·√h. With <2 months σ=0 → the band collapses (no basis to quantify it).
+  const sigma = stddev(look.map((m) => m.net));
   const months: Forecast["months"] = [];
   let active = currentActive;
-  let lo = currentActive;
-  let hi = currentActive;
   for (let h = 1; h <= horizon; h++) {
     const j = Math.max(0, Math.round(wj + sj * h));
     const l = Math.max(0, Math.round(wl + sl * h));
     const net = j - l;
     active += net;
-    // ±10% scenario envelope (upside: more joiners, fewer leavers; downside: reverse).
-    hi += Math.round(j * 1.1) - Math.round(l * 0.9);
-    lo += Math.round(j * 0.9) - Math.round(l * 1.1);
-    months.push({ label: `+${h}m`, net, projectedActive: active, lower: lo, upper: hi });
+    const halfWidth = Math.round(BAND_Z * sigma * Math.sqrt(h));
+    months.push({ label: `+${h}m`, net, projectedActive: active, lower: Math.max(0, active - halfWidth), upper: active + halfWidth });
   }
-  return { months, projectedActive: active, projectedNet: active - currentActive, lower: lo, upper: hi };
+  const end = months[months.length - 1];
+  return {
+    months,
+    projectedActive: active,
+    projectedNet: active - currentActive,
+    lower: end ? end.lower : active,
+    upper: end ? end.upper : active,
+    sigma,
+  };
 }
 
 // Adapter for cross-functional attrition (leaver events with dept).
@@ -169,15 +188,21 @@ export function buildMovement(snapshots: Snapshot[], opts: { activeHeadcount?: n
   const totalLeavers = events.filter((e) => e.event_type === "leaver").length;
   const totalJoiners = events.filter((e) => e.event_type === "joiner").length;
   const months = movement.length;
-  const annualisedAttrition = currentActive ? (totalLeavers / months) * 12 / currentActive : 0;
+  // Standard annualised attrition = leavers / AVERAGE headcount over the period,
+  // annualised by 12/months — not divided by the ending headcount (which
+  // understates attrition in a shrinking org and overstates it in a growing one).
+  const headcounts = snaps.map((s) => s.rows.filter(isWorking).length);
+  const avgActive = headcounts.length ? headcounts.reduce((a, b) => a + b, 0) / headcounts.length : 0;
+  const annualisedAttrition = avgActive ? (totalLeavers / avgActive) * (12 / months) : 0;
   const forecast = forecastWorkforce(currentActive, movement);
+  const rangeHint = forecast.sigma > 0 ? ` · range ${N.humanizeInt(forecast.lower)}–${N.humanizeInt(forecast.upper)}` : " · range needs ≥2 months";
 
   const kpis: MetricKPI[] = [
     { label: "Joiners (last month)", value: N.humanizeInt(last?.joiners ?? 0) },
     { label: "Leavers (last month)", value: N.humanizeInt(last?.leavers ?? 0) },
     { label: "Net (last month)", value: (last && last.net >= 0 ? "+" : "") + N.humanizeInt(last?.net ?? 0) },
-    { label: "Annualised Attrition", value: N.formatPct(annualisedAttrition * 100), hint: `${totalLeavers} exits over ${months} mo` },
-    { label: "Projected Active (+6m)", value: N.humanizeInt(forecast.projectedActive), hint: `${forecast.projectedNet >= 0 ? "+" : ""}${forecast.projectedNet} vs now · range ${N.humanizeInt(forecast.lower)}–${N.humanizeInt(forecast.upper)}` },
+    { label: "Annualised Attrition", value: N.formatPct(annualisedAttrition * 100), hint: `${totalLeavers} exits over ${months} mo · avg HC ${N.humanizeInt(Math.round(avgActive))}` },
+    { label: "Projected Active (+6m)", value: N.humanizeInt(forecast.projectedActive), hint: `${forecast.projectedNet >= 0 ? "+" : ""}${forecast.projectedNet} vs now${rangeHint}` },
   ];
 
   const charts: ChartSpec[] = [
@@ -195,7 +220,10 @@ export function buildMovement(snapshots: Snapshot[], opts: { activeHeadcount?: n
     },
     {
       title: "Headcount forecast (with range)",
-      caption: "Recency-weighted projection with a ±10% scenario band (low = fewer joiners / more leavers, high = the reverse).",
+      caption:
+        forecast.sigma > 0
+          ? `Recency-weighted projection with a ±1σ uncertainty band (σ≈${forecast.sigma.toFixed(1)}/mo of recent net movement, widening as √horizon).`
+          : "Recency-weighted projection. An uncertainty band appears once there are ≥2 months of movement to estimate volatility.",
       columns: ["Horizon", "Projected", "Low", "High"],
       rows: forecast.months.map((m) => [m.label, m.projectedActive, m.lower, m.upper] as (string | number)[]),
     },
