@@ -12,11 +12,23 @@ A self-contained, **browser-based** HR analytics suite that any organisation can
 
 Most HR analytics tooling needs IT to provision servers, databases or installers — and HR data is exactly the data you least want leaving the building. This product compiles to **one `dist/index.html`** you can:
 
-- open by double-clicking (`file://`), or
+- run the included **`Run HR Analytics.bat`** launcher (Windows) for a proper `http://localhost` origin — recommended, needs nothing installed, or
 - drop on a SharePoint / network share for the team, or
 - host on any static web server.
 
+> ⚠️ **Don't just double-click `index.html`.** Opening it via `file://` works for *viewing*, but Chrome — and corporate security / DLP tools — ignore download filenames (you get a random name with no extension) and block file pickers from `file://` pages. Use the launcher or a hosted `http(s)://` URL so downloads, uploads and saved data all work.
+
 No Python, no `.exe`, no native dependencies — so the antivirus / AppContainer restrictions that block desktop installers and Python DLLs don't apply.
+
+## Running it
+
+**Windows (recommended):** double-click **`Run HR Analytics.bat`**. It serves the app at `http://localhost:4173` using built-in PowerShell — no install, no admin — and opens your browser. Keep the small console window open while you work; close it to stop.
+
+**With Node:** `npm run serve` (serves on `http://localhost:4173` and opens the browser).
+
+**For the team:** host `dist/index.html` on SharePoint, a network share, or any static web server — any `http(s)://` origin gives full functionality.
+
+Why it matters: on a real origin the browser honours download filenames, opens file pickers, and keeps your auto-saved data durably — none of which is reliable from `file://`.
 
 ## What it covers
 

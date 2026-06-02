@@ -6,6 +6,18 @@
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { spawn } from "node:child_process";
+
+function openBrowser(url) {
+  if (process.env.HRA_NO_OPEN) return;
+  const [cmd, args] =
+    process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+  try {
+    spawn(cmd, args, { stdio: "ignore", detached: true }).unref();
+  } catch {
+    /* opening the browser is best-effort */
+  }
+}
 
 const PORT = Number(process.env.PORT) || 4173;
 const root = path.resolve("dist");
@@ -30,4 +42,8 @@ http
       }
     }
   })
-  .listen(PORT, () => console.log(`HR Analytics running at http://localhost:${PORT}   (Ctrl+C to stop)`));
+  .listen(PORT, () => {
+    const url = `http://localhost:${PORT}`;
+    console.log(`HR Analytics running at ${url}   (Ctrl+C to stop)`);
+    openBrowser(url);
+  });
