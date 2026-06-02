@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
+import pako from "pako";
 import { MemoryStore } from "../core/store/memoryStore";
 import { DEFAULT_BRANDING } from "../branding/branding";
-import { saveWorkspace, loadWorkspace } from "./workspace";
+import { saveWorkspace, loadWorkspace, CURRENT_VERSION } from "./workspace";
 
 describe("workspace round-trip", () => {
   it("serializes store + branding to bytes and restores them", () => {
@@ -34,5 +35,72 @@ describe("workspace round-trip", () => {
     expect(restored.savedViews[0].filters.department).toEqual(["Tech"]);
     // older workspace (no savedViews arg) -> empty list
     expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).savedViews).toEqual([]);
+  });
+});
+
+// Build a raw gzipped workspace file at an arbitrary version, bypassing
+// saveWorkspace (which always writes CURRENT_VERSION) — to exercise migration.
+function rawWorkspace(obj: Record<string, unknown>): Uint8Array {
+  return pako.gzip(JSON.stringify(obj));
+}
+const SNAP = {
+  id: "employee_master:2026-03-06",
+  kind: "employee_master",
+  asOf: "2026-03-06",
+  periodLabel: "2026-03-06",
+  sourceFile: "emp.xlsx",
+  compatibility: "full",
+  rows: [{ employee_number: "AA1" }],
+};
+
+describe("workspace versioning & migration", () => {
+  it("writes the current format version and round-trips the audit log", () => {
+    const store = new MemoryStore();
+    const audit = [{ ts: "2026-06-02T00:00:00Z", action: "Saved workspace", detail: "1 employee" }];
+    const restored = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING, "now", [], audit));
+    expect(restored.auditLog).toHaveLength(1);
+    expect(restored.auditLog[0].action).toBe("Saved workspace");
+  });
+
+  it("migrates a v1 file (no audit log) forward, defaulting auditLog to []", () => {
+    const v1 = rawWorkspace({
+      format: "hr-analytics-workspace",
+      version: 1,
+      generatedAt: "old",
+      branding: { ...DEFAULT_BRANDING, appName: "Legacy Co" },
+      snapshots: [SNAP],
+      savedViews: [{ id: "v1", name: "All", page: "People Analytics", filters: {} }],
+    });
+    const restored = loadWorkspace(v1);
+    expect(restored.branding.appName).toBe("Legacy Co");
+    expect(restored.store.getLatest("employee_master")!.rows[0].employee_number).toBe("AA1");
+    expect(restored.savedViews).toHaveLength(1);
+    expect(restored.auditLog).toEqual([]);
+  });
+
+  it("treats a file with no version field as v1 and migrates it", () => {
+    const noVersion = rawWorkspace({ format: "hr-analytics-workspace", generatedAt: "old", branding: DEFAULT_BRANDING, snapshots: [SNAP] });
+    expect(loadWorkspace(noVersion).auditLog).toEqual([]);
+  });
+
+  it("refuses a file saved by a newer app version", () => {
+    const future = rawWorkspace({ format: "hr-analytics-workspace", version: CURRENT_VERSION + 1, branding: DEFAULT_BRANDING, snapshots: [] });
+    let msg = "";
+    try {
+      loadWorkspace(future);
+    } catch (e) {
+      msg = String((e as Error).message);
+    }
+    expect(/newer version/i.test(msg)).toBe(true);
+  });
+
+  it("rejects a file that is not a workspace", () => {
+    let msg = "";
+    try {
+      loadWorkspace(rawWorkspace({ hello: "world" }));
+    } catch (e) {
+      msg = String((e as Error).message);
+    }
+    expect(/valid HR Analytics workspace/i.test(msg)).toBe(true);
   });
 });
