@@ -9,6 +9,7 @@
 import * as N from "../narrative";
 import type { Row } from "../ingest/types";
 import { ChartSpec, DomainMetrics, MetricKPI, MetricWatchout } from "./base";
+import { median, quantile } from "./stats";
 
 export interface PeopleSection {
   key: string;
@@ -159,6 +160,12 @@ function tenureSection(rows: Row[], refMs: number | null): DomainMetrics {
   const avgYrs = valid.length ? valid.reduce((s, d) => s + d, 0) / valid.length / 365 : null;
   const earlyShare = valid.length ? valid.filter((d) => d < 365).length / valid.length : 0;
   const veteranShare = valid.length ? valid.filter((d) => d >= 1825).length / valid.length : 0;
+  // Median + interquartile range describe the actual spread; a long-tenured tail
+  // can pull the mean well above where most of the team sits.
+  const medDays = median(valid);
+  const p25Days = quantile(valid, 0.25);
+  const p75Days = quantile(valid, 0.75);
+  const yrs = (d: number | null): string => (d === null ? "n/a" : `${(d / 365).toFixed(1)} yrs`);
 
   // exit tenure for relieved
   const exitTenure = rows.filter(isRelieved).map((r) => { const j = dayMs(r["date_joined"]); const l = dayMs(r["last_working_day"]); return j !== null && l !== null ? daysBetween(l, j) : null; });
@@ -167,6 +174,7 @@ function tenureSection(rows: Row[], refMs: number | null): DomainMetrics {
 
   const kpis: MetricKPI[] = [
     { label: "Avg Tenure (active)", value: avgYrs === null ? "n/a" : `${avgYrs.toFixed(1)} yrs` },
+    { label: "Median Tenure", value: yrs(medDays), hint: medDays === null ? undefined : `IQR ${yrs(p25Days)}–${yrs(p75Days)}` },
     { label: "< 1 year", value: N.formatPct(earlyShare * 100), hint: `${valid.filter((d) => d < 365).length} people` },
     { label: "5+ years", value: N.formatPct(veteranShare * 100), hint: `${valid.filter((d) => d >= 1825).length} people` },
   ];
@@ -198,7 +206,7 @@ function tenureSection(rows: Row[], refMs: number | null): DomainMetrics {
   }
   return {
     kind: "people_tenure", label: "Tenure", hasData: valid.length > 0,
-    blurb: avgYrs === null ? "Tenure needs date-joined data." : `Average active tenure ${avgYrs.toFixed(1)} years; ${N.formatPct(earlyShare * 100)} under a year.`,
+    blurb: avgYrs === null ? "Tenure needs date-joined data." : `Average active tenure ${avgYrs.toFixed(1)} years${medDays === null ? "" : ` (median ${(medDays / 365).toFixed(1)})`}; ${N.formatPct(earlyShare * 100)} under a year.`,
     kpis, charts,
     tables: [{ title: "Tenure by department", caption: "Average tenure (years) and early-tenure share.", columns: ["Department", "Active", "Avg Tenure (yrs)", "% < 1yr"], rows: deptRows }],
     watchouts: watchouts.slice(0, 4),
