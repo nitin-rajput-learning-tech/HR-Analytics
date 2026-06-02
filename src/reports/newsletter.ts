@@ -15,6 +15,7 @@ import type { DataSource } from "../core/store/types";
 import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
 import { buildPeople } from "../core/metrics/people";
 import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
+import { joinClauses } from "../core/narrative";
 import { buildRisk } from "../core/metrics/risk";
 import { buildPayEquity } from "../core/metrics/pay_equity";
 import type { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../core/metrics/base";
@@ -48,6 +49,7 @@ export interface Mover {
 }
 
 export interface ExecBrief {
+  summary: string;
   headlineKpis: MetricKPI[];
   movers: Mover[];
   wins: string[];
@@ -208,6 +210,54 @@ function buildWins(sections: NewsletterSection[]): string[] {
   return wins;
 }
 
+// Turn a KPI delta chip ("▲ +4 vs Apr 2026") into prose ("up 4 since Apr 2026").
+function deltaToProse(delta: string | null | undefined): string | null {
+  if (!delta || delta.startsWith("no change")) return null;
+  const body = delta.replace(/^[▲▼]\s*/, "");
+  const [magPart, period] = body.split(" vs ");
+  if (!magPart) return null;
+  const dir = magPart.trim().startsWith("+") ? "up" : "down";
+  const mag = magPart.trim().replace(/^[+−-]/, "");
+  return period ? `${dir} ${mag} since ${period.trim()}` : `${dir} ${mag}`;
+}
+
+// A one-paragraph CHRO lede that synthesises the period: scale + trend + coverage,
+// then a crisp wins/risks summary. Pure prose from the already-computed pieces.
+function buildExecSummary(opts: {
+  appName: string;
+  periodLabel: string;
+  headcount?: MetricKPI;
+  domainsWithData: number;
+  domainsTotal: number;
+  winsCount: number;
+  risksCount: number;
+  topRiskDomain?: string;
+}): string {
+  const { appName, periodLabel, headcount, domainsWithData, domainsTotal, winsCount, risksCount, topRiskDomain } = opts;
+  const period = prettyPeriod(periodLabel);
+  const out: string[] = [];
+
+  if (headcount) {
+    let s = `As of ${period}, ${appName}'s workforce stands at ${headcount.value} active employees`;
+    if (headcount.hint) s += ` (${headcount.hint})`;
+    const trend = deltaToProse(headcount.delta);
+    if (trend) s += `, ${trend}`;
+    s += `, with ${domainsWithData} of ${domainsTotal} HR functions reporting.`;
+    out.push(s);
+  } else if (domainsWithData > 0) {
+    out.push(`${domainsWithData} of ${domainsTotal} HR functions are reporting for ${period}.`);
+  }
+
+  const clauses: string[] = [];
+  if (winsCount > 0) clauses.push(`${winsCount} ${winsCount === 1 ? "area is" : "areas are"} performing strongly`);
+  if (risksCount > 0) clauses.push(`${risksCount} ${risksCount === 1 ? "risk needs" : "risks need"} attention${topRiskDomain ? `, led by ${topRiskDomain}` : ""}`);
+  if (clauses.length) {
+    const joined = joinClauses(clauses);
+    out.push(joined.charAt(0).toUpperCase() + joined.slice(1) + ".");
+  }
+  return out.join(" ");
+}
+
 // Notable month-over-month movers for the exec brief — KPI cards that carry a
 // toned delta (set by the period-comparison decorators). Deteriorations lead
 // (they need attention), then improvements; capped so the brief stays tight.
@@ -283,20 +333,33 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     if (h) headlineKpis.push({ ...h, label: `${s.label} · ${h.label}` });
   }
 
+  const topRisk = actionPlan.find((a) => a.severity === "high" || a.severity === "medium");
   const risks = actionPlan
     .filter((a) => a.severity === "high" || a.severity === "medium")
     .slice(0, 3)
     .map((a) => `${a.domain}: ${a.title} — ${a.detail}`);
 
+  const wins = buildWins(sections);
+  const domainsWithData = sections.filter((s) => s.hasData).length;
+  const headcountKpi = sections[0]?.kpis.find((k) => k.label === "Active Headcount");
+
   const execBrief: ExecBrief = {
+    summary: buildExecSummary({
+      appName,
+      periodLabel,
+      headcount: headcountKpi,
+      domainsWithData,
+      domainsTotal: sections.length,
+      winsCount: wins.length,
+      risksCount: risks.length,
+      topRiskDomain: topRisk?.domain,
+    }),
     headlineKpis,
     movers: buildMovers(sections),
-    wins: buildWins(sections),
+    wins,
     risks,
     topActions: actionPlan.slice(0, 5),
   };
-
-  const domainsWithData = sections.filter((s) => s.hasData).length;
 
   return {
     appName,

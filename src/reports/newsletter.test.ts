@@ -96,6 +96,12 @@ describe("buildNewsletter", () => {
     expect(nl.execBrief.headlineKpis[0].label).toBe("People & Org · Active Headcount");
   });
 
+  it("writes a one-paragraph executive summary", () => {
+    const nl = buildNewsletter(populated(), { periodLabel: "May 2026" });
+    expect(nl.execBrief.summary).toContain("active employees");
+    expect(nl.execBrief.summary).toMatch(/HR functions reporting/);
+  });
+
   it("surfaces TA's strong offer-accept rate as a win", () => {
     const nl = buildNewsletter(populated(), {});
     expect(nl.execBrief.wins.some((w) => w.includes("Talent Acquisition") && w.includes("80"))).toBe(true);

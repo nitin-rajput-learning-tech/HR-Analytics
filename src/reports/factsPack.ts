@@ -15,6 +15,10 @@ export function buildFactsMarkdown(nl: Newsletter): string {
 
   push("## Executive Brief");
   push();
+  if (nl.execBrief.summary) {
+    push(nl.execBrief.summary);
+    push();
+  }
   if (nl.execBrief.headlineKpis.length) {
     push("**Headline metrics**");
     for (const k of nl.execBrief.headlineKpis) push(`- ${k.label}: ${k.value}${k.hint ? ` (${k.hint})` : ""}`);
