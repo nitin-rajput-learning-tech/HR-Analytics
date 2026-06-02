@@ -28,6 +28,9 @@ export function FilterBar({
   // responsive via local state; propagation is deferred. A ref holds the latest
   // filters so a concurrent facet toggle isn't stomped by a late search fire.
   const [q, setQ] = useState(filters.search ?? "");
+  // Only one filter dropdown open at a time — native <details> don't coordinate,
+  // so without this every opened chip stacks its panel over the others.
+  const [openField, setOpenField] = useState<FilterField | null>(null);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   const timer = useRef<number | undefined>(undefined);
@@ -36,6 +39,25 @@ export function FilterBar({
     window.clearTimeout(timer.current);
   }, [filters.search]);
   useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  // Close the open dropdown on an outside click or Escape (clicks inside a
+  // .filter — the summary or a checkbox — are left alone so multi-select works).
+  useEffect(() => {
+    if (!openField) return;
+    const onDown = (e: MouseEvent) => {
+      if (!(e.target as Element)?.closest?.(".filter")) setOpenField(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenField(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openField]);
+
   function onSearchInput(val: string) {
     setQ(val);
     window.clearTimeout(timer.current);
@@ -63,8 +85,13 @@ export function FilterBar({
         const opts = facetsByField[d.field] ?? [];
         if (opts.length <= 1) return null;
         return (
-          <details className="filter" key={d.field}>
-            <summary>
+          <details className="filter" key={d.field} open={openField === d.field}>
+            <summary
+              onClick={(e) => {
+                e.preventDefault();
+                setOpenField((cur) => (cur === d.field ? null : d.field));
+              }}
+            >
               {d.label}
               {sel.length ? <span className="filter-badge">{sel.length}</span> : null}
             </summary>
