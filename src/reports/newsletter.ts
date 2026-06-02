@@ -14,6 +14,8 @@
 import type { DataSource } from "../core/store/types";
 import { buildAll, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
 import { buildPeople } from "../core/metrics/people";
+import { buildRisk } from "../core/metrics/risk";
+import { buildPayEquity } from "../core/metrics/pay_equity";
 import type { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../core/metrics/base";
 import type { LeaverEvent } from "../core/metrics/cross_functional";
 
@@ -71,6 +73,8 @@ const SEVERITY_RANK: Record<MetricWatchout["severity"], number> = { high: 3, med
 // Preferred headline KPI per section (falls back to the first KPI if absent).
 const HEADLINE_PREF: Record<string, string> = {
   employee_master: "Active Headcount",
+  people_risk: "High Risk",
+  people_pay_equity: "Gender Pay Gap",
   ta_requisition: "Offer-Accept Rate",
   pms_review: "Review Completion",
   ld_enrollment: "Coverage",
@@ -218,9 +222,23 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
   const functional = buildAll(store, { activeHeadcount: opts.activeHeadcount });
   const cross = buildCrossFunctional(store, { leaverEvents: opts.leaverEvents });
 
-  // Order: People & Org, then the five functions (DOMAIN_ORDER), then cross-functional.
+  // People-page differentiators that belong in the board brief: their watch-outs
+  // (flight risk, gender pay gap) flow into the action plan + exec-brief risks
+  // because every section's watchouts are rolled up. Built from the latest
+  // snapshots; both degrade to placeholders when their inputs are absent.
+  const snap = store.getLatest("employee_master");
+  const empRows = snap?.rows ?? [];
+  const payrollRows = store.getLatest("payroll_record")?.rows ?? null;
+  const pmsRows = store.getLatest("pms_review")?.rows ?? null;
+  const risk = buildRisk({ employeeRows: empRows, asOf: snap?.asOf ?? null, payrollRows, pmsRows });
+  const payEquity = buildPayEquity({ employeeRows: empRows, payrollRows });
+
+  // Order: People & Org, attrition risk, pay equity, the functions (DOMAIN_ORDER),
+  // then the cross-functional cross-cut.
   const sections: NewsletterSection[] = [
     peopleSection(store),
+    toSection(risk),
+    toSection(payEquity),
     ...DOMAIN_ORDER.map((_, i) => toSection(functional[i])),
     toSection(cross),
   ];

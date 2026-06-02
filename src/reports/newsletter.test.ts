@@ -56,10 +56,12 @@ function populated(): MemoryStore {
 }
 
 describe("buildNewsletter", () => {
-  it("assembles 8 sections in CHRO order", () => {
+  it("assembles 10 sections in CHRO order (incl. attrition risk + pay equity)", () => {
     const nl = buildNewsletter(populated(), { appName: "Acme HR", periodLabel: "May 2026" });
     expect(nl.sections.map((s) => s.kind)).toEqual([
       "employee_master",
+      "people_risk",
+      "people_pay_equity",
       "ta_requisition",
       "pms_review",
       "ld_enrollment",
@@ -69,6 +71,24 @@ describe("buildNewsletter", () => {
       "cross_functional",
     ]);
     expect(nl.title).toBe("Acme HR — HR Newsletter");
+  });
+
+  it("surfaces a pay-equity finding in the action plan", () => {
+    const store = new MemoryStore();
+    const emp: Row[] = [];
+    const pay: Row[] = [];
+    for (let i = 0; i < 5; i++) {
+      emp.push({ employee_number: "F" + i, department: "Tech", gender: "Female", employment_status: "Working", date_joined: "2020-01-01" });
+      pay.push({ employee_number: "F" + i, gross_monthly: 80000 });
+    }
+    for (let i = 0; i < 5; i++) {
+      emp.push({ employee_number: "M" + i, department: "Tech", gender: "Male", employment_status: "Working", date_joined: "2020-01-01" });
+      pay.push({ employee_number: "M" + i, gross_monthly: 110000 });
+    }
+    store.add(snap("employee_master", "2026-05-31", emp, "May 2026"));
+    store.add(snap("payroll_record", "2026-05-31", pay));
+    const nl = buildNewsletter(store, {});
+    expect(nl.actionPlan.some((a) => a.domain === "Pay Equity" && /pay gap/i.test(a.title))).toBe(true);
   });
 
   it("leads the exec brief with People & Org active headcount", () => {
