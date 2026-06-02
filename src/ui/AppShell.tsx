@@ -10,6 +10,7 @@ import { BrandingPage } from "./pages/Branding";
 import { CommandPalette } from "./components/CommandPalette";
 import { ToastHost, toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
+import { encryptWorkspace, decryptWorkspace, isEncryptedWorkspace } from "../workspace/crypto";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
@@ -22,36 +23,86 @@ export function AppShell() {
   const page = app.page as Page;
   const setPage = app.setPage;
 
-  function onSave() {
-    const bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog);
-    const blob = new Blob([new Uint8Array(bytes)], { type: "application/gzip" });
+  // Encrypt-on-save controls.
+  const [encrypt, setEncrypt] = React.useState(false);
+  const [passphrase, setPassphrase] = React.useState("");
+  // Decrypt-on-load modal state.
+  const [encOpen, setEncOpen] = React.useState(false);
+  const [encBytes, setEncBytes] = React.useState<Uint8Array | null>(null);
+  const [loadPass, setLoadPass] = React.useState("");
+  const [encErr, setEncErr] = React.useState("");
+
+  async function onSave() {
+    if (encrypt && !passphrase.trim()) {
+      toast("Enter a passphrase to encrypt the workspace", "error");
+      return;
+    }
+    let bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog);
+    let filename = "hr-workspace.json.gz";
+    const willEncrypt = encrypt && !!passphrase.trim();
+    if (willEncrypt) {
+      try {
+        bytes = await encryptWorkspace(bytes, passphrase);
+        filename = "hr-workspace.enc.gz";
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Encryption failed", "error");
+        return;
+      }
+    }
+    const blob = new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "hr-workspace.json.gz";
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
     const emp = app.store.getLatest("employee_master")?.rows.length ?? 0;
-    app.logAudit("Saved workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${app.store.allSnapshots().length} snapshot(s)`);
-    toast("Workspace saved", "success");
+    const detail = emp ? `${emp.toLocaleString("en-IN")} employees` : `${app.store.allSnapshots().length} snapshot(s)`;
+    app.logAudit(willEncrypt ? "Saved workspace (encrypted)" : "Saved workspace", detail);
+    toast(willEncrypt ? "Workspace saved (encrypted)" : "Workspace saved", "success");
+  }
+
+  function applyWorkspaceBytes(bytes: Uint8Array) {
+    const { store, branding, savedViews, auditLog } = loadWorkspace(bytes);
+    app.setStore(store);
+    app.setBranding(branding);
+    app.setSavedViews(savedViews);
+    app.setAuditLog(auditLog);
+    const emp = store.getLatest("employee_master")?.rows.length ?? 0;
+    app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);
+    toast(emp ? `Workspace loaded — ${emp.toLocaleString("en-IN")} employees` : "Workspace loaded", "success");
   }
 
   async function onLoad(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { store, branding, savedViews, auditLog } = loadWorkspace(new Uint8Array(await file.arrayBuffer()));
-      app.setStore(store);
-      app.setBranding(branding);
-      app.setSavedViews(savedViews);
-      app.setAuditLog(auditLog);
-      const emp = store.getLatest("employee_master")?.rows.length ?? 0;
-      app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);
-      toast(emp ? `Workspace loaded — ${emp.toLocaleString("en-IN")} employees` : "Workspace loaded", "success");
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (isEncryptedWorkspace(bytes)) {
+        setEncBytes(bytes);
+        setLoadPass("");
+        setEncErr("");
+        setEncOpen(true);
+      } else {
+        applyWorkspaceBytes(bytes);
+      }
     } catch {
       toast("Couldn't read that workspace file", "error");
     }
     e.target.value = "";
+  }
+
+  async function submitDecrypt() {
+    if (!encBytes) return;
+    try {
+      const plain = await decryptWorkspace(encBytes, loadPass);
+      applyWorkspaceBytes(plain);
+      setEncOpen(false);
+      setEncBytes(null);
+      setLoadPass("");
+    } catch (err) {
+      setEncErr(err instanceof Error ? err.message : "Could not decrypt this workspace.");
+    }
   }
 
   return (
@@ -96,10 +147,24 @@ export function AppShell() {
           <button className="primary" style={{ width: "100%", marginTop: 6 }} onClick={onSave}>
             Save workspace
           </button>
+          <label className="ws-encrypt">
+            <input type="checkbox" checked={encrypt} onChange={(e) => setEncrypt(e.target.checked)} />
+            <span>🔒 Encrypt with passphrase</span>
+          </label>
+          {encrypt ? (
+            <input
+              type="password"
+              className="ws-pass"
+              placeholder="Passphrase"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              autoComplete="new-password"
+            />
+          ) : null}
           <label style={{ marginTop: 10, fontSize: ".8rem", color: "var(--muted)" }}>
             Load workspace
             <br />
-            <input type="file" accept=".gz,.json" onChange={onLoad} style={{ marginTop: 4, fontSize: ".78rem" }} />
+            <input type="file" accept=".gz,.json,.enc" onChange={onLoad} style={{ marginTop: 4, fontSize: ".78rem" }} />
           </label>
         </div>
       </nav>
@@ -114,6 +179,28 @@ export function AppShell() {
           {app.branding.footer}
         </footer>
       </main>
+      {encOpen ? (
+        <div className="cmdk-overlay no-print" onMouseDown={(e) => { if (e.target === e.currentTarget) setEncOpen(false); }}>
+          <div className="enc-modal" role="dialog" aria-modal="true" aria-label="Decrypt workspace">
+            <h3>🔒 Encrypted workspace</h3>
+            <p className="muted">This workspace is passphrase-protected. Enter the passphrase to open it.</p>
+            <input
+              type="password"
+              className="ws-pass"
+              autoFocus
+              placeholder="Passphrase"
+              value={loadPass}
+              onChange={(e) => { setLoadPass(e.target.value); setEncErr(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") submitDecrypt(); }}
+            />
+            {encErr ? <p className="enc-err">{encErr}</p> : null}
+            <div className="enc-actions">
+              <button onClick={() => { setEncOpen(false); setEncBytes(null); }}>Cancel</button>
+              <button className="primary" onClick={submitDecrypt}>Open</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <CommandPalette onSaveWorkspace={onSave} />
       <ToastHost />
     </div>
