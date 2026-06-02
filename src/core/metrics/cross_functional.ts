@@ -180,7 +180,7 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
   const scoreRows: ScoreRow[] = eligible.map((dept) => {
     let score = 0;
     for (const k of SIGNAL_KEYS) {
-      if (activeWeights[k] != null) score += ((activeWeights[k] as number) / weightTotal) * normalise(signals, k, dept, eligible);
+      if (activeWeights[k] != null) score += ((activeWeights[k] as number) / weightTotal) * signalScore(signals, k, dept);
     }
     const s = signals.get(dept) ?? {};
     return {
@@ -223,7 +223,7 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
     tables.push({
       title: "Compound risk by department",
       caption:
-        "Departments scored across attrition, training coverage and review completion. Higher = more compounded people-risk.",
+        "Each department scored 0–100 on ABSOLUTE thresholds across attrition, training coverage and review completion (independent of other departments). Higher = more compounded people-risk.",
       columns,
       rows: tableRows,
     });
@@ -306,18 +306,24 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
 // --------------------------------------------------------------------------- helpers
 
 const round1 = (x: number): number => Math.round(x * 10) / 10;
+const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
-function normalise(
+// A 12-month attrition proportion at/above this is treated as maximum risk.
+const ATTRITION_REF = 0.3;
+
+// Absolute 0..1 risk for one signal — independent of the OTHER departments, so a
+// dept's score reflects its own health rather than its rank among peers.
+// (The previous min-max scaling made every set produce a 0 and a 1 regardless
+// of absolute severity, and a dept's score shifted whenever the set of
+// departments changed — e.g. under a filter. coverage_gap and review_gap are
+// already absolute risks in [0,1]; attrition is scaled against a fixed reference.)
+function signalScore(
   signals: Map<string, Partial<Record<SignalKey, number>>>,
   key: SignalKey,
   dept: string,
-  depts: string[],
 ): number {
-  const values = depts.map((d) => signals.get(d)?.[key] ?? 0);
-  const lo = Math.min(...values);
-  const hi = Math.max(...values);
-  if (hi - lo < 1e-9) return 0;
-  return ((signals.get(dept)?.[key] ?? 0) - lo) / (hi - lo);
+  const v = signals.get(dept)?.[key] ?? 0;
+  return key === "attrition" ? clamp01(v / ATTRITION_REF) : clamp01(v);
 }
 
 function estimateReplacementCost(taRows?: Row[] | null, payrollAgg?: Row[] | null): number | null {

@@ -42,7 +42,40 @@ describe("cross_functional.compute", () => {
     }
     const kpi = Object.fromEntries(d.kpis.map((k) => [k.label, k.value]));
     expect(kpi["Compound-Risk Depts"]).toBe("1");
-    expect(d.watchouts.some((w) => w.title === "Compounding risk in Sales")).toBe(true);
+    // Absolute scoring ranks Technology highest: it is the dept actually losing
+    // people (23% attrition, the heaviest-weighted signal) plus 80% untrained —
+    // whereas min-max previously flagged Sales only because its two weak signals
+    // happened to be the per-signal maxima.
+    expect(d.watchouts.some((w) => w.title === "Compounding risk in Technology")).toBe(true);
+  });
+
+  it("scores are absolute — adding a healthy department doesn't shift another's score", () => {
+    const base: Row[] = [];
+    for (let i = 1; i <= 10; i++) base.push({ employee_number: "A" + i, department: "Alpha", employment_status: "Working" });
+    for (let i = 1; i <= 10; i++) base.push({ employee_number: "B" + i, department: "Beta", employment_status: "Working" });
+    const pms: Row[] = [];
+    for (let i = 1; i <= 10; i++) pms.push({ employee_number: "A" + i, manager_review_done: i <= 5, final_rating: 3, rating_scale: "1-5" });
+    for (let i = 1; i <= 10; i++) pms.push({ employee_number: "B" + i, manager_review_done: i <= 2, final_rating: 3, rating_scale: "1-5" });
+
+    const scoreOf = (dom: ReturnType<typeof compute>, dept: string) => {
+      const t = dom.tables.find((x) => x.title === "Compound risk by department")!;
+      const row = t.rows.find((r) => r[0] === dept)!;
+      return row[row.length - 1];
+    };
+
+    const before = scoreOf(compute({ employeeRows: base, pmsRows: pms, asOf: "2026-05-31" }), "Alpha");
+
+    // Add a fully-healthy Gamma dept (100% reviews) — would change min-max ranges.
+    const base2 = [...base];
+    const pms2 = [...pms];
+    for (let i = 1; i <= 10; i++) {
+      base2.push({ employee_number: "G" + i, department: "Gamma", employment_status: "Working" });
+      pms2.push({ employee_number: "G" + i, manager_review_done: true, final_rating: 3, rating_scale: "1-5" });
+    }
+    const after = scoreOf(compute({ employeeRows: base2, pmsRows: pms2, asOf: "2026-05-31" }), "Alpha");
+
+    expect(after).toBe(before); // absolute scoring → unchanged by peers (min-max would have shifted it)
+    expect(before).toBe(50); // review rate 50% → review-gap 0.5 → only signal present → score 50
   });
 
   it("detects regrettable high-performer exits", () => {
