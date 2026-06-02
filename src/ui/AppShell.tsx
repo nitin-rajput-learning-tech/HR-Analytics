@@ -107,7 +107,8 @@ export function AppShell() {
 
   return (
     <div className="app">
-      <nav className="sidebar no-print">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <nav className="sidebar no-print" aria-label="Primary">
         <div className="brandbar">{app.branding.appName}</div>
         {app.branding.logoDataUri ? <img src={app.branding.logoDataUri} alt="" style={{ height: 30, margin: "8px 6px" }} /> : null}
         <div className="nav">
@@ -116,6 +117,7 @@ export function AppShell() {
               key={p}
               className={p === page ? "active" : ""}
               href="#"
+              aria-current={p === page ? "page" : undefined}
               onClick={(ev) => {
                 ev.preventDefault();
                 setPage(p);
@@ -168,7 +170,7 @@ export function AppShell() {
           </label>
         </div>
       </nav>
-      <main className="content">
+      <main className="content" id="main-content" tabIndex={-1}>
         {page === "People Analytics" && <People />}
         {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}
