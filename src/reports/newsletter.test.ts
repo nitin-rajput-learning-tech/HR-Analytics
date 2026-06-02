@@ -111,6 +111,21 @@ describe("buildNewsletter", () => {
     }
   });
 
+  it("surfaces month-over-month movers in the exec brief", () => {
+    const store = new MemoryStore();
+    store.add(
+      snap("employee_master", "2026-05-31", Array.from({ length: 50 }, (_, i) => ({ employee_number: "E" + i, department: "Tech", employment_status: "Working" })), "May 2026"),
+    );
+    const ta = (accepted: number): Row[] => [
+      { requisition_id: "R1", department: "Tech", status: "Filled", open_date: "2026-04-01", applications: 100, shortlisted: 40, interviewed: 12, offers_made: 10, offers_accepted: accepted, joined: accepted, primary_source: "Referral" },
+    ];
+    store.add(snap("ta_requisition", "2026-04-30", ta(6), "2026-04")); // 60%
+    store.add(snap("ta_requisition", "2026-05-31", ta(9), "2026-05")); // 90% → +30pp, good
+    const nl = buildNewsletter(store, {});
+    expect(nl.execBrief.movers.length).toBeGreaterThan(0);
+    expect(nl.execBrief.movers.some((m) => /Talent Acquisition/.test(m.text) && m.tone === "good")).toBe(true);
+  });
+
   it("degrades to all-placeholder with an empty store", () => {
     const nl = buildNewsletter(new MemoryStore(), { appName: "X" });
     expect(nl.domainsWithData).toBe(0);

@@ -121,6 +121,18 @@ export function Reports() {
               )}
             </div>
           </div>
+          {nl.execBrief.movers.length > 0 ? (
+            <div className="brief-movers">
+              <h3>Notable movers — month over month</h3>
+              <ul>
+                {nl.execBrief.movers.map((m, i) => (
+                  <li key={i} className={`mover ${m.tone}`}>
+                    {m.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
 
         {nl.sections.map((s, i) => (

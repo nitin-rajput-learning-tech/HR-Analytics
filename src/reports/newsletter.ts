@@ -12,8 +12,9 @@
 // assembly here makes the whole newsletter testable without a DOM.
 
 import type { DataSource } from "../core/store/types";
-import { buildAll, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
+import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
 import { buildPeople } from "../core/metrics/people";
+import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
 import { buildRisk } from "../core/metrics/risk";
 import { buildPayEquity } from "../core/metrics/pay_equity";
 import type { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../core/metrics/base";
@@ -41,8 +42,14 @@ export interface NewsletterSection {
   watchouts: MetricWatchout[];
 }
 
+export interface Mover {
+  text: string;
+  tone: "good" | "bad";
+}
+
 export interface ExecBrief {
   headlineKpis: MetricKPI[];
+  movers: Mover[];
   wins: string[];
   risks: string[];
   topActions: ActionItem[];
@@ -130,7 +137,13 @@ function peopleSection(store: DataSource): NewsletterSection {
   }
   // Pull the rich People analytics and curate a detailed-but-tight summary.
   const people = buildPeople(snap.rows, snap.asOf);
-  const byKind: Record<string, DomainMetrics> = Object.fromEntries(people.map((s) => [s.metrics.kind, s.metrics]));
+  // Month-over-month deltas vs the prior employee snapshot (same pattern as the
+  // People page), so headcount/attrition movement surfaces in the brief.
+  const empSnaps = store.listByKind("employee_master");
+  const priorSnap = empSnaps.length >= 2 ? empSnaps[empSnaps.length - 2] : null;
+  const priorPeople = priorSnap ? buildPeople(priorSnap.rows, priorSnap.asOf) : null;
+  const decorated = decoratePeopleDeltas(people, priorPeople, priorSnap ? prettyPeriod(priorSnap.periodLabel ?? priorSnap.asOf) : "");
+  const byKind: Record<string, DomainMetrics> = Object.fromEntries(decorated.map((s) => [s.metrics.kind, s.metrics]));
   const ov = byKind["people_overview"];
   const ten = byKind["people_tenure"];
   const div = byKind["people_diversity"];
@@ -195,6 +208,24 @@ function buildWins(sections: NewsletterSection[]): string[] {
   return wins;
 }
 
+// Notable month-over-month movers for the exec brief — KPI cards that carry a
+// toned delta (set by the period-comparison decorators). Deteriorations lead
+// (they need attention), then improvements; capped so the brief stays tight.
+function buildMovers(sections: NewsletterSection[]): Mover[] {
+  const movers: Mover[] = [];
+  for (const s of sections) {
+    if (!s.hasData) continue;
+    for (const k of s.kpis) {
+      if (!k.delta || !k.deltaTone || k.deltaTone === "neutral") continue;
+      if (k.delta.startsWith("no change")) continue;
+      movers.push({ text: `${s.label} — ${k.label} ${k.value} · ${k.delta}`, tone: k.deltaTone });
+    }
+  }
+  const bad = movers.filter((m) => m.tone === "bad");
+  const good = movers.filter((m) => m.tone === "good");
+  return [...bad, ...good].slice(0, 6);
+}
+
 function buildActionPlan(sections: NewsletterSection[]): ActionItem[] {
   const items: Omit<ActionItem, "priority">[] = [];
   sections.forEach((s) => {
@@ -219,7 +250,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
   const periodLabel = opts.periodLabel ?? store.getLatest("employee_master")?.periodLabel ?? "Latest period";
   const generatedAtLabel = opts.generatedAtLabel ?? periodLabel;
 
-  const functional = buildAll(store, { activeHeadcount: opts.activeHeadcount });
+  const functional = DOMAIN_ORDER.map((k) => buildDomainCompared(store, k, { activeHeadcount: opts.activeHeadcount }));
   const cross = buildCrossFunctional(store, { leaverEvents: opts.leaverEvents });
 
   // People-page differentiators that belong in the board brief: their watch-outs
@@ -259,6 +290,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
 
   const execBrief: ExecBrief = {
     headlineKpis,
+    movers: buildMovers(sections),
     wins: buildWins(sections),
     risks,
     topActions: actionPlan.slice(0, 5),

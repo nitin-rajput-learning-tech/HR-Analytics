@@ -30,6 +30,11 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     for (const r of nl.execBrief.risks) push(`- ${r}`);
     push();
   }
+  if (nl.execBrief.movers.length) {
+    push("**Notable movers (month over month)**");
+    for (const m of nl.execBrief.movers) push(`- ${m.text}`);
+    push();
+  }
 
   for (const s of nl.sections) {
     push(`## ${s.label}`);
