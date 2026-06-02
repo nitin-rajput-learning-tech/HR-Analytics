@@ -108,6 +108,25 @@ export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoS
     };
   });
   out.push({ kind: "payroll_aggregate", asOf, periodLabel: month, rows: payAgg });
+
+  // --- Payroll record (per-employee): base-by-dept × tenure, with a deliberate
+  // ~10% gender factor so the Pay Equity module has a realistic gap to surface
+  // (demo only — illustrative, not a claim about any real organisation).
+  const deptBase = new Map<string, number>();
+  for (const d of depts) deptBase.set(d, int(60000, 150000));
+  const payRec: Row[] = active.map((e) => {
+    const base = deptBase.get(str(e["department"]) || "Unspecified") ?? 90000;
+    const g = str(e["gender"]).toLowerCase();
+    const genderFactor = g === "female" ? 0.88 + rnd() * 0.06 : g === "male" ? 0.99 + rnd() * 0.06 : 0.95 + rnd() * 0.06;
+    const gross = Math.round((base * genderFactor * (0.9 + rnd() * 0.35)) / 1000) * 1000;
+    return {
+      employee_number: str(e["employee_number"]), pay_month: month, ctc_annual: gross * 12, gross_monthly: gross,
+      fixed_pay: Math.round(gross * 0.85), variable_pay_paid: Math.round(gross * 0.15), overtime_hours: chance(0.15) ? int(2, 20) : 0,
+      overtime_amount: 0, total_deductions: Math.round(gross * 0.15), net_pay: Math.round(gross * 0.85),
+      payroll_status: chance(0.98) ? "Paid" : pick(["Held", "Error"]), off_cycle: chance(0.05) ? "Y" : "N", last_revision_date: "",
+    };
+  });
+  out.push({ kind: "payroll_record", asOf, periodLabel: month, rows: payRec });
   out.push({
     kind: "payroll_statutory", asOf, periodLabel: month,
     rows: [

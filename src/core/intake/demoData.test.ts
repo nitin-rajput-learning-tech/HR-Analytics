@@ -29,8 +29,15 @@ describe("generateFunctionalDemo", () => {
 
   it("produces all functional domains", () => {
     expect(snaps.map((s) => s.kind).sort()).toEqual(
-      ["admin_asset", "admin_contract", "admin_lifecycle", "ld_enrollment", "ld_program", "payroll_aggregate", "payroll_statutory", "pms_review", "ta_requisition"].sort(),
+      ["admin_asset", "admin_contract", "admin_lifecycle", "ld_enrollment", "ld_program", "payroll_aggregate", "payroll_record", "payroll_statutory", "pms_review", "ta_requisition"].sort(),
     );
+  });
+
+  it("keys per-employee payroll to real active employees with a gross", () => {
+    const pay = byKind["payroll_record"];
+    const activeCount = rows.filter((r) => r.employment_status === "Working").length;
+    expect(pay.rows).toHaveLength(activeCount);
+    expect(pay.rows.every((r) => empNumbers.has(r.employee_number) && Number(r.gross_monthly) > 0)).toBe(true);
   });
 
   it("keys PMS to real active employee numbers", () => {

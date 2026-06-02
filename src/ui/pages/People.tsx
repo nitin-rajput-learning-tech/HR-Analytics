@@ -9,6 +9,7 @@ import { decoratePeopleDeltas } from "../../core/metrics/compare";
 import { rankWatchouts } from "../../core/metrics/base";
 import { buildMovement } from "../../core/metrics/movement";
 import { buildRisk } from "../../core/metrics/risk";
+import { buildPayEquity } from "../../core/metrics/pay_equity";
 import { filterRows, rowsToCsv } from "../../core/filters";
 
 // Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
@@ -51,7 +52,13 @@ export function People() {
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
     const risk = buildRisk({ employeeRows: filtered, asOf: snap.asOf, payrollRows: enrich.payrollRows, pmsRows: enrich.pmsRows });
-    return [...people, { key: "movement", label: movement.label, metrics: movement }, { key: "risk", label: risk.label, metrics: risk }];
+    const payEquity = buildPayEquity({ employeeRows: filtered, payrollRows: enrich.payrollRows });
+    return [
+      ...people,
+      { key: "movement", label: movement.label, metrics: movement },
+      { key: "risk", label: risk.label, metrics: risk },
+      { key: "pay_equity", label: payEquity.label, metrics: payEquity },
+    ];
   }, [filtered, empSnaps, filters, snap, enrich]);
 
   // Roll every section's watch-outs up into a single cross-tab summary banner.
