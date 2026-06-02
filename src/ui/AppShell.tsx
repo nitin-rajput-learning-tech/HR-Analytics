@@ -67,6 +67,7 @@ export function AppShell() {
     app.setBranding(branding);
     app.setSavedViews(savedViews);
     app.setAuditLog(auditLog);
+    app.markLive(); // a loaded workspace is the user's own data — persist it
     const emp = store.getLatest("employee_master")?.rows.length ?? 0;
     app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);
     toast(emp ? `Workspace loaded — ${emp.toLocaleString("en-IN")} employees` : "Workspace loaded", "success");
@@ -168,19 +169,36 @@ export function AppShell() {
             <input type="file" accept=".gz,.json,.enc" onChange={onLoad} style={{ marginTop: 4, fontSize: ".78rem" }} />
           </label>
           <div className="ws-autosave">
-            ↻ Auto-saved in this browser ·{" "}
-            <button
-              className="link-btn"
-              onClick={() => {
-                if (window.confirm("Clear the auto-saved session in this browser? Save/export a workspace first if you want a backup.")) app.clearSession();
-              }}
-            >
-              Clear
-            </button>
+            {app.mode === "live" ? (
+              <>
+                ↻ Saved on this device ·{" "}
+                <button
+                  className="link-btn"
+                  onClick={() => {
+                    if (window.confirm("Clear your data from this device and return to the demo? Save or export a workspace first if you want a backup — this cannot be undone.")) app.clearData();
+                  }}
+                >
+                  Clear my data
+                </button>
+              </>
+            ) : (
+              <>🔬 Demo data — upload your own in Data Intake to begin.</>
+            )}
           </div>
         </div>
       </nav>
       <main className="content" id="main-content" tabIndex={-1}>
+        {app.ready && app.mode === "demo" ? (
+          <div className="demo-banner no-print" role="status">
+            <span>
+              🔬 <strong>Demo mode</strong> — you're exploring a sample organisation. Nothing here is saved. Upload your
+              own data to begin; it stays on this device and survives refreshes.
+            </span>
+            <button className="primary" onClick={() => setPage("Data Intake")}>
+              Upload your data →
+            </button>
+          </div>
+        ) : null}
         {page === "People Analytics" && <People />}
         {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}

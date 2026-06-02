@@ -4,8 +4,10 @@ import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/bran
 import { toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 import { persistWorkspace, loadPersisted, clearPersisted } from "../workspace/autosave";
+import { demoWorkspaceBytes } from "../demo/demo";
 import type { Filters } from "../core/filters";
 import type { SavedView, AuditEntry } from "../workspace/workspace";
+import type { Snapshot } from "../core/store/types";
 
 interface AppState {
   store: MemoryStore;
@@ -32,8 +34,14 @@ interface AppState {
   auditLog: AuditEntry[];
   setAuditLog(l: AuditEntry[]): void;
   logAudit(action: string, detail?: string): void;
-  // The session auto-saves to IndexedDB (survives refresh); clear it to reset.
-  clearSession(): void;
+  // Demo vs live. The tool ships in "demo" mode — a sample workspace that is
+  // never persisted. The first real upload/load switches to "live" mode, whose
+  // data auto-saves to IndexedDB (survives refresh) and stays on this device.
+  mode: "demo" | "live";
+  ready: boolean; // false until the initial demo/live decision is made
+  commitSnapshot(snap: Snapshot): void; // add one dataset; exits demo on first add
+  markLive(): void; // a full workspace load is the user's own data → live
+  clearData(): void; // wipe the saved data and return to demo mode
 }
 
 const AUDIT_CAP = 250;
@@ -56,6 +64,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [peopleFilters, setPeopleFilters] = useState<Filters>({});
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [mode, setMode] = useState<"demo" | "live">("demo");
+  const [ready, setReady] = useState(false);
 
   const logAudit = useCallback((action: string, detail?: string) => {
     setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
@@ -100,36 +110,61 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     toast("View deleted");
   }, []);
 
-  // --- Session persistence (survive browser refresh) -----------------------
+  // --- Demo mode + session persistence -------------------------------------
+  // The tool ships populated (demo mode); the user's own data, once uploaded,
+  // auto-saves to IndexedDB and survives refresh. Demo data is never persisted,
+  // so the presence of a saved workspace is exactly "live mode" — no extra flag.
   const hydrated = useRef(false);
 
-  // Restore the last session from IndexedDB on first mount.
+  // Replace the whole workspace from gzipped bytes (demo, restore, file load).
+  const applyBytes = useCallback(
+    (bytes: Uint8Array) => {
+      const r = loadWorkspace(bytes);
+      setStore(r.store);
+      setBranding(r.branding);
+      setSavedViews(r.savedViews);
+      setAuditLog(r.auditLog);
+    },
+    [setStore, setBranding],
+  );
+
+  const loadDemo = useCallback(() => {
+    try {
+      applyBytes(demoWorkspaceBytes());
+    } catch {
+      setStore(new MemoryStore()); // demo bytes unavailable (e.g. test runner)
+    }
+    setMode("demo");
+  }, [applyBytes, setStore]);
+
+  // On first mount: restore the user's saved workspace if one exists (live),
+  // otherwise show the bundled demo.
   useEffect(() => {
     let cancelled = false;
     loadPersisted().then((bytes) => {
       if (cancelled) return;
       if (bytes) {
         try {
-          const r = loadWorkspace(bytes);
-          setStore(r.store);
-          setBranding(r.branding);
-          setSavedViews(r.savedViews);
-          setAuditLog(r.auditLog);
+          applyBytes(bytes);
+          setMode("live");
         } catch {
-          /* corrupt persisted session — start fresh */
+          loadDemo(); // corrupt saved data — fall back to demo
         }
+      } else {
+        loadDemo();
       }
       hydrated.current = true;
+      setReady(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [setStore, setBranding]);
+  }, [applyBytes, loadDemo]);
 
-  // Auto-save to IndexedDB on change (debounced). Only after hydration, so an
-  // empty initial render never overwrites a saved session.
+  // Auto-save to IndexedDB on change (debounced). Skipped before hydration and
+  // in demo mode, so demo data never becomes — or overwrites — a saved session.
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!hydrated.current || mode === "demo") return;
     const id = window.setTimeout(() => {
       try {
         void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog));
@@ -138,21 +173,41 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       }
     }, 800);
     return () => window.clearTimeout(id);
-  }, [store, version, branding, savedViews, auditLog]);
+  }, [store, version, branding, savedViews, auditLog, mode]);
 
-  const clearSession = useCallback(() => {
+  // Add one dataset snapshot. The first add while in demo mode swaps the demo
+  // showroom for a clean live workspace holding just the user's own data.
+  const commitSnapshot = useCallback(
+    (snap: Snapshot) => {
+      if (mode === "demo") {
+        const fresh = new MemoryStore();
+        fresh.add(snap);
+        setStore(fresh);
+        setBranding(DEFAULT_BRANDING);
+        setSavedViews([]);
+        setAuditLog([]);
+        setMode("live");
+      } else {
+        store.add(snap);
+        bump();
+      }
+    },
+    [mode, store, setStore, setBranding, bump],
+  );
+
+  // A full workspace load (from a file) is the user's own data → live mode.
+  const markLive = useCallback(() => setMode("live"), []);
+
+  const clearData = useCallback(() => {
     void clearPersisted();
-    setStore(new MemoryStore());
-    setBranding(DEFAULT_BRANDING);
-    setSavedViews([]);
-    setAuditLog([]);
+    loadDemo();
     setPeopleFilters({});
-    toast("Saved session cleared");
-  }, [setStore, setBranding]);
+    toast("Your data was cleared — showing demo data");
+  }, [loadDemo]);
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, clearSession }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData }}
     >
       {children}
     </Ctx.Provider>

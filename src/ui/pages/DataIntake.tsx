@@ -35,7 +35,7 @@ function fmtTs(ts: string): string {
 }
 
 export function DataIntake() {
-  const { store, bump, version, auditLog, logAudit } = useApp();
+  const { store, bump, version, auditLog, logAudit, mode, commitSnapshot } = useApp();
   const [kind, setKind] = useState<string>("employee_master");
   const [msg, setMsg] = useState<string>("");
   const [ok, setOk] = useState<boolean | null>(null);
@@ -77,7 +77,8 @@ export function DataIntake() {
   // Commit the previewed snapshot to the store.
   function confirmImport() {
     if (!preview || preview.status !== "imported" || !preview.asOf) return;
-    store.add({
+    const wasDemo = mode === "demo";
+    commitSnapshot({
       id: `${preview.kind}:${preview.asOf}`,
       kind: preview.kind,
       asOf: preview.asOf,
@@ -86,8 +87,8 @@ export function DataIntake() {
       compatibility: preview.compatibility,
       rows: preview.rows,
     });
-    bump();
     const label = getSchema(preview.kind).label;
+    if (wasDemo) logAudit("Exited demo — started your workspace");
     logAudit(`Published ${label}`, `${preview.rowCount} rows · as of ${preview.asOf}${preview.rowsWithIssues ? ` · ${preview.rowsWithIssues} flagged` : ""}`);
     setOk(true);
     setMsg(`Imported ${preview.rowCount.toLocaleString("en-IN")} rows into ${label} (as of ${preview.asOf}).`);
@@ -124,6 +125,12 @@ export function DataIntake() {
         Pick the domain, upload its workbook (<strong>.xlsx</strong> or <strong>.csv</strong>), review the preview, then
         import. Need the format? Download the template — it carries the exact columns, a data dictionary and a README.
       </p>
+      {mode === "demo" ? (
+        <p className="intake-demo-note">
+          🔬 You're exploring <strong>demo data</strong>. Importing your first file replaces it with your own — which is
+          then saved on this device and survives refreshes. Start with the <strong>Employee Master</strong>.
+        </p>
+      ) : null}
 
       <div className="intake-controls">
         <label>
@@ -250,19 +257,21 @@ export function DataIntake() {
         </div>
       ) : null}
 
-      <div className="demo-box">
-        <div>
-          <strong>Demo functional data</strong>
-          <p className="muted" style={{ margin: "3px 0 0", fontSize: ".84rem", maxWidth: "62ch" }}>
-            No TA / PMS / Payroll / L&amp;D / Admin files yet? Generate realistic, organisation-consistent data from your
-            loaded Employee Master — keyed to your real employee numbers and departments — to populate every dashboard,
-            Movement &amp; Forecast, and the newsletter.
-          </p>
+      {mode === "live" ? (
+        <div className="demo-box">
+          <div>
+            <strong>Generate demo functional data</strong>
+            <p className="muted" style={{ margin: "3px 0 0", fontSize: ".84rem", maxWidth: "62ch" }}>
+              No TA / PMS / Payroll / L&amp;D / Admin files yet? Generate realistic, organisation-consistent data from your
+              loaded Employee Master — keyed to your real employee numbers and departments — to populate every dashboard,
+              Movement &amp; Forecast, and the newsletter.
+            </p>
+          </div>
+          <button className="primary" onClick={generateDemo} disabled={!store.getLatest("employee_master")}>
+            Generate demo data
+          </button>
         </div>
-        <button className="primary" onClick={generateDemo} disabled={!store.getLatest("employee_master")}>
-          Generate demo data
-        </button>
-      </div>
+      ) : null}
 
       <h3 style={{ marginTop: 28 }}>Loaded data</h3>
       {loaded.length === 0 ? (
