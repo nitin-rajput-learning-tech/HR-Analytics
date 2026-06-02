@@ -10,6 +10,7 @@ import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { CommandPalette } from "./components/CommandPalette";
 import { useFocusTrap } from "./useFocusTrap";
+import { downloadBlob } from "./download";
 import { ToastHost, toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 import { encryptWorkspace, decryptWorkspace, isEncryptedWorkspace } from "../workspace/crypto";
@@ -53,13 +54,7 @@ export function AppShell() {
         return;
       }
     }
-    const blob = new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" }), filename);
     const emp = app.store.getLatest("employee_master")?.rows.length ?? 0;
     const detail = emp ? `${emp.toLocaleString("en-IN")} employees` : `${app.store.allSnapshots().length} snapshot(s)`;
     app.logAudit(willEncrypt ? "Saved workspace (encrypted)" : "Saved workspace", detail);

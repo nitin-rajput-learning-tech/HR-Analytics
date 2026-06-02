@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import Plotly from "plotly.js-basic-dist-min";
 import { toPlotly } from "../../core/charts";
+import { downloadUrl } from "../download";
 import type { ChartSpec } from "../../core/metrics/base";
 
 // Imperative Plotly wrapper. The figure is derived from props during render
@@ -52,12 +53,8 @@ export function Chart({
 
   function downloadPng() {
     if (!ref.current) return;
-    void Plotly.toImage(ref.current, { format: "png", scale: 2 }).then((url) => {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = (spec.title || "chart").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
-      a.click();
-    });
+    const name = (spec.title || "chart").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
+    void Plotly.toImage(ref.current, { format: "png", scale: 2 }).then((url) => downloadUrl(url, name));
   }
 
   return (

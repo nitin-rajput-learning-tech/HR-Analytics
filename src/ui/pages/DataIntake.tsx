@@ -6,6 +6,7 @@ import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth } from "../../core/intake/demoData";
 import { issuesToCsv } from "../../core/ingest/validate";
 import type { SnapshotCandidate } from "../../core/ingest/types";
+import { downloadBlob } from "../download";
 import { useApp } from "../state";
 
 // Team order, first-seen, for grouping the picker.
@@ -21,7 +22,10 @@ function downloadTemplate(schema: DatasetSchema) {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa.data), "Data");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa.dictionary), "Data Dictionary");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa.readme), "README");
-  XLSX.writeFile(wb, `${schema.kind}_template.xlsx`);
+  // Build the bytes and route through the shared downloader (XLSX.writeFile has
+  // the same detached-anchor naming pitfall as our other downloads).
+  const bytes = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `${schema.kind}_template.xlsx`);
 }
 
 // Compact local time for the activity log (falls back to the raw ISO string).
@@ -92,13 +96,7 @@ export function DataIntake() {
 
   function downloadIssues() {
     if (!preview || !preview.issues.length) return;
-    const blob = new Blob([issuesToCsv(preview.issues)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${preview.kind}-import-issues.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([issuesToCsv(preview.issues)], { type: "text/csv;charset=utf-8" }), `${preview.kind}-import-issues.csv`);
   }
 
   function generateDemo() {

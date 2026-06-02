@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Chart } from "./Chart";
 import { tableToCsv } from "../../core/filters";
+import { downloadBlob } from "../download";
 import type { DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../../core/metrics/base";
 
 export function KpiCard({ kpi }: { kpi: MetricKPI }) {
@@ -34,13 +35,8 @@ export function DataTable({ table }: { table: MetricTable }) {
     setSort((s) => (s && s.col === col ? (s.dir === 1 ? { col, dir: -1 } : null) : { col, dir: 1 }));
 
   function downloadCsv() {
-    const blob = new Blob([tableToCsv(table.columns, rows)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = (table.title || "table").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    const name = (table.title || "table").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".csv";
+    downloadBlob(new Blob([tableToCsv(table.columns, rows)], { type: "text/csv;charset=utf-8" }), name);
   }
 
   return (

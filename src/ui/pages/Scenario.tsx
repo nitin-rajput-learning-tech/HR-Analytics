@@ -3,6 +3,7 @@ import { useApp } from "../state";
 import * as N from "../../core/narrative";
 import { activeByDept, costByDeptFromAggregate, computeScenario, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
 import { tableToCsv } from "../../core/filters";
+import { downloadBlob } from "../download";
 
 function describeOp(o: ScenarioOp): string {
   if (o.kind === "hire") return `Hire ${o.count} → ${o.dept}`;
@@ -73,13 +74,7 @@ export function Scenario() {
     );
     const depts = tableToCsv(["Department", "Baseline", "Scenario", "Delta"], result.depts.map((d) => [d.dept, d.base, d.scenario, d.delta]));
     const csv = `Scenario: ${opsLine}\n\n${summary}\n\n${depts}\n`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "scenario-plan.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "scenario-plan.csv");
   }
 
   const costBasisNote =

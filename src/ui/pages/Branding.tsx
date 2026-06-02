@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { useApp } from "../state";
 import { DEFAULT_BRANDING, serializeTheme, parseTheme, type Branding } from "../../branding/branding";
+import { downloadBlob } from "../download";
 
 const PRESETS: { name: string; primary: string; accent: string }[] = [
   { name: "Indigo", primary: "#1f2937", accent: "#2563eb" },
@@ -26,13 +27,7 @@ export function BrandingPage() {
     reader.readAsDataURL(file);
   }
   function exportTheme() {
-    const blob = new Blob([serializeTheme(branding)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "brand-theme.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([serializeTheme(branding)], { type: "application/json" }), "brand-theme.json");
   }
   function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

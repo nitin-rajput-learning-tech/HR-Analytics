@@ -11,6 +11,7 @@ import { buildMovement } from "../../core/metrics/movement";
 import { buildRisk } from "../../core/metrics/risk";
 import { buildPayEquity } from "../../core/metrics/pay_equity";
 import { filterRows, rowsToCsv } from "../../core/filters";
+import { downloadBlob } from "../download";
 
 // Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
 // the raw period label (or a generic fallback) so delta chips read naturally.
@@ -83,13 +84,7 @@ export function People() {
   }
 
   function exportCsv() {
-    const blob = new Blob([rowsToCsv(filtered, EMPLOYEE_FIELDS)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "employees-filtered.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([rowsToCsv(filtered, EMPLOYEE_FIELDS)], { type: "text/csv;charset=utf-8" }), "employees-filtered.csv");
   }
 
   const idx = Math.min(tab, Math.max(0, sections.length - 1));

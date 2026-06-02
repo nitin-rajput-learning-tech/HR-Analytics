@@ -5,6 +5,7 @@ import { overviewKpis } from "../../core/metrics/overview";
 import { buildNewsletter } from "../../reports/newsletter";
 import { buildFactsMarkdown } from "../../reports/factsPack";
 import { leaverEvents } from "../../core/metrics/movement";
+import { downloadBlob } from "../download";
 
 export function Reports() {
   const { store, branding, version } = useApp();
@@ -32,13 +33,7 @@ export function Reports() {
   );
 
   function downloadFacts() {
-    const blob = new Blob([buildFactsMarkdown(nl)], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "hr-newsletter-facts.md";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([buildFactsMarkdown(nl)], { type: "text/markdown" }), "hr-newsletter-facts.md");
   }
 
   return (

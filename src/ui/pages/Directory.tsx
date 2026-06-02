@@ -5,6 +5,7 @@ import { FilterBar } from "../components/FilterBar";
 import { ViewsMenu } from "../components/ViewsMenu";
 import { directorySection, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
+import { downloadBlob } from "../download";
 
 export function Directory() {
   const { store, branding, version } = useApp();
@@ -26,13 +27,7 @@ export function Directory() {
   }
 
   function exportCsv() {
-    const blob = new Blob([rowsToCsv(filtered, EMPLOYEE_FIELDS)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "employees-filtered.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([rowsToCsv(filtered, EMPLOYEE_FIELDS)], { type: "text/csv;charset=utf-8" }), "employees-filtered.csv");
   }
 
   return (
