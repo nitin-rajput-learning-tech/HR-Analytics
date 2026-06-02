@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateFunctionalDemo, generatePriorEmployeeMonth } from "./demoData";
+import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "./demoData";
 import type { Row } from "../ingest/types";
 
 function roster(): Row[] {
@@ -67,6 +67,30 @@ describe("generateFunctionalDemo", () => {
 
   it("returns nothing without active staff", () => {
     expect(generateFunctionalDemo([], "2026-05-05")).toHaveLength(0);
+  });
+});
+
+describe("generatePriorFunctionalMonth", () => {
+  const rows = roster();
+  const cur = Object.fromEntries(generateFunctionalDemo(rows, "2026-05-05").map((s) => [s.kind, s]));
+  const prior = Object.fromEntries(generatePriorFunctionalMonth(rows, "2026-05-05").map((s) => [s.kind, s]));
+
+  it("is the month before and only the monthly-cadence kinds", () => {
+    const snaps = generatePriorFunctionalMonth(rows, "2026-05-05");
+    expect(snaps.length).toBeGreaterThan(0);
+    expect(snaps.every((s) => s.asOf === "2026-04-05")).toBe(true);
+    expect(snaps.some((s) => s.kind === "pms_review" || s.kind === "engagement_survey")).toBe(false);
+  });
+
+  it("clones the population (same TA requisition count, so deltas stay sane)", () => {
+    expect(prior["ta_requisition"].rows.length).toBe(cur["ta_requisition"].rows.length);
+  });
+
+  it("derives a modestly-worse prior month so current shows improvement", () => {
+    const errs = (s: { rows: Row[] }) => s.rows.filter((r) => String(r.payroll_status) === "Error").length;
+    expect(errs(prior["payroll_record"])).toBeGreaterThan(errs(cur["payroll_record"]));
+    const done = (s: { rows: Row[] }) => s.rows.filter((r) => String(r.status) === "Completed").length;
+    expect(done(prior["ld_enrollment"])).toBeLessThan(done(cur["ld_enrollment"]));
   });
 });
 

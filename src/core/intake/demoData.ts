@@ -45,8 +45,8 @@ const MODES = ["Classroom", "Virtual", "Self-paced"];
 const SOURCES = ["Referral", "Agency", "Portal", "Internal", "Direct"];
 const CONTRACT_CATS = ["Facilities", "IT", "Insurance", "License", "Other"];
 
-export function generateFunctionalDemo(employeeRows: Row[], asOf: string, seedValue = 20260505): DemoSnapshot[] {
-  seed = seedValue;
+export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoSnapshot[] {
+  seed = 20260505;
   const active = employeeRows.filter(isWorking);
   const relieved = employeeRows.filter((r) => str(r["employment_status"]) === "Relieved");
   if (!active.length) return [];
@@ -213,11 +213,65 @@ const MONTHLY_DEMO_KINDS = new Set([
   "ld_program", "ld_enrollment", "admin_asset", "admin_contract", "admin_lifecycle",
 ]);
 
-// Synthesise a prior MONTH of the monthly functional domains so the dashboards
-// show real month-over-month deltas. A different seed makes the prior month
-// genuinely differ from the current one (movement, not a flat copy).
+// Targeted, deterministic nudges that make the PRIOR month modestly worse than
+// the current one, so dashboards show believable, mostly-improving movement
+// rather than a flat copy. Operates on cloned rows (see below).
+function nudgePriorRows(kind: string, rows: Row[]): void {
+  let n = 0;
+  if (kind === "ta_requisition") {
+    // A few fewer offers accepted/joined last month → offer-accept + joined improve.
+    for (const r of rows) {
+      if (n >= 3) break;
+      const oa = Number(r["offers_accepted"] ?? 0);
+      if (oa > 0) {
+        r["offers_accepted"] = oa - 1;
+        const j = Number(r["joined"] ?? 0);
+        if (j > 0) r["joined"] = j - 1;
+        n++;
+      }
+    }
+  } else if (kind === "payroll_record") {
+    // Two more payroll errors last month → current error count drops.
+    for (const r of rows) {
+      if (n >= 2) break;
+      if (str(r["payroll_status"]) === "Paid") { r["payroll_status"] = "Error"; n++; }
+    }
+  } else if (kind === "payroll_statutory") {
+    // One more late statutory filing last month → on-time rate improves.
+    for (const r of rows) {
+      if (str(r["status"]) === "Paid") { r["status"] = "Late"; break; }
+    }
+  } else if (kind === "ld_enrollment") {
+    // A few fewer completions last month → completion rate improves.
+    for (const r of rows) {
+      if (n >= 6) break;
+      if (str(r["status"]) === "Completed") { r["status"] = "In-progress"; r["completion_date"] = ""; n++; }
+    }
+  } else if (kind === "admin_lifecycle") {
+    // A couple of incomplete onboarding checklists last month → current improves.
+    for (const r of rows) {
+      if (n >= 2) break;
+      if (str(r["checklist_complete"]) === "Y") { r["checklist_complete"] = "N"; n++; }
+    }
+  }
+}
+
+// Derive a believable prior MONTH for the monthly functional domains by CLONING
+// the current month and shifting its as-of date back one month — so requisition
+// ages, headcounts and statuses stay consistent and only drift a little (the
+// targeted nudges above). This replaces an earlier independent-seed approach
+// that produced unrealistic swings (e.g. +50 days of requisition aging); with a
+// clone, open reqs keep their open_date, so avg aging is naturally ~30 days
+// lower last month.
 export function generatePriorFunctionalMonth(employeeRows: Row[], asOf: string): DemoSnapshot[] {
-  return generateFunctionalDemo(employeeRows, shiftMonth(asOf, -1), 20260405).filter((s) => MONTHLY_DEMO_KINDS.has(s.kind));
+  const prior = shiftMonth(asOf, -1);
+  const priorMonth = prior.slice(0, 7);
+  const current = generateFunctionalDemo(employeeRows, asOf).filter((s) => MONTHLY_DEMO_KINDS.has(s.kind));
+  return current.map((snap) => {
+    const rows = snap.rows.map((r) => ({ ...r }));
+    nudgePriorRows(snap.kind, rows);
+    return { kind: snap.kind, asOf: prior, periodLabel: priorMonth, rows };
+  });
 }
 
 // Synthesise a prior employee month so Movement & Forecast have something to diff.
