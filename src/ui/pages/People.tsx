@@ -8,6 +8,7 @@ import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
 import { decoratePeopleDeltas } from "../../core/metrics/compare";
 import { rankWatchouts } from "../../core/metrics/base";
 import { buildMovement } from "../../core/metrics/movement";
+import { buildRisk } from "../../core/metrics/risk";
 import { filterRows, rowsToCsv } from "../../core/filters";
 
 // Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
@@ -31,6 +32,12 @@ export function People() {
   const empSnaps = useMemo(() => store.listByKind("employee_master"), [store, version]);
   const allRows = snap?.rows ?? [];
   const filtered = useMemo(() => filterRows(allRows, filters), [allRows, filters]);
+  // Optional domains that sharpen the attrition-risk signals when loaded.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enrich = useMemo(
+    () => ({ payrollRows: store.getLatest("payroll_record")?.rows ?? null, pmsRows: store.getLatest("pms_review")?.rows ?? null }),
+    [store, version],
+  );
   const sections = useMemo(() => {
     if (!snap) return [];
     const current = buildPeople(filtered, snap.asOf);
@@ -43,8 +50,9 @@ export function People() {
     const people = decoratePeopleDeltas(current, priorPeople, priorLabel);
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
-    return [...people, { key: "movement", label: movement.label, metrics: movement }];
-  }, [filtered, empSnaps, filters, snap]);
+    const risk = buildRisk({ employeeRows: filtered, asOf: snap.asOf, payrollRows: enrich.payrollRows, pmsRows: enrich.pmsRows });
+    return [...people, { key: "movement", label: movement.label, metrics: movement }, { key: "risk", label: risk.label, metrics: risk }];
+  }, [filtered, empSnaps, filters, snap, enrich]);
 
   // Roll every section's watch-outs up into a single cross-tab summary banner.
   const allWatchouts = useMemo(() => sections.flatMap((s) => s.metrics.watchouts), [sections]);
