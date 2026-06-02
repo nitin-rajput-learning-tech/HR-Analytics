@@ -4,7 +4,9 @@
 
 import type { DataSource } from "../store/types";
 import type { Row } from "../ingest/types";
+import { MemoryStore } from "../store/memoryStore";
 import { DomainMetrics } from "./base";
+import { decorateDomainDeltas, prettyPeriod } from "./compare";
 import * as ta from "./talent_acquisition";
 import * as pms from "./pms";
 import * as payroll from "./payroll";
@@ -76,6 +78,27 @@ export function buildDomain(store: DataSource, key: DomainKey, opts: { activeHea
 
 export function buildAll(store: DataSource, opts: { activeHeadcount?: number } = {}): DomainMetrics[] {
   return DOMAIN_ORDER.map((k) => buildDomain(store, k, opts));
+}
+
+// Build a domain with month-over-month KPI deltas. The prior period is the
+// second-latest snapshot of each of the domain's kinds (so a domain with only
+// one upload shows no deltas — graceful). Mirrors the People delta pattern.
+export function buildDomainCompared(store: DataSource, key: DomainKey, opts: { activeHeadcount?: number } = {}): DomainMetrics {
+  const current = buildDomain(store, key, opts);
+  const prior = new MemoryStore();
+  let priorLabel = "";
+  let hasPrior = false;
+  for (const kind of DOMAIN_REGISTRY[key].requiredKinds) {
+    const snaps = store.listByKind(kind); // ascending by asOf
+    if (snaps.length >= 2) {
+      const priorSnap = snaps[snaps.length - 2];
+      prior.add(priorSnap);
+      hasPrior = true;
+      if (!priorLabel) priorLabel = prettyPeriod(priorSnap.periodLabel ?? priorSnap.asOf);
+    }
+  }
+  if (!hasPrior) return current;
+  return decorateDomainDeltas(current, buildDomain(prior, key, opts), priorLabel);
 }
 
 // Domains with at least one of their dataset kinds loaded — lets callers skip

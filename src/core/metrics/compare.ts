@@ -9,9 +9,19 @@
 // delta. Pure functions; no React/Plotly.
 
 import type { PeopleSection } from "./people";
-import type { MetricKPI } from "./base";
+import type { MetricKPI, DomainMetrics } from "./base";
 
-export type ValueUnit = "count" | "pct" | "yrs";
+export type ValueUnit = "count" | "pct" | "yrs" | "days";
+
+// Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
+// the raw period label (or a generic fallback) so delta chips read naturally.
+export function prettyPeriod(label: string | null | undefined): string {
+  if (!label) return "prior period";
+  const s = String(label).trim();
+  const m = s.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/); // YYYY-MM-DD or YYYY-MM
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  return s;
+}
 export interface ParsedValue {
   n: number;
   unit: ValueUnit;
@@ -36,6 +46,10 @@ export function parseKpiValue(value: string | null | undefined): ParsedValue | n
     const n = Number(s.replace(/yrs?$/i, "").replace(/,/g, "").trim());
     return Number.isFinite(n) ? { n, unit: "yrs" } : null;
   }
+  if (/\bdays?$/i.test(s)) {
+    const n = Number(s.replace(/days?$/i, "").replace(/,/g, "").trim());
+    return Number.isFinite(n) ? { n, unit: "days" } : null;
+  }
   const cleaned = s.replace(/,/g, "");
   if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
   const n = Number(cleaned);
@@ -47,15 +61,21 @@ export type Tone = "good" | "bad" | "neutral";
 // Conservative sentiment map — only the unambiguous KPIs are coloured; anything
 // else stays neutral so we never mis-signal good/bad in a context we can't judge
 // (e.g. headcount growth, gender mix, remote share — all left neutral).
-const HIGHER_IS_GOOD = new Set(["Active Headcount", "Avg Tenure (active)", "5+ years", "Avg Completeness"]);
+const HIGHER_IS_GOOD = new Set([
+  // People
+  "Active Headcount", "Avg Tenure (active)", "5+ years", "Avg Completeness",
+  // Functional — higher is unambiguously better
+  "Offer-Accept Rate", "Filled (this file)", "Joined", "Review Completion", "Goals Set",
+  "Calibrated", "Completion Rate", "Coverage", "Avg Feedback", "Statutory On-time",
+  "Lifecycle Checklist", "eNPS",
+]);
 const HIGHER_IS_BAD = new Set([
-  "Relieved",
-  "Pending Exits",
-  "Next 30 days",
-  "Next 90 days",
-  "< 1 year",
-  "Large Spans (≥15)",
-  "Fields < 90% complete",
+  // People
+  "Relieved", "Pending Exits", "Next 30 days", "Next 90 days", "< 1 year",
+  "Large Spans (≥15)", "Fields < 90% complete",
+  // Functional — higher is unambiguously worse
+  "Avg Age, Open Reqs", "On PIP", "Payroll Errors", "Overtime % of Pay",
+  "Assets Lost", "Contracts ≤30d", "Cost / Hire",
 ]);
 
 export function toneFor(label: string, dir: "up" | "down" | "flat"): Tone {
@@ -74,6 +94,7 @@ export function deltaText(diff: number, unit: ValueUnit): string {
   const mag = Math.abs(diff);
   if (unit === "pct") return `${arrow} ${sign}${round1(mag)}pp`;
   if (unit === "yrs") return `${arrow} ${sign}${round1(mag)} yrs`;
+  if (unit === "days") return `${arrow} ${sign}${round1(mag)} days`;
   const m = Number.isInteger(mag) ? mag.toLocaleString("en-US") : round1(mag).toLocaleString("en-US");
   return `${arrow} ${sign}${m}`;
 }
@@ -91,6 +112,18 @@ function withDelta(curr: MetricKPI, prior: MetricKPI | undefined, priorLabel: st
   return { ...curr, delta: `${deltaText(diff, c.unit)} vs ${priorLabel}`, deltaTone: toneFor(curr.label, dir) };
 }
 
+// Diff one KPI list against the prior period's, matching by label. KPIs with no
+// prior match — or non-comparable values — pass through undecorated.
+export function decorateKpiDeltas(
+  current: MetricKPI[],
+  prior: MetricKPI[] | null | undefined,
+  priorLabel: string,
+): MetricKPI[] {
+  if (!prior || prior.length === 0) return current;
+  const priorByLabel = new Map(prior.map((k) => [k.label, k]));
+  return current.map((k) => withDelta(k, priorByLabel.get(k.label), priorLabel));
+}
+
 // Returns a new section list with deltas applied to matching KPIs. If there is
 // no prior period, the current sections are returned unchanged.
 export function decoratePeopleDeltas(
@@ -103,8 +136,18 @@ export function decoratePeopleDeltas(
   return current.map((sec) => {
     const p = priorByKey.get(sec.key);
     if (!p) return sec;
-    const priorByLabel = new Map(p.metrics.kpis.map((k) => [k.label, k]));
-    const kpis = sec.metrics.kpis.map((k) => withDelta(k, priorByLabel.get(k.label), priorLabel));
-    return { ...sec, metrics: { ...sec.metrics, kpis } };
+    return { ...sec, metrics: { ...sec.metrics, kpis: decorateKpiDeltas(sec.metrics.kpis, p.metrics.kpis, priorLabel) } };
   });
+}
+
+// Decorate a functional domain's KPI cards with deltas vs the prior period's
+// metrics (same domain, built from the prior snapshot). Charts/tables/watch-outs
+// are left as the current period's.
+export function decorateDomainDeltas(
+  current: DomainMetrics,
+  prior: DomainMetrics | null | undefined,
+  priorLabel: string,
+): DomainMetrics {
+  if (!prior) return current;
+  return { ...current, kpis: decorateKpiDeltas(current.kpis, prior.kpis, priorLabel) };
 }

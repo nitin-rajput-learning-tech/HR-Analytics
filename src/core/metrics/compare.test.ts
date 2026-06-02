@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { parseKpiValue, deltaText, toneFor, decoratePeopleDeltas } from "./compare";
+import { parseKpiValue, deltaText, toneFor, decoratePeopleDeltas, decorateDomainDeltas, prettyPeriod } from "./compare";
 import type { PeopleSection } from "./people";
-import type { MetricKPI } from "./base";
+import type { MetricKPI, DomainMetrics } from "./base";
 
 describe("parseKpiValue", () => {
   it("parses grouped counts, percents and tenure", () => {
@@ -11,6 +11,8 @@ describe("parseKpiValue", () => {
     expect(parseKpiValue("90.0%")).toEqual({ n: 90, unit: "pct" });
     expect(parseKpiValue("4.9 yrs")).toEqual({ n: 4.9, unit: "yrs" });
     expect(parseKpiValue("1 yr")).toEqual({ n: 1, unit: "yrs" });
+    expect(parseKpiValue("42 days")).toEqual({ n: 42, unit: "days" });
+    expect(parseKpiValue("1 day")).toEqual({ n: 1, unit: "days" });
   });
   it("rejects non-numeric values", () => {
     expect(parseKpiValue("Engineering")).toBeNull();
@@ -27,6 +29,7 @@ describe("deltaText", () => {
     expect(deltaText(-3, "count")).toBe("▼ −3");
     expect(deltaText(1.2, "pct")).toBe("▲ +1.2pp");
     expect(deltaText(-0.3, "yrs")).toBe("▼ −0.3 yrs");
+    expect(deltaText(-6, "days")).toBe("▼ −6 days");
     expect(deltaText(1500, "count")).toBe("▲ +1,500");
   });
 });
@@ -91,5 +94,49 @@ describe("decoratePeopleDeltas", () => {
     const current = [section("overview", [{ label: "Active Headcount", value: "90.0%" }])];
     expect(decoratePeopleDeltas(current, prior, "Apr 2026")[0].metrics.kpis[0].delta).toBeUndefined();
     expect(decoratePeopleDeltas(current, null, "Apr 2026")[0].metrics.kpis[0].delta).toBeUndefined();
+  });
+});
+
+function domain(kpis: MetricKPI[]): DomainMetrics {
+  return { kind: "talent_acquisition", label: "Talent Acquisition", hasData: true, blurb: "", kpis, charts: [], tables: [], watchouts: [] };
+}
+
+describe("decorateDomainDeltas", () => {
+  it("diffs functional KPI cards by label, with days + conservative tone", () => {
+    const prior = domain([
+      { label: "Offer-Accept Rate", value: "70.0%" },
+      { label: "Avg Age, Open Reqs", value: "40 days" },
+      { label: "Payroll Errors", value: "5" },
+      { label: "Cost / Head", value: "₹1.2 L" }, // currency → not comparable → no delta
+    ]);
+    const current = domain([
+      { label: "Offer-Accept Rate", value: "78.0%" }, // +8pp, higher good
+      { label: "Avg Age, Open Reqs", value: "34 days" }, // −6 days, lower good
+      { label: "Payroll Errors", value: "8" }, // +3, higher bad
+      { label: "Cost / Head", value: "₹1.4 L" },
+    ]);
+    const k = Object.fromEntries(decorateDomainDeltas(current, prior, "Apr 2026").kpis.map((x) => [x.label, x]));
+    expect(k["Offer-Accept Rate"].delta).toBe("▲ +8pp vs Apr 2026");
+    expect(k["Offer-Accept Rate"].deltaTone).toBe("good");
+    expect(k["Avg Age, Open Reqs"].delta).toBe("▼ −6 days vs Apr 2026");
+    expect(k["Avg Age, Open Reqs"].deltaTone).toBe("good");
+    expect(k["Payroll Errors"].delta).toBe("▲ +3 vs Apr 2026");
+    expect(k["Payroll Errors"].deltaTone).toBe("bad");
+    expect(k["Cost / Head"].delta).toBeUndefined();
+  });
+
+  it("returns the current domain unchanged when there is no prior", () => {
+    const current = domain([{ label: "Offer-Accept Rate", value: "78.0%" }]);
+    expect(decorateDomainDeltas(current, null, "Apr 2026").kpis[0].delta).toBeUndefined();
+  });
+});
+
+describe("prettyPeriod", () => {
+  it("formats ISO dates and passes other labels through", () => {
+    expect(prettyPeriod("2026-04-05")).toBe("Apr 2026");
+    expect(prettyPeriod("2026-04")).toBe("Apr 2026");
+    expect(prettyPeriod("FY26-H1")).toBe("FY26-H1");
+    expect(prettyPeriod(null)).toBe("prior period");
+    expect(prettyPeriod("")).toBe("prior period");
   });
 });

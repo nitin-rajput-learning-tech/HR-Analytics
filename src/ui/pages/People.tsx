@@ -5,24 +5,13 @@ import { FilterBar } from "../components/FilterBar";
 import { ViewsMenu } from "../components/ViewsMenu";
 import { InsightsBanner } from "../components/InsightsBanner";
 import { buildPeople, EMPLOYEE_FIELDS } from "../../core/metrics/people";
-import { decoratePeopleDeltas } from "../../core/metrics/compare";
+import { decoratePeopleDeltas, prettyPeriod } from "../../core/metrics/compare";
 import { rankWatchouts } from "../../core/metrics/base";
 import { buildMovement } from "../../core/metrics/movement";
 import { buildRisk } from "../../core/metrics/risk";
 import { buildPayEquity } from "../../core/metrics/pay_equity";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
-
-// Friendly label for a snapshot period — "2026-04-05" → "Apr 2026"; otherwise
-// the raw period label (or a generic fallback) so delta chips read naturally.
-function prettyPeriod(label: string | null): string {
-  if (!label) return "prior period";
-  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(label.trim());
-  if (m) {
-    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-  }
-  return label;
-}
 
 export function People() {
   const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();

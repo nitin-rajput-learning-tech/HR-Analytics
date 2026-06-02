@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { overviewKpis } from "../../core/metrics/overview";
-import { buildDomain, buildCrossFunctional, DOMAIN_ORDER, DOMAIN_LABELS, type DomainKey } from "../../core/metrics";
+import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER, DOMAIN_LABELS, type DomainKey } from "../../core/metrics";
 import { leaverEvents } from "../../core/metrics/movement";
 
 type Tab = DomainKey | "cross_functional";
@@ -25,7 +25,7 @@ export function FunctionAnalytics() {
 
   const domain = useMemo(() => {
     if (tab === "cross_functional") return buildCrossFunctional(store, { leaverEvents: leaverEvents(store.listByKind("employee_master")) });
-    return buildDomain(store, tab, { activeHeadcount });
+    return buildDomainCompared(store, tab, { activeHeadcount });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version, tab, activeHeadcount]);
 

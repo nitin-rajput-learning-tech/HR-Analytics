@@ -45,8 +45,8 @@ const MODES = ["Classroom", "Virtual", "Self-paced"];
 const SOURCES = ["Referral", "Agency", "Portal", "Internal", "Direct"];
 const CONTRACT_CATS = ["Facilities", "IT", "Insurance", "License", "Other"];
 
-export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoSnapshot[] {
-  seed = 20260505;
+export function generateFunctionalDemo(employeeRows: Row[], asOf: string, seedValue = 20260505): DemoSnapshot[] {
+  seed = seedValue;
   const active = employeeRows.filter(isWorking);
   const relieved = employeeRows.filter((r) => str(r["employment_status"]) === "Relieved");
   if (!active.length) return [];
@@ -203,6 +203,21 @@ export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoS
   out.push({ kind: "engagement_survey", asOf, periodLabel: period, rows: engagement });
 
   return out;
+}
+
+// Monthly-cadence functional domains — the ones where a month-over-month delta
+// is meaningful (PMS is half-yearly and engagement quarterly, so they stay
+// single-period in the demo, which is realistic).
+const MONTHLY_DEMO_KINDS = new Set([
+  "ta_requisition", "payroll_aggregate", "payroll_record", "payroll_statutory",
+  "ld_program", "ld_enrollment", "admin_asset", "admin_contract", "admin_lifecycle",
+]);
+
+// Synthesise a prior MONTH of the monthly functional domains so the dashboards
+// show real month-over-month deltas. A different seed makes the prior month
+// genuinely differ from the current one (movement, not a flat copy).
+export function generatePriorFunctionalMonth(employeeRows: Row[], asOf: string): DemoSnapshot[] {
+  return generateFunctionalDemo(employeeRows, shiftMonth(asOf, -1), 20260405).filter((s) => MONTHLY_DEMO_KINDS.has(s.kind));
 }
 
 // Synthesise a prior employee month so Movement & Forecast have something to diff.

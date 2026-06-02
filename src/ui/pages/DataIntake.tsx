@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
-import { generateFunctionalDemo, generatePriorEmployeeMonth } from "../../core/intake/demoData";
+import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "../../core/intake/demoData";
 import { issuesToCsv } from "../../core/ingest/validate";
 import type { SnapshotCandidate } from "../../core/ingest/types";
 import { downloadBlob } from "../download";
@@ -107,15 +107,16 @@ export function DataIntake() {
       setMsg("Load an Employee Master first — demo functional data is generated from it.");
       return;
     }
-    const prior = generatePriorEmployeeMonth(emp.rows, emp.asOf);
+    const priorEmp = generatePriorEmployeeMonth(emp.rows, emp.asOf);
+    const priorFns = generatePriorFunctionalMonth(emp.rows, emp.asOf);
     const fns = generateFunctionalDemo(emp.rows, emp.asOf);
-    for (const s of [...(prior ? [prior] : []), ...fns]) {
+    for (const s of [...(priorEmp ? [priorEmp] : []), ...priorFns, ...fns]) {
       store.add({ id: `${s.kind}:${s.asOf}`, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: s.rows });
     }
     bump();
     setOk(true);
-    logAudit("Generated demo data", `${fns.length} functional domains${prior ? " + prior month" : ""}`);
-    setMsg(`Generated demo data for ${fns.length} functional domains${prior ? ` + a prior employee month (${prior.asOf})` : ""}. Every dashboard, Movement & Forecast, and the newsletter are now populated.`);
+    logAudit("Generated demo data", `${fns.length} functional domains + prior month`);
+    setMsg(`Generated demo data for ${fns.length} functional domains, plus a prior month so the dashboards show month-over-month deltas. Every dashboard, Movement & Forecast, and the newsletter are now populated.`);
   }
 
   return (
