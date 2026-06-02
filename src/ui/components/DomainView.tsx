@@ -49,7 +49,7 @@ export function DataTable({ table }: { table: MetricTable }) {
         <h4>{table.title}</h4>
         <div className="mt-tools no-print">
           {table.rows.length > 10 ? (
-            <input className="table-search" type="search" placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="table-search" type="search" aria-label={`Filter ${table.title} rows`} placeholder="Filter rows…" value={q} onChange={(e) => setQ(e.target.value)} />
           ) : null}
           <button className="table-csv" title="Download this table as CSV" onClick={downloadCsv}>
             CSV

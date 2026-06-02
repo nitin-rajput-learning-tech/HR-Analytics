@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import { rankCommands, type Command } from "../commands";
+import { useFocusTrap } from "../useFocusTrap";
 
 const PAGES = ["People Analytics", "Directory", "Function Analytics", "Scenario", "Newsletter", "Data Intake", "Branding"];
 
@@ -12,6 +13,8 @@ export function CommandPalette({ onSaveWorkspace }: { onSaveWorkspace: () => voi
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -91,7 +94,7 @@ export function CommandPalette({ onSaveWorkspace }: { onSaveWorkspace: () => voi
 
   return (
     <div className="cmdk-overlay no-print" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-      <div className="cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div className="cmdk" ref={dialogRef} role="dialog" aria-modal="true" aria-label="Command palette">
         <input
           ref={inputRef}
           className="cmdk-input"

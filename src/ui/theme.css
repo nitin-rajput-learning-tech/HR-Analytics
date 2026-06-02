@@ -8,7 +8,7 @@
   --border-strong: rgba(15, 23, 42, 0.16);
   --text: #0f172a;
   --muted: #5b6677;
-  --faint: #94a3b8;
+  --faint: #5e6a7d; /* darkened from #94a3b8 to meet WCAG AA 4.5:1 on --bg/--surface */
   --radius: 14px;
   --radius-sm: 10px;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
@@ -28,7 +28,7 @@
   --text: #e6ebf4;
   --ink: #f1f5f9;
   --muted: #9aa7bd;
-  --faint: #6b7a92;
+  --faint: #8d99af; /* lightened from #6b7a92 to meet WCAG AA 4.5:1 on dark --surface */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 22px rgba(0, 0, 0, 0.5);
 }
@@ -412,7 +412,7 @@ select, input[type="file"] { font: inherit; }
 .newsletter {
   --bg: #ffffff; --surface: #ffffff; --surface-2: #f8fafc;
   --border: rgba(15, 23, 42, 0.09); --border-strong: rgba(15, 23, 42, 0.16);
-  --text: #0f172a; --ink: var(--brand-primary); --muted: #5b6677; --faint: #94a3b8;
+  --text: #0f172a; --ink: var(--brand-primary); --muted: #5b6677; --faint: #5e6a7d;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 34px; max-width: 1000px; box-shadow: var(--shadow); color: var(--text);
 }
 .nl-header { border-bottom: 3px solid var(--brand-accent); padding-bottom: 14px; margin-bottom: 20px; }

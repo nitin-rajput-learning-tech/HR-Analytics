@@ -32,6 +32,7 @@ export function FilterBar({
       <input
         className="search"
         type="search"
+        aria-label="Search employees by name, ID, email or title"
         placeholder="Search name, ID, email, title…"
         value={filters.search ?? ""}
         onChange={(e) => onChange({ ...filters, search: e.target.value })}

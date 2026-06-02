@@ -9,6 +9,7 @@ import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { CommandPalette } from "./components/CommandPalette";
+import { useFocusTrap } from "./useFocusTrap";
 import { ToastHost, toast } from "./toast";
 import { saveWorkspace, loadWorkspace } from "../workspace/workspace";
 import { encryptWorkspace, decryptWorkspace, isEncryptedWorkspace } from "../workspace/crypto";
@@ -32,6 +33,8 @@ export function AppShell() {
   const [encBytes, setEncBytes] = React.useState<Uint8Array | null>(null);
   const [loadPass, setLoadPass] = React.useState("");
   const [encErr, setEncErr] = React.useState("");
+  const encModalRef = React.useRef<HTMLDivElement>(null);
+  useFocusTrap(encModalRef, encOpen);
 
   async function onSave() {
     if (encrypt && !passphrase.trim()) {
@@ -185,7 +188,7 @@ export function AppShell() {
       </main>
       {encOpen ? (
         <div className="cmdk-overlay no-print" onMouseDown={(e) => { if (e.target === e.currentTarget) setEncOpen(false); }}>
-          <div className="enc-modal" role="dialog" aria-modal="true" aria-label="Decrypt workspace">
+          <div className="enc-modal" ref={encModalRef} role="dialog" aria-modal="true" aria-label="Decrypt workspace">
             <h3>🔒 Encrypted workspace</h3>
             <p className="muted">This workspace is passphrase-protected. Enter the passphrase to open it.</p>
             <input
