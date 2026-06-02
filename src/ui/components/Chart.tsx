@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import Plotly from "plotly.js-dist-min";
+import Plotly from "plotly.js-basic-dist-min";
 import { toPlotly } from "../../core/charts";
 import type { ChartSpec } from "../../core/metrics/base";
 

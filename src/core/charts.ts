@@ -101,9 +101,11 @@ export function toPlotly(spec: ChartSpec, brand: Partial<ChartColors> & { dark?:
         config,
       };
     case "funnel":
+      // Rendered as a colour-per-stage horizontal bar (the basic Plotly bundle
+      // omits the funnel trace) — stages stay top-to-bottom in the given order.
       return {
-        data: [{ type: "funnel", y: spec.labels, x: spec.values, marker: { color: series } }],
-        layout: { ...layout, yaxis: { automargin: true } },
+        data: [{ type: "bar", orientation: "h", y: spec.labels, x: spec.values, marker: { color: series.slice(0, spec.labels.length) } }],
+        layout: { ...layout, yaxis: { automargin: true, autorange: "reversed" }, xaxis: { gridcolor: grid, zeroline: false } },
         config,
       };
   }

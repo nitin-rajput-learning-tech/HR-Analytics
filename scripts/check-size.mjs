@@ -5,7 +5,7 @@
 import { statSync } from "node:fs";
 import path from "node:path";
 
-const BUDGET_MB = 9;
+const BUDGET_MB = 4; // single-file is ~2.6 MB on the basic Plotly bundle; this catches a full-Plotly regression
 const BUDGET = BUDGET_MB * 1024 * 1024;
 const file = path.resolve("dist/index.html");
 

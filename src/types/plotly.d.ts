@@ -1,7 +1,9 @@
 // Minimal ambient declaration for the prebuilt Plotly bundle. The dist-min
 // package ships no types; we only use the imperative figure API (react/purge),
-// so a narrow surface keeps the rest of the app strictly typed.
-declare module "plotly.js-dist-min" {
+// so a narrow surface keeps the rest of the app strictly typed. We ship the
+// "basic" partial bundle (bar/scatter/pie) to keep the single-file download
+// small — the funnel chart is rendered as a horizontal bar (see charts.ts).
+declare module "plotly.js-basic-dist-min" {
   type PlotData = Record<string, unknown>;
   type PlotLayout = Record<string, unknown>;
   type PlotConfig = Record<string, unknown>;

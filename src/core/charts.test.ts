@@ -41,9 +41,12 @@ describe("toPlotly", () => {
     expect(f.data[0].sort).toBe(false);
   });
 
-  it("renders a funnel trace", () => {
+  it("renders a funnel as a colour-per-stage horizontal bar (basic Plotly has no funnel trace)", () => {
     const f = toPlotly(spec("funnel"), { accent: ACCENT });
-    expect(f.data[0].type).toBe("funnel");
+    expect(f.data[0].type).toBe("bar");
+    expect(f.data[0].orientation).toBe("h");
+    expect((f.data[0].marker as { color: string[] }).color[0]).toBe(ACCENT);
+    expect((f.layout.yaxis as { autorange: string }).autorange).toBe("reversed");
   });
 
   it("falls back to default colors when no brand is supplied", () => {
