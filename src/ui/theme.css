@@ -469,6 +469,8 @@ select, input[type="file"] { font: inherit; }
   /* one function/section per page; keep blocks intact */
   .nl-section, .action-plan { break-before: page; }
   .nl-toc, .exec-brief, .nl-section, .metric-table, .chart, .watchout, .kpi, .action-plan li { break-inside: avoid; }
+  thead { display: table-header-group; } /* repeat table headers when a table spans pages */
+  tr, figure, .kpis { break-inside: avoid; }
   .charts { display: block; } /* avoid wide 2-col charts overflowing the page */
   .charts .chart { margin-bottom: 12px; }
   body { background: #fff; }
