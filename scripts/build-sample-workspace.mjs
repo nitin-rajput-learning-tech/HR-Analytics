@@ -60,11 +60,39 @@ const seedEarlyExits = (rows) => {
   });
 };
 
+// Make the demo's managers REAL employees (the source pool was synthetic names
+// that matched no one), so leadership-representation analytics resolve a gender.
+// Managers are the most-tenured staff per department (~1 per 10 reports) rolling
+// up to a single head — and since recent hiring skews more female, the tenured
+// leadership realistically lags overall representation.
+const assignManagers = (rows) => {
+  const s2 = (v) => String(v ?? "").trim();
+  const joinMs = (r) => { const t = Date.parse(s2(r["date_joined"])); return Number.isNaN(t) ? Infinity : t; };
+  const active = rows.filter((r) => s2(r["employment_status"]) === "Working");
+  const byDept = new Map();
+  for (const r of active) { const d = s2(r["department"]) || "Other"; if (!byDept.has(d)) byDept.set(d, []); byDept.get(d).push(r); }
+  const heads = [];
+  for (const list of byDept.values()) {
+    const tenured = [...list].sort((a, b) => joinMs(a) - joinMs(b));
+    const mgrs = tenured.slice(0, Math.max(1, Math.round(list.length / 10)));
+    const mgrSet = new Set(mgrs);
+    const mgrNames = mgrs.map((m) => s2(m["full_name"]));
+    heads.push(...mgrs);
+    let i = 0;
+    for (const r of list) { if (!mgrSet.has(r)) { r["reporting_manager"] = mgrNames[i % mgrNames.length]; i += 1; } }
+  }
+  const top = [...active].sort((a, b) => joinMs(a) - joinMs(b))[0];
+  const topName = top ? s2(top["full_name"]) : "";
+  for (const h of heads) { if (h !== top) h["reporting_manager"] = topName; }
+  if (top) top["reporting_manager"] = "";
+  return rows;
+};
+
 // Preserve the employee roster (both months) + non-monthly functional cadences.
 const store = new MemoryStore();
 for (const kind of ["employee_master", "pms_review", "engagement_survey"]) {
   for (const s of ws.store.listByKind(kind)) {
-    const rows = kind === "employee_master" ? seedEarlyExits(neutralize(s.rows)) : neutralize(s.rows);
+    const rows = kind === "employee_master" ? assignManagers(seedEarlyExits(neutralize(s.rows))) : neutralize(s.rows);
     store.add({ ...s, rows });
   }
 }
