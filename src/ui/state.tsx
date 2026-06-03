@@ -43,6 +43,9 @@ interface AppState {
   commitSnapshot(snap: Snapshot): void; // add one dataset; exits demo on first add
   markLive(): void; // a full workspace load is the user's own data → live
   clearData(): void; // wipe the saved data and return to demo mode
+  // Scorecard KPI targets (management-by-objective); persisted with the workspace.
+  targets: Record<string, number>;
+  setTargets(t: Record<string, number>): void;
 }
 
 const AUDIT_CAP = 250;
@@ -67,6 +70,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [mode, setMode] = useState<"demo" | "live">("demo");
   const [ready, setReady] = useState(false);
+  const [targets, setTargets] = useState<Record<string, number>>({});
 
   const logAudit = useCallback((action: string, detail?: string) => {
     setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
@@ -125,6 +129,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setBranding(r.branding);
       setSavedViews(r.savedViews);
       setAuditLog(r.auditLog);
+      setTargets(r.targets);
     },
     [setStore, setBranding],
   );
@@ -168,13 +173,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated.current || mode === "demo") return;
     const id = window.setTimeout(() => {
       try {
-        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog));
+        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets));
       } catch {
         /* persistence is best-effort */
       }
     }, 800);
     return () => window.clearTimeout(id);
-  }, [store, version, branding, savedViews, auditLog, mode]);
+  }, [store, version, branding, savedViews, auditLog, targets, mode]);
 
   // Once the user has their own data, ask the browser to keep it durable so the
   // local database isn't evicted under storage pressure. Idempotent; no-ops
@@ -194,6 +199,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setBranding(DEFAULT_BRANDING);
         setSavedViews([]);
         setAuditLog([]);
+        setTargets({});
         setMode("live");
       } else {
         store.add(snap);
@@ -209,13 +215,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const clearData = useCallback(() => {
     void clearPersisted();
     loadDemo();
+    setTargets({});
     setPeopleFilters({});
     toast("Your data was cleared — showing demo data");
   }, [loadDemo]);
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets }}
     >
       {children}
     </Ctx.Provider>

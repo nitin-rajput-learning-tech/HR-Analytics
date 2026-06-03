@@ -5,6 +5,7 @@ import { People } from "./pages/People";
 import { Directory } from "./pages/Directory";
 import { FunctionAnalytics } from "./pages/FunctionAnalytics";
 import { Scenario } from "./pages/Scenario";
+import { Scorecard } from "./pages/Scorecard";
 import { Reports } from "./pages/Reports";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
@@ -20,7 +21,7 @@ import { loadPersisted } from "../workspace/autosave";
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
-const PAGES = ["People Analytics", "Directory", "Function Analytics", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "Directory", "Function Analytics", "Scorecard", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -66,7 +67,7 @@ export function AppShell() {
       toast("Enter a passphrase to encrypt the workspace", "error");
       return;
     }
-    let bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog);
+    let bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog, app.targets);
     let filename = "hr-workspace.json.gz";
     const willEncrypt = encrypt && !!passphrase.trim();
     if (willEncrypt) {
@@ -86,11 +87,12 @@ export function AppShell() {
   }
 
   function applyWorkspaceBytes(bytes: Uint8Array) {
-    const { store, branding, savedViews, auditLog } = loadWorkspace(bytes);
+    const { store, branding, savedViews, auditLog, targets } = loadWorkspace(bytes);
     app.setStore(store);
     app.setBranding(branding);
     app.setSavedViews(savedViews);
     app.setAuditLog(auditLog);
+    app.setTargets(targets);
     app.markLive(); // a loaded workspace is the user's own data — persist it
     const emp = store.getLatest("employee_master")?.rows.length ?? 0;
     app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);
@@ -234,6 +236,7 @@ export function AppShell() {
         {page === "People Analytics" && <People />}
         {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}
+        {page === "Scorecard" && <Scorecard />}
         {page === "Scenario" && <Scenario />}
         {page === "Newsletter" && <Reports />}
         {page === "Data Intake" && <DataIntake />}

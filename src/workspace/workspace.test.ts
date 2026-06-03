@@ -62,6 +62,13 @@ describe("workspace versioning & migration", () => {
     expect(restored.auditLog[0].action).toBe("Saved workspace");
   });
 
+  it("round-trips scorecard targets and defaults them to {} when absent", () => {
+    const store = new MemoryStore();
+    const restored = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING, "now", [], [], { offer_accept: 90, pay_gap: 3 }));
+    expect(restored.targets).toEqual({ offer_accept: 90, pay_gap: 3 });
+    expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).targets).toEqual({});
+  });
+
   it("migrates a v1 file (no audit log) forward, defaulting auditLog to []", () => {
     const v1 = rawWorkspace({
       format: "hr-analytics-workspace",

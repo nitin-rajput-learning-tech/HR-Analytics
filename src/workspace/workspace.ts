@@ -31,6 +31,7 @@ interface WorkspaceFile {
   snapshots: Snapshot[];
   savedViews?: SavedView[];
   auditLog?: AuditEntry[];
+  targets?: Record<string, number>; // scorecard KPI targets (additive; old files default {})
 }
 
 // Migration ladder: each entry upgrades a parsed file from version K to K+1.
@@ -66,6 +67,7 @@ export function saveWorkspace(
   now = "1970-01-01T00:00:00Z",
   savedViews: SavedView[] = [],
   auditLog: AuditEntry[] = [],
+  targets: Record<string, number> = {},
 ): Uint8Array {
   const payload: WorkspaceFile = {
     format: FORMAT,
@@ -75,6 +77,7 @@ export function saveWorkspace(
     snapshots: store.allSnapshots(),
     savedViews,
     auditLog,
+    targets,
   };
   return pako.gzip(JSON.stringify(payload));
 }
@@ -84,15 +87,18 @@ export function loadWorkspace(bytes: Uint8Array): {
   branding: Branding;
   savedViews: SavedView[];
   auditLog: AuditEntry[];
+  targets: Record<string, number>;
 } {
   const json = pako.ungzip(bytes, { to: "string" });
   const file = migrate(JSON.parse(json) as Record<string, unknown>);
   const store = new MemoryStore();
   for (const s of file.snapshots ?? []) store.add(s);
+  const t = file.targets as Record<string, number> | undefined;
   return {
     store,
     branding: sanitizeBranding({ ...DEFAULT_BRANDING, ...(file.branding ?? {}) }),
     savedViews: file.savedViews ?? [],
     auditLog: file.auditLog ?? [],
+    targets: t && typeof t === "object" ? t : {},
   };
 }
