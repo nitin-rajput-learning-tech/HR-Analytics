@@ -10,6 +10,7 @@ import { rankWatchouts } from "../../core/metrics/base";
 import { buildMovement } from "../../core/metrics/movement";
 import { buildRisk } from "../../core/metrics/risk";
 import { buildPayEquity } from "../../core/metrics/pay_equity";
+import { buildCompensation } from "../../core/metrics/compensation";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -43,10 +44,12 @@ export function People() {
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
     const risk = buildRisk({ employeeRows: filtered, asOf: snap.asOf, payrollRows: enrich.payrollRows, pmsRows: enrich.pmsRows });
     const payEquity = buildPayEquity({ employeeRows: filtered, payrollRows: enrich.payrollRows });
+    const compensation = buildCompensation({ employeeRows: filtered, payrollRows: enrich.payrollRows, asOf: snap.asOf });
     return [
       ...people,
       { key: "movement", label: movement.label, metrics: movement },
       { key: "risk", label: risk.label, metrics: risk },
+      { key: "compensation", label: compensation.label, metrics: compensation },
       { key: "pay_equity", label: payEquity.label, metrics: payEquity },
     ];
   }, [filtered, empSnaps, filters, snap, enrich]);
