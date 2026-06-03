@@ -110,6 +110,25 @@ for (const s of [...prior, ...current]) {
   store.add({ id: s.kind + ":" + s.asOf, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: neutralize(s.rows) });
 }
 
+// Give a realistic share of recent leavers a prior performance review (several
+// high-rated) so the existing Regrettable-Attrition analytics light up — the
+// source PMS was active-only, leaving "are we losing our best people?" blank.
+const empLatest = store.getLatest("employee_master");
+const pmsSnap = store.getLatest("pms_review");
+if (empLatest && pmsSnap) {
+  const relieved = empLatest.rows.filter((r) => String(r["employment_status"]) === "Relieved");
+  const have = new Set(pmsSnap.rows.map((r) => String(r["employee_number"])));
+  const RATING = [5, 4, 5, 4, 3, 2, 4, 3, 2, 3, 4, 2, 3, 2, 3];
+  const POT = ["High", "High", "Medium", "High", "Medium", "Low", "Medium", "Low", "Low", "Medium", "High", "Low", "Medium", "Low", "Medium"];
+  const leaverReviews = [];
+  relieved.forEach((r, i) => {
+    const id = String(r["employee_number"]);
+    if (have.has(id)) return;
+    leaverReviews.push({ employee_number: id, cycle: "FY26-H1", goals_set: "Y", manager_review_done: "Y", final_rating: RATING[i % RATING.length], rating_scale: "1-5", calibrated: "Y", potential_rating: POT[i % POT.length], promotion_recommended: "N", on_pip: "N", pip_outcome: "" });
+  });
+  if (leaverReviews.length) store.add({ ...pmsSnap, rows: [...pmsSnap.rows, ...leaverReviews] });
+}
+
 // Neutralise the brand wordmark / footer too (Airpay -> Acme).
 const branding = { ...ws.branding };
 for (const k of ["appName", "footer"]) {
