@@ -473,6 +473,114 @@ export function directorySection(rows: Row[]): DomainMetrics {
   };
 }
 
+// ---------------------------------------------------------------- retention & quality of hire
+function retentionSection(rows: Row[]): DomainMetrics {
+  const median = (xs: number[]): number | null => {
+    if (!xs.length) return null;
+    const s = [...xs].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+
+  // Tenure-at-exit for leavers present in the file (how long they stayed).
+  const exitTenures = rows
+    .filter(isRelieved)
+    .map((r) => { const j = dayMs(r["date_joined"]); const l = dayMs(r["last_working_day"]); return j !== null && l !== null && l >= j ? daysBetween(l, j) : null; })
+    .filter((d): d is number => d !== null);
+
+  // Quality-of-hire signals — robust from a current snapshot, since recent
+  // leavers (short tenure) are still present even if old leavers are purged.
+  const early = exitTenures.filter((d) => d < 365).length;
+  const earlyShare = exitTenures.length ? early / exitTenures.length : null;
+  const exits90 = exitTenures.filter((d) => d < 90).length;
+  const medExit = median(exitTenures);
+  const yrs = (d: number | null) => (d === null ? "n/a" : `${(d / 365).toFixed(1)} yrs`);
+
+  const kpis: MetricKPI[] = [
+    { label: "Exits Analysed", value: N.humanizeInt(exitTenures.length), hint: "leavers with join + exit dates" },
+    { label: "First-Year Exit Share", value: earlyShare === null ? "n/a" : N.formatPct(earlyShare * 100), hint: `${early} of ${exitTenures.length} leavers left < 12 months in` },
+    { label: "90-Day Exits", value: N.humanizeInt(exits90), hint: "left within 3 months of joining" },
+    { label: "Median Tenure at Exit", value: yrs(medExit) },
+  ];
+
+  const charts: ChartSpec[] = [];
+
+  // Exit-timing curve: leavers bucketed by how long they stayed.
+  if (exitTenures.length) {
+    const bands = new Map<string, number>();
+    for (const d of exitTenures) bands.set(tenureBand(d), (bands.get(tenureBand(d)) ?? 0) + 1);
+    charts.push({
+      title: "Exits by tenure at departure",
+      caption: "When leavers left, by how long they had stayed. Heavy early bars point to quality-of-hire / onboarding gaps.",
+      kind: "bar",
+      labels: TENURE_ORDER,
+      values: TENURE_ORDER.map((b) => bands.get(b) ?? 0),
+    });
+  }
+
+  // Retention by joining cohort (year).
+  const cohorts = new Map<string, { joined: number; active: number }>();
+  for (const r of rows) {
+    const j = dayMs(r["date_joined"]);
+    if (j === null) continue;
+    const year = String(new Date(j).getUTCFullYear());
+    const c = cohorts.get(year) ?? { joined: 0, active: 0 };
+    c.joined += 1;
+    if (isWorking(r)) c.active += 1;
+    cohorts.set(year, c);
+  }
+  const cohortRows = [...cohorts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (cohortRows.length) {
+    charts.push({
+      title: "Retention by joining cohort",
+      caption: "Share of each joining year still active. Recent cohorts read most reliably — older ones can be inflated by past leavers no longer in the file.",
+      kind: "bar",
+      labels: cohortRows.map(([y]) => y),
+      values: cohortRows.map(([, c]) => Math.round((c.joined ? c.active / c.joined : 0) * 1000) / 10),
+    });
+  }
+  const cohortTable = cohortRows
+    .map(([y, c]) => [y, c.joined, c.active, c.joined - c.active, N.formatPct(N.pct(c.active, c.joined))] as (string | number)[])
+    .reverse()
+    .slice(0, 10);
+
+  const watchouts: MetricWatchout[] = [];
+  if (earlyShare !== null && exitTenures.length >= 10 && earlyShare >= 0.3) {
+    watchouts.push({
+      severity: earlyShare >= 0.45 ? "high" : "medium",
+      title: "High share of first-year exits (quality-of-hire risk)",
+      detail: `${N.formatPct(earlyShare * 100)} of analysed exits left within their first year (${early}/${exitTenures.length}).`,
+      actionHint: "Review sourcing channels, role-fit screening and the 90-day onboarding for the most-affected teams.",
+      owner: "Talent Acquisition",
+    });
+  }
+  if (exits90 >= 5) {
+    watchouts.push({
+      severity: exits90 >= 12 ? "high" : "medium",
+      title: "Early (90-day) exits",
+      detail: `${exits90} employee(s) left within 3 months of joining.`,
+      actionHint: "Audit onboarding, manager readiness and offer-to-role expectation gaps.",
+      owner: "HRBP",
+    });
+  }
+
+  return {
+    kind: "people_retention",
+    label: "Retention",
+    hasData: exitTenures.length > 0 || cohortRows.length > 0,
+    blurb:
+      earlyShare === null
+        ? "Add join + exit dates (date_joined, last_working_day) to analyse retention and quality of hire."
+        : `${N.formatPct(earlyShare * 100)} of ${exitTenures.length} analysed exits left within their first year; median stay ${yrs(medExit)}.`,
+    kpis,
+    charts,
+    tables: cohortTable.length
+      ? [{ title: "Joining cohorts", caption: "Retention by joining year (recent cohorts read most reliably).", columns: ["Cohort (year)", "Joined", "Still active", "Departed", "Retention"], rows: cohortTable }]
+      : [],
+    watchouts: watchouts.sort((a, b) => SEV_RANK[b.severity] - SEV_RANK[a.severity]),
+  };
+}
+
 export function buildPeople(rows: Row[] | null | undefined, asOf: string | null): PeopleSection[] {
   if (!rows || rows.length === 0) return [];
   const refMs = dayMs(asOf);
@@ -484,6 +592,7 @@ export function buildPeople(rows: Row[] | null | undefined, asOf: string | null)
     { key: "geography", label: "Geography", metrics: geographySection(rows) },
     { key: "managers", label: "Managers", metrics: managersSection(rows, refMs) },
     { key: "attrition", label: "Attrition & Exits", metrics: attritionSection(rows, refMs) },
+    { key: "retention", label: "Retention", metrics: retentionSection(rows) },
     { key: "quality", label: "Data Quality", metrics: dataQualitySection(rows) },
   ];
 }

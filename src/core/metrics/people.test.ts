@@ -36,8 +36,8 @@ describe("buildPeople", () => {
   const byKind = Object.fromEntries(sections.map((s) => [s.metrics.kind, s.metrics]));
   const kpi = (kind: string, label: string) => byKind[kind].kpis.find((k) => k.label === label)?.value;
 
-  it("returns the 8 employee-analytics tabs", () => {
-    expect(sections.map((s) => s.key)).toEqual(["overview", "headcount", "tenure", "diversity", "geography", "managers", "attrition", "quality"]);
+  it("returns the 9 employee-analytics tabs", () => {
+    expect(sections.map((s) => s.key)).toEqual(["overview", "headcount", "tenure", "diversity", "geography", "managers", "attrition", "retention", "quality"]);
   });
 
   it("computes overview headcount and pending exits", () => {
@@ -60,6 +60,15 @@ describe("buildPeople", () => {
 
   it("flags pending-exit pressure as a watch-out", () => {
     expect(kpi("people_attrition", "Pending Exits")).toBe("5");
+  });
+
+  it("analyses retention / quality-of-hire from join + exit dates", () => {
+    // Leavers joined 2025-09-01 and left 2025-12-15 (~3.5 months) → first-year
+    // exits; the cohort table spans the 2019 + 2025 joining years.
+    expect(Number(kpi("people_retention", "Exits Analysed"))).toBeGreaterThan(0);
+    expect(kpi("people_retention", "First-Year Exit Share")).toContain("%");
+    const cohortYears = byKind["people_retention"].tables[0].rows.map((r) => r[0]);
+    expect(cohortYears).toContain("2025");
   });
 
   it("tags dimension charts with a drill field for drill-down", () => {

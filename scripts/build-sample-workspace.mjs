@@ -39,10 +39,34 @@ const neutralize = (rows) => rows.map((r) => {
   return r;
 });
 
+// Seed a realistic early-attrition pattern into a few leavers so the Retention
+// tab demonstrates the quality-of-hire signal (otherwise every demo exit is
+// long-tenured and first-year attrition reads a flat 0%). Sets a short tenure
+// (date_joined close to last_working_day) on the first few relieved records.
+const EARLY_EXIT_TENURE_DAYS = [25, 60, 95, 180, 300];
+const seedEarlyExits = (rows) => {
+  let n = 0;
+  return rows.map((r) => {
+    if (n >= EARLY_EXIT_TENURE_DAYS.length) return r;
+    if (String(r["employment_status"]) === "Relieved" && String(r["last_working_day"] ?? "")) {
+      const lwd = new Date(String(r["last_working_day"]) + "T00:00:00Z");
+      if (!Number.isNaN(lwd.getTime())) {
+        const doj = new Date(lwd.getTime() - EARLY_EXIT_TENURE_DAYS[n] * 86400000);
+        n += 1;
+        return { ...r, date_joined: doj.toISOString().slice(0, 10) };
+      }
+    }
+    return r;
+  });
+};
+
 // Preserve the employee roster (both months) + non-monthly functional cadences.
 const store = new MemoryStore();
 for (const kind of ["employee_master", "pms_review", "engagement_survey"]) {
-  for (const s of ws.store.listByKind(kind)) store.add({ ...s, rows: neutralize(s.rows) });
+  for (const s of ws.store.listByKind(kind)) {
+    const rows = kind === "employee_master" ? seedEarlyExits(neutralize(s.rows)) : neutralize(s.rows);
+    store.add({ ...s, rows });
+  }
 }
 const emp = store.getLatest("employee_master");
 if (!emp) throw new Error("sample workspace has no employee_master");
