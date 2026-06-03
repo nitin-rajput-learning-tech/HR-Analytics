@@ -29,10 +29,20 @@ import { generateFunctionalDemo, generatePriorFunctionalMonth } from ${p("src/co
 const SRC = ${p("sample-data/Airpay-HR-sample-workspace.json.gz")};
 const ws = loadWorkspace(new Uint8Array(fs.readFileSync(SRC)));
 
+// Vendor-neutral demo: rename the sample organisation's legal entities so the
+// shipped showroom is brand-agnostic (applied before functional regeneration so
+// the synthesized domains inherit the neutral entities).
+const ENTITY_MAP = { "Airpay Payment Services Pvt Ltd": "Acme Payments Pvt Ltd", "Airpay Academy Pvt Ltd": "Acme Academy Pvt Ltd" };
+const neutralize = (rows) => rows.map((r) => {
+  const le = r["legal_entity"];
+  if (typeof le === "string" && (ENTITY_MAP[le] || le.includes("Airpay"))) return { ...r, legal_entity: ENTITY_MAP[le] || le.replace(/Airpay/g, "Acme") };
+  return r;
+});
+
 // Preserve the employee roster (both months) + non-monthly functional cadences.
 const store = new MemoryStore();
 for (const kind of ["employee_master", "pms_review", "engagement_survey"]) {
-  for (const s of ws.store.listByKind(kind)) store.add(s);
+  for (const s of ws.store.listByKind(kind)) store.add({ ...s, rows: neutralize(s.rows) });
 }
 const emp = store.getLatest("employee_master");
 if (!emp) throw new Error("sample workspace has no employee_master");
@@ -45,11 +55,17 @@ const MONTHLY = new Set([
 const current = generateFunctionalDemo(emp.rows, emp.asOf).filter((s) => MONTHLY.has(s.kind));
 const prior = generatePriorFunctionalMonth(emp.rows, emp.asOf);
 for (const s of [...prior, ...current]) {
-  store.add({ id: s.kind + ":" + s.asOf, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: s.rows });
+  store.add({ id: s.kind + ":" + s.asOf, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: neutralize(s.rows) });
+}
+
+// Neutralise the brand wordmark / footer too (Airpay -> Acme).
+const branding = { ...ws.branding };
+for (const k of ["appName", "footer"]) {
+  if (typeof branding[k] === "string" && branding[k].includes("Airpay")) branding[k] = branding[k].replace(/Airpay/g, "Acme");
 }
 
 // Fixed timestamp keeps the output deterministic (core stays free of Date.now).
-const out = saveWorkspace(store, ws.branding, "2026-05-05T00:00:00.000Z", ws.savedViews, ws.auditLog);
+const out = saveWorkspace(store, branding, "2026-05-05T00:00:00.000Z", ws.savedViews, ws.auditLog);
 fs.writeFileSync(SRC, Buffer.from(out));
 globalThis.__WROTE = {
   bytes: out.length,

@@ -27,7 +27,7 @@ const isoRand = (y1, y2) => iso(int(y1, y2), int(1, 12), int(1, 28));
 const FIRST = ["Aarav","Vivaan","Aditya","Vihaan","Arjun","Sai","Reyansh","Krishna","Ishaan","Rohan","Ananya","Diya","Aadhya","Saanvi","Pari","Anika","Navya","Myra","Sara","Aarohi","Rahul","Priya","Neha","Karan","Sneha","Vikram","Pooja","Amit","Divya","Rohit","Megha","Suresh","Kavya","Manish","Ritu","Deepak","Nisha","Sanjay","Anjali","Farhan","Zoya","Imran","Tara","Kabir","Meera","Dev","Ira","Yash","Riya","Nikhil"];
 const LAST = ["Sharma","Verma","Patel","Reddy","Nair","Iyer","Rao","Mehta","Shah","Gupta","Singh","Kumar","Das","Bose","Chopra","Malhotra","Joshi","Pillai","Menon","Desai","Kulkarni","Bhat","Naidu","Khan","Sheikh","Dsouza","Lopes","Fernandes","Banerjee","Mukherjee"];
 
-const ENTITIES = ["Airpay Payment Services Pvt Ltd", "Airpay Academy Pvt Ltd"];
+const ENTITIES = ["Acme Payments Pvt Ltd", "Acme Academy Pvt Ltd"];
 const CITIES = ["Mumbai", "Pune", "Bengaluru", "Delhi", "Hyderabad", "Remote"];
 
 const DEPTS = [

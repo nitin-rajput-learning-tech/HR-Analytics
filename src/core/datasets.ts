@@ -185,7 +185,7 @@ export const PAYROLL_AGGREGATE = new DatasetSchema(
   [
     f("pay_month", "Pay Month", "string", { required: true, example: "2026-05" }),
     f("department", "Department", "string", { required: true, example: "Technology" }),
-    f("legal_entity", "Legal Entity", "string", { required: true, example: "Airpay Payment Services Pvt Ltd" }),
+    f("legal_entity", "Legal Entity", "string", { required: true, example: "Acme Payments Pvt Ltd" }),
     f("headcount_paid", "Headcount Paid", "integer", { example: "120" }),
     f("total_gross", "Total Gross (INR)", "number", { example: "18000000" }),
     f("total_variable", "Total Variable (INR)", "number", { example: "1500000" }),
