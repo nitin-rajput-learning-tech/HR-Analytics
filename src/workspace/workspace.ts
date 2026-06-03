@@ -1,7 +1,7 @@
 import pako from "pako";
 import { MemoryStore } from "../core/store/memoryStore";
 import type { DataSource, Snapshot } from "../core/store/types";
-import { DEFAULT_BRANDING, type Branding } from "../branding/branding";
+import { DEFAULT_BRANDING, sanitizeBranding, type Branding } from "../branding/branding";
 import type { Filters } from "../core/filters";
 
 const FORMAT = "hr-analytics-workspace";
@@ -91,7 +91,7 @@ export function loadWorkspace(bytes: Uint8Array): {
   for (const s of file.snapshots ?? []) store.add(s);
   return {
     store,
-    branding: { ...DEFAULT_BRANDING, ...(file.branding ?? {}) },
+    branding: sanitizeBranding({ ...DEFAULT_BRANDING, ...(file.branding ?? {}) }),
     savedViews: file.savedViews ?? [],
     auditLog: file.auditLog ?? [],
   };
