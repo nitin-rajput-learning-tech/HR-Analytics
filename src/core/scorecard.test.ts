@@ -58,6 +58,19 @@ describe("buildScorecard", () => {
     expect(offer?.trend).toContain("pp");
   });
 
+  it("governs org layers when reporting-manager data is present", () => {
+    const store = new MemoryStore();
+    const rows: Row[] = [
+      { employee_number: "H", full_name: "Head", employment_status: "Working", reporting_manager: "", date_joined: "2018-01-01" },
+      { employee_number: "M", full_name: "Mgr", employment_status: "Working", reporting_manager: "Head", date_joined: "2019-01-01" },
+      ...Array.from({ length: 6 }, (_, i) => ({ employee_number: "E" + i, full_name: "Emp " + i, employment_status: "Working", reporting_manager: "Mgr", date_joined: "2021-01-01" })),
+    ];
+    store.add(snap("employee_master", "2026-05-31", rows));
+    const layers = buildScorecard(store, {}).find((r) => r.id === "org_layers");
+    expect(layers?.value).toBe(3); // Head -> Mgr -> Emp
+    expect(layers?.rag).toBe("green"); // 3 <= default target 6
+  });
+
   it("leaves trend empty when there is no prior period", () => {
     const store = new MemoryStore();
     store.add(snap("employee_master", "2026-05-31", [{ employee_number: "E1", employment_status: "Working", date_joined: "2024-01-01" }]));

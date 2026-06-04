@@ -8,6 +8,7 @@ import { parseKpiValue, deltaText } from "./metrics/compare";
 import { buildPeople } from "./metrics/people";
 import { buildAll } from "./metrics";
 import { buildPayEquity } from "./metrics/pay_equity";
+import { buildOrgHealth } from "./metrics/orgHealth";
 import { overviewKpis } from "./metrics/overview";
 import type { DataSource } from "./store/types";
 import { MemoryStore } from "./store/memoryStore";
@@ -54,6 +55,7 @@ const DEFS: Def[] = [
   { id: "pay_gap", label: "Gender Pay Gap", group: "Pay Equity", kind: "people_pay_equity", kpiLabel: "Gender Pay Gap", unit: "%", higherIsBetter: false, defaultTarget: 5 },
   { id: "first_year_exit", label: "First-Year Exit Share", group: "Retention", kind: "people_retention", kpiLabel: "First-Year Exit Share", unit: "%", higherIsBetter: false, defaultTarget: 15 },
   { id: "avg_tenure", label: "Avg Tenure (active)", group: "People & Org", kind: "people_overview", kpiLabel: "Avg Tenure (active)", unit: "yrs", higherIsBetter: true, defaultTarget: 3 },
+  { id: "org_layers", label: "Org Layers", group: "Org Design", kind: "people_org_health", kpiLabel: "Org Layers", unit: "", higherIsBetter: false, defaultTarget: 6 },
 ];
 
 export function ragFor(value: number | null, target: number, higherIsBetter: boolean): Rag {
@@ -85,6 +87,8 @@ function collect(store: DataSource): Map<string, MetricKPI[]> {
   for (const d of buildAll(store, { activeHeadcount })) add(d.kind, d.kpis);
   const pe = buildPayEquity({ employeeRows: empRows, payrollRows: store.getLatest("payroll_record")?.rows ?? null });
   add(pe.kind, pe.kpis);
+  const oh = buildOrgHealth(empRows);
+  add(oh.kind, oh.kpis);
   return byKind;
 }
 
