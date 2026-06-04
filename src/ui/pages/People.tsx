@@ -16,6 +16,7 @@ import { buildOrgHealth } from "../../core/metrics/orgHealth";
 import { buildMobility } from "../../core/metrics/mobility";
 import { buildWorkforceCost } from "../../core/metrics/workforceCost";
 import { combinedEmployeeSnapshot, employeePeriods } from "../../core/metrics/combineEmployees";
+import { buildSourceReconciliation } from "../../core/metrics/sourceReconciliation";
 import { getSchema } from "../../core/datasets";
 
 const EMP_SCHEMA = getSchema("employee_master");
@@ -27,7 +28,7 @@ import { downloadBlob } from "../download";
 // overflows and related views sit together. Keys reference section keys built
 // below; any key not present (e.g. a domain with no data wired) is skipped.
 const TAB_GROUPS: { label: string; keys: string[] }[] = [
-  { label: "Workforce", keys: ["overview", "headcount", "tenure", "geography", "managers", "quality"] },
+  { label: "Workforce", keys: ["overview", "headcount", "tenure", "geography", "managers", "quality", "sources"] },
   { label: "Diversity", keys: ["diversity", "representation", "pay_equity"] },
   { label: "Attrition & Risk", keys: ["attrition", "retention", "risk"] },
   { label: "Movement & Org", keys: ["movement", "mobility", "org_health"] },
@@ -72,6 +73,9 @@ export function People() {
     const workforceCost = buildWorkforceCost({ payrollRows: enrich.payrollRows, employeeRows: filtered });
     const representation = buildRepresentation({ employeeRows: filtered, asOf: snap.asOf });
     const orgHealth = buildOrgHealth(filtered);
+    // Cross-source reconciliation uses the RAW (unfiltered) snapshots — it audits
+    // the feeds themselves, not the current filter selection.
+    const reconciliation = buildSourceReconciliation(store.listByKind("employee_master"));
     return [
       ...people,
       { key: "movement", label: movement.label, metrics: movement },
@@ -82,6 +86,7 @@ export function People() {
       { key: "workforce_cost", label: workforceCost.label, metrics: workforceCost },
       { key: "representation", label: representation.label, metrics: representation },
       { key: "pay_equity", label: payEquity.label, metrics: payEquity },
+      { key: "sources", label: reconciliation.label, metrics: reconciliation },
     ];
   }, [filtered, empSnaps, filters, snap, enrich]);
 
