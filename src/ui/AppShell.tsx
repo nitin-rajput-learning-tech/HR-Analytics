@@ -226,8 +226,8 @@ export function AppShell() {
         {app.ready && app.mode === "demo" ? (
           <div className="demo-banner no-print" role="status">
             <span>
-              🔬 <strong>Demo mode</strong> — you're exploring a sample organisation. Nothing here is saved. Upload your
-              own data to begin; it stays on this device and survives refreshes.
+              🔬 <strong>Demo mode</strong> — you're exploring a sample organisation, and nothing here is saved. Upload your
+              own data to begin; it stays on this device and is kept across refreshes.
             </span>
             <button className="primary" onClick={() => setPage("Data Intake")}>
               Upload your data →

@@ -118,7 +118,7 @@ export function People() {
     return (
       <div>
         <h2>People Analytics</h2>
-        <p className="muted placeholder">No employee data yet — upload the Employee Master on the Data Intake page.</p>
+        <p className="muted placeholder">No employee data yet. Upload the Employee Master on the Data Intake page to begin.</p>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export function People() {
     <div>
       <div className="page-head">
         <h2>People Analytics</h2>
-        <p className="page-sub">Headcount, tenure, diversity, geography, span of control, attrition and data quality — filter or search to drill in.</p>
+        <p className="page-sub">Headcount, tenure, movement, diversity, pay and attrition risk — filter or search to drill into any team.</p>
       </div>
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />

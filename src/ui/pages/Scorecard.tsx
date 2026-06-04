@@ -19,8 +19,8 @@ export function Scorecard() {
       <div className="page-head">
         <h2>Scorecard</h2>
         <p className="page-sub">
-          Headline KPIs against targets — RAG status (red / amber / green) shows where you are versus goal. Edit a target inline; it
-          saves with your workspace.
+          Headline KPIs against your targets — red / amber / green status, plus the change since last period. Edit any target
+          inline; it saves with your workspace.
         </p>
       </div>
 

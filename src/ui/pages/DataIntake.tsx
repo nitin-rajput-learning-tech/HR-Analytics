@@ -128,12 +128,12 @@ export function DataIntake() {
       <h2>Data Intake</h2>
       <p className="muted">
         Pick the domain, upload its workbook (<strong>.xlsx</strong> or <strong>.csv</strong>), review the preview, then
-        import. Need the format? Download the template — it carries the exact columns, a data dictionary and a README.
+        import. Need the format? Download the template — it includes the exact columns, a data dictionary and a README.
       </p>
       {mode === "demo" ? (
         <p className="intake-demo-note">
-          🔬 You're exploring <strong>demo data</strong>. Importing your first file replaces it with your own — which is
-          then saved on this device and survives refreshes. Start with the <strong>Employee Master</strong>.
+          🔬 You're exploring <strong>demo data</strong>. Your first import replaces it with your own data — saved on this
+          device and kept across refreshes. Start with the <strong>Employee Master</strong>.
         </p>
       ) : null}
 
@@ -163,7 +163,7 @@ export function DataIntake() {
 
       <p className="intake-desc">{schema.description}</p>
       <p className="muted intake-required" style={{ marginBottom: 4 }}>
-        Set the as-of date if the filename has no date (e.g. "…as on 5th May.xlsx") — it overrides filename detection.
+        The as-of date is read automatically from the filename or the export footer. Set it here only to override.
       </p>
       <p className="muted intake-required">
         Required columns: {schema.fields.filter((fld) => fld.required).map((fld) => fld.label).join(", ") || "none"}
@@ -308,8 +308,8 @@ export function DataIntake() {
 
       <h3 style={{ marginTop: 28 }}>Activity log</h3>
       <p className="muted" style={{ marginTop: 0, fontSize: ".84rem", maxWidth: "62ch" }}>
-        A local record of data actions (save, load, publish) — stored inside the workspace, never sent anywhere. Useful
-        for an audit trail of what happened to this dataset.
+        A local record of data actions (save, load, publish), kept in the workspace and never sent anywhere — your
+        audit trail.
       </p>
       {auditLog.length === 0 ? (
         <p className="muted">No activity recorded yet.</p>

@@ -41,9 +41,9 @@ export function Scenario() {
       <div>
         <div className="page-head">
           <h2>Scenario Planner</h2>
-          <p className="page-sub">Model hiring, reductions and reorganisations — see the headcount and cost impact instantly.</p>
+          <p className="page-sub">Model hiring, cuts and reorganisations — headcount and cost impact recompute instantly.</p>
         </div>
-        <p className="muted placeholder">Load an Employee Master on the Data Intake page to start planning scenarios.</p>
+        <p className="muted placeholder">No employee data yet. Upload the Employee Master on the Data Intake page to plan scenarios.</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export function Scenario() {
     <div>
       <div className="page-head">
         <h2>Scenario Planner</h2>
-        <p className="page-sub">Model hiring, reductions and reorganisations against the latest snapshot — headcount and INR cost impact recompute instantly, fully offline.</p>
+        <p className="page-sub">Model hiring, cuts and reorganisations against the latest snapshot — headcount and cost impact recompute instantly.</p>
       </div>
 
       <div className="scn-builder no-print">

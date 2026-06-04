@@ -22,7 +22,7 @@ export function Directory() {
     return (
       <div>
         <h2>Employee Directory</h2>
-        <p className="muted placeholder">No employee data yet — upload the Employee Master on the Data Intake page.</p>
+        <p className="muted placeholder">No employee data yet. Upload the Employee Master on the Data Intake page to begin.</p>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function Directory() {
     <div>
       <div className="page-head">
         <h2>Employee Directory</h2>
-        <p className="page-sub">Browse, search, sort and export the full employee list — filter to drill in.</p>
+        <p className="page-sub">Browse, search, sort and export the full employee roster.</p>
       </div>
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />

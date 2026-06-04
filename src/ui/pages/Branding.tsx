@@ -48,7 +48,7 @@ export function BrandingPage() {
     <div className="branding">
       <div className="page-head">
         <h2>Branding</h2>
-        <p className="page-sub">White-label the app — name, colours, logo and footer. Changes apply instantly and save with the workspace.</p>
+        <p className="page-sub">White-label the app — name, colours, logo and footer. Changes apply instantly and save with your workspace.</p>
       </div>
 
       <div className="brand-grid">
