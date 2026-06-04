@@ -2,6 +2,7 @@ import React from "react";
 import "./theme.css";
 import { useApp } from "./state";
 import { People } from "./pages/People";
+import { HRBrain } from "./pages/HRBrain";
 import { Directory } from "./pages/Directory";
 import { FunctionAnalytics } from "./pages/FunctionAnalytics";
 import { Scenario } from "./pages/Scenario";
@@ -21,7 +22,7 @@ import { loadPersisted } from "../workspace/autosave";
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
-const PAGES = ["People Analytics", "Directory", "Function Analytics", "Scorecard", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "HR Brain", "Directory", "Function Analytics", "Scorecard", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -234,6 +235,7 @@ export function AppShell() {
           </div>
         ) : null}
         {page === "People Analytics" && <People />}
+        {page === "HR Brain" && <HRBrain />}
         {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}
         {page === "Scorecard" && <Scorecard />}
