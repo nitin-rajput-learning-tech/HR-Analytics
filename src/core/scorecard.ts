@@ -5,6 +5,7 @@
 // so the scorecard can never drift from the dashboards it summarises.
 
 import { parseKpiValue, deltaText } from "./metrics/compare";
+import { DEFAULT_BENCHMARKS, benchmarkPosition, formatBand, type BenchPos } from "./benchmarks";
 import { buildPeople } from "./metrics/people";
 import { buildAll } from "./metrics";
 import { buildPayEquity } from "./metrics/pay_equity";
@@ -32,6 +33,8 @@ export interface ScorecardRow {
   delta: number | null; // value − prior
   trend: string; // formatted change vs last period, e.g. "▲ +2.1pp"
   trendTone: "good" | "bad" | "neutral";
+  benchmark: string; // typical industry range, e.g. "12–18%" ("—" if none)
+  benchmarkPos: BenchPos; // where the value sits vs the typical band
 }
 
 interface Def {
@@ -136,7 +139,8 @@ export function buildScorecard(store: DataSource, targets: Record<string, number
       }
     }
 
-    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone };
+    const band = DEFAULT_BENCHMARKS[def.id];
+    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone, benchmark: formatBand(band, def.unit), benchmarkPos: benchmarkPosition(value, band, def.higherIsBetter) };
   });
 }
 

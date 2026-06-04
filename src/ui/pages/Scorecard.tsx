@@ -43,6 +43,7 @@ export function Scorecard() {
                 <th>Area</th>
                 <th>Current</th>
                 <th>vs last period</th>
+                <th>Benchmark</th>
                 <th>Target</th>
                 <th>Status</th>
               </tr>
@@ -54,6 +55,18 @@ export function Scorecard() {
                   <td className="muted">{r.group}</td>
                   <td><strong>{r.display}</strong></td>
                   <td>{r.trend ? <span className={`sc-trend ${r.trendTone}`}>{r.trend}</span> : <span className="muted">—</span>}</td>
+                  <td>
+                    {r.benchmarkPos === "none" ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <span className="sc-bench">
+                        <span className="sc-bench-range">{r.benchmark}</span>
+                        <span className={`sc-bench-pos ${r.benchmarkPos}`}>
+                          {r.benchmarkPos === "better" ? "▲ better" : r.benchmarkPos === "worse" ? "▼ worse" : "● typical"}
+                        </span>
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <span className="sc-target">
                       <input
@@ -76,9 +89,13 @@ export function Scorecard() {
         </div>
       </div>
 
-      <p className="muted" style={{ fontSize: ".82rem", marginTop: 10, maxWidth: "72ch" }}>
+      <p className="muted" style={{ fontSize: ".82rem", marginTop: 10, maxWidth: "78ch" }}>
         Targets are stored in your workspace (auto-saved on this device and included when you save/export).{" "}
         {summary.red > 0 ? "Red KPIs are where to focus this period." : summary.tracked > 0 ? "All tracked KPIs are at or near target." : "Upload data to populate the scorecard."}
+      </p>
+      <p className="muted" style={{ fontSize: ".8rem", marginTop: 4, maxWidth: "78ch" }}>
+        Benchmark ranges are <strong>illustrative</strong> general references — a starting point to compare against, not a sourced
+        survey. Adjust them for your sector and region.
       </p>
     </div>
   );
