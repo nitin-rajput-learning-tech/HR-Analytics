@@ -538,6 +538,14 @@ select, input[type="file"] { font: inherit; }
 .nl-brain-tag { color: var(--muted); font-size: 0.78rem; text-transform: capitalize; }
 .nl-brain-reason { margin: 5px 0 4px; font-size: 0.86rem; color: var(--text); }
 .nl-brain-remedy { font-size: 0.84rem; color: var(--muted); }
+.nl-roadmap { margin-top: 14px; }
+.nl-roadmap h3 { margin: 0 0 6px; color: var(--ink); font-size: 1rem; }
+.nl-rm-h { margin: 6px 0; break-inside: avoid; }
+.nl-rm-label { font-weight: 800; font-size: 0.85rem; }
+.nl-rm-label span { color: var(--muted); font-weight: 600; }
+.nl-rm-h ul { margin: 3px 0 0; padding-left: 20px; font-size: 0.86rem; }
+.nl-rm-h li { margin: 2px 0; }
+.nl-rm-h em { color: var(--muted); font-style: normal; font-size: 0.8rem; }
 .nl-sc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
 .nl-sc-table th, .nl-sc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
 .nl-sc-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }

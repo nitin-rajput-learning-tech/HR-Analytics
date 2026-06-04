@@ -62,6 +62,17 @@ export function buildFactsMarkdown(nl: Newsletter): string {
       for (const r of f.remedy) push(`  - ${r}`);
       push();
     }
+    if (nl.brain.roadmap.length) {
+      push("### Recommended action roadmap");
+      for (const h of ["Now", "Next", "Later"] as const) {
+        const items = nl.brain.roadmap.filter((r) => r.horizon === h);
+        if (!items.length) continue;
+        const hint = h === "Now" ? "0–30 days" : h === "Next" ? "1–3 months" : "3–12 months";
+        push(`- **${h}** (${hint}):`);
+        for (const it of items) push(`  - ${it.title} — ${it.impact} impact · ${it.effort} effort · ${it.owner}`);
+      }
+      push();
+    }
   }
 
   for (const s of nl.sections) {

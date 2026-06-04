@@ -163,6 +163,28 @@ export function Reports() {
                 <div className="nl-brain-remedy">Remedy: {f.remedy[0]}</div>
               </div>
             ))}
+            {nl.brain.roadmap.length > 0 ? (
+              <div className="nl-roadmap">
+                <h3>Recommended action roadmap</h3>
+                {(["Now", "Next", "Later"] as const).map((h) => {
+                  const items = nl.brain.roadmap.filter((r) => r.horizon === h);
+                  if (!items.length) return null;
+                  const hint = h === "Now" ? "0–30 days" : h === "Next" ? "1–3 months" : "3–12 months";
+                  return (
+                    <div className="nl-rm-h" key={h}>
+                      <div className="nl-rm-label">{h} <span>· {hint}</span></div>
+                      <ul>
+                        {items.map((it) => (
+                          <li key={it.id}>
+                            {it.title} <em>— {it.impact} impact · {it.effort} effort · {it.owner}</em>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </section>
         ) : null}
 
