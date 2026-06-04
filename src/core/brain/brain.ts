@@ -322,9 +322,33 @@ const RULES: Rule[] = [
   },
 ];
 
+export interface BrainHealth {
+  score: number; // 0–100
+  band: "Excellent" | "Good" | "Fair" | "At Risk" | "Critical";
+  caption: string;
+}
+
 export interface BrainResult {
   findings: BrainFinding[];
   summary: { total: number; critical: number; high: number; medium: number; low: number; known: number; possible: number };
+  health: BrainHealth;
+}
+
+// Multiplicative health: each open issue retains a fraction of health, so the
+// score has diminishing returns (one critical hurts a lot; a tenth low barely
+// moves it) and never collapses to 0 unfairly. Pure function of the findings.
+const HEALTH_FACTOR: Record<BrainSeverity, number> = { critical: 0.78, high: 0.9, medium: 0.96, low: 0.99 };
+
+export function computeHealth(findings: BrainFinding[], summary: BrainResult["summary"]): BrainHealth {
+  let h = 1;
+  for (const f of findings) h *= HEALTH_FACTOR[f.severity];
+  const score = Math.round(h * 100);
+  const band: BrainHealth["band"] = score >= 85 ? "Excellent" : score >= 70 ? "Good" : score >= 50 ? "Fair" : score >= 30 ? "At Risk" : "Critical";
+  const priority = summary.critical + summary.high;
+  const caption = findings.length === 0
+    ? "No material issues detected across the loaded data."
+    : `${priority} priority issue${priority === 1 ? "" : "s"} of ${summary.total} open${findings[0] ? ` · lead concern: ${findings[0].title}` : ""}.`;
+  return { score, band, caption };
 }
 
 export function buildBrain(store: DataSource, opts: { targets?: Record<string, number> } = {}): BrainResult {
@@ -348,5 +372,5 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     known: findings.filter((f) => f.confidence === "confirmed").length,
     possible: findings.filter((f) => f.confidence !== "confirmed").length,
   };
-  return { findings, summary };
+  return { findings, summary, health: computeHealth(findings, summary) };
 }

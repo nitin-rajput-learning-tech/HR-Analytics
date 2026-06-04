@@ -393,6 +393,18 @@ select, input[type="file"] { font: inherit; }
 .brain-remedy { margin: 0; padding-left: 20px; font-size: 0.9rem; max-width: 92ch; }
 .brain-remedy li { margin: 4px 0; }
 .brain-clear { padding: 15px 18px; border: 1px solid var(--border); border-left: 5px solid #15803d; border-radius: var(--radius); background: var(--surface); color: var(--text); font-weight: 600; max-width: 80ch; }
+.brain-score { display: flex; align-items: center; gap: 18px; margin: 4px 0 16px; padding: 15px 20px; border: 1px solid var(--border); border-left: 6px solid var(--brand-accent); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
+.brain-score-num { font-size: 2.6rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); flex: none; }
+.brain-score-of { font-size: 1rem; font-weight: 600; color: var(--muted); }
+.brain-score-band { font-size: 1rem; font-weight: 800; }
+.brain-score-caption { color: var(--muted); font-size: 0.88rem; margin-top: 2px; max-width: 84ch; }
+.brain-score.band-excellent, .brain-score.band-good { border-left-color: #15803d; }
+.brain-score.band-fair, .brain-score.band-at-risk { border-left-color: #b45309; }
+.brain-score.band-critical { border-left-color: #b91c1c; }
+.brain-score.band-excellent .brain-score-band, .brain-score.band-good .brain-score-band { color: #15803d; }
+.brain-score.band-fair .brain-score-band, .brain-score.band-at-risk .brain-score-band { color: #b45309; }
+.brain-score.band-critical .brain-score-band { color: #b91c1c; }
+[data-theme="dark"] .brain-score.band-excellent .brain-score-band, [data-theme="dark"] .brain-score.band-good .brain-score-band { color: #4ade80; }
 .enc-modal { width: min(420px, 92vw); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow-lg, 0 24px 60px rgba(2, 6, 23, 0.35)); padding: 20px 22px; }
 .enc-modal h3 { margin: 0 0 6px; }
 .enc-modal .ws-pass { margin-top: 12px; font-size: 0.92rem; padding: 9px 11px; }
@@ -490,6 +502,18 @@ select, input[type="file"] { font: inherit; }
 [data-theme="dark"] .brief-movers .mover.bad { color: #f87171; }
 .nl-scorecard { margin: 22px 0; }
 .nl-scorecard h2 { color: var(--ink); }
+/* Newsletter HR Brain diagnosis */
+.nl-brain { margin: 22px 0; }
+.nl-brain h2 { color: var(--ink); }
+.nl-brain-score { font-size: 0.95rem; margin: 4px 0 12px; }
+.nl-brain-finding { border: 1px solid var(--border); border-left: 4px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 13px; margin: 8px 0; background: var(--surface); break-inside: avoid; }
+.nl-brain-finding.sev-critical { border-left-color: #b91c1c; }
+.nl-brain-finding.sev-high { border-left-color: #b45309; }
+.nl-brain-finding.sev-medium { border-left-color: #475569; }
+.nl-brain-head { font-size: 0.95rem; }
+.nl-brain-tag { color: var(--muted); font-size: 0.78rem; text-transform: capitalize; }
+.nl-brain-reason { margin: 5px 0 4px; font-size: 0.86rem; color: var(--text); }
+.nl-brain-remedy { font-size: 0.84rem; color: var(--muted); }
 .nl-sc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
 .nl-sc-table th, .nl-sc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
 .nl-sc-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }

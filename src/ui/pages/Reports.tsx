@@ -68,6 +68,11 @@ export function Reports() {
             <li>
               <a href="#sec-exec">Executive Brief</a>
             </li>
+            {nl.brain.findings.length > 0 ? (
+              <li>
+                <a href="#sec-brain">HR Brain — Diagnosis</a>
+              </li>
+            ) : null}
             {nl.scorecard.some((r) => r.rag !== "none") ? (
               <li>
                 <a href="#sec-scorecard">Scorecard vs Targets</a>
@@ -142,6 +147,24 @@ export function Reports() {
             </div>
           ) : null}
         </section>
+
+        {nl.brain.findings.length > 0 ? (
+          <section className="nl-brain" id="sec-brain">
+            <h2>HR Brain — Diagnosis</h2>
+            <p className="nl-brain-score">
+              HR Health <strong>{nl.brain.health.score}/100</strong> · {nl.brain.health.band} — {nl.brain.health.caption}
+            </p>
+            {nl.brain.findings.map((f) => (
+              <div className={`nl-brain-finding sev-${f.severity}`} key={f.id}>
+                <div className="nl-brain-head">
+                  <strong>{f.title}</strong> <span className="nl-brain-tag">{f.severity} · {f.category} · {f.owner}</span>
+                </div>
+                <p className="nl-brain-reason">{f.reason}</p>
+                <div className="nl-brain-remedy">Remedy: {f.remedy[0]}</div>
+              </div>
+            ))}
+          </section>
+        ) : null}
 
         {nl.scorecard.some((r) => r.rag !== "none") ? (
           <section className="nl-scorecard" id="sec-scorecard">

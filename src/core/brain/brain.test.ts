@@ -41,5 +41,15 @@ describe("buildBrain", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
     expect(r.findings).toEqual([]);
+    expect(r.health.score).toBe(100); // nothing wrong → perfect health
+    expect(r.health.band).toBe("Excellent");
+  });
+
+  it("rolls findings up into a health score that drops with issues", () => {
+    const r = buildBrain(storeWithEarlyExits());
+    expect(r.health.score).toBeGreaterThan(0);
+    expect(r.health.score).toBeLessThan(100); // at least one finding present
+    expect(["Excellent", "Good", "Fair", "At Risk", "Critical"]).toContain(r.health.band);
+    expect(r.health.caption.length).toBeGreaterThan(0);
   });
 });
