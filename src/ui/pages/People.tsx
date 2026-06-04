@@ -13,6 +13,7 @@ import { buildPayEquity } from "../../core/metrics/pay_equity";
 import { buildCompensation } from "../../core/metrics/compensation";
 import { buildRepresentation } from "../../core/metrics/representation";
 import { buildOrgHealth } from "../../core/metrics/orgHealth";
+import { buildMobility } from "../../core/metrics/mobility";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -44,6 +45,7 @@ export function People() {
     const people = decoratePeopleDeltas(current, priorPeople, priorLabel);
     const filteredSnaps = empSnaps.map((s) => ({ ...s, rows: filterRows(s.rows, filters) }));
     const movement = buildMovement(filteredSnaps, { activeHeadcount: filtered.filter((r) => String(r.employment_status) === "Working").length });
+    const mobility = buildMobility({ employeeSnaps: filteredSnaps, pmsRows: enrich.pmsRows });
     const risk = buildRisk({ employeeRows: filtered, asOf: snap.asOf, payrollRows: enrich.payrollRows, pmsRows: enrich.pmsRows });
     const payEquity = buildPayEquity({ employeeRows: filtered, payrollRows: enrich.payrollRows });
     const compensation = buildCompensation({ employeeRows: filtered, payrollRows: enrich.payrollRows, asOf: snap.asOf });
@@ -52,6 +54,7 @@ export function People() {
     return [
       ...people,
       { key: "movement", label: movement.label, metrics: movement },
+      { key: "mobility", label: mobility.label, metrics: mobility },
       { key: "risk", label: risk.label, metrics: risk },
       { key: "org_health", label: orgHealth.label, metrics: orgHealth },
       { key: "compensation", label: compensation.label, metrics: compensation },
