@@ -37,6 +37,21 @@ describe("buildBrain", () => {
     expect(summary.critical + summary.high + summary.medium + summary.low).toBe(findings.length);
   });
 
+  it("flags department hotspots from compounding cross-functional risk", () => {
+    const store = new MemoryStore();
+    const emp: Row[] = Array.from({ length: 10 }, (_, i) => ({ employee_number: "E" + i, full_name: "E" + i, employment_status: "Working", department: "Tech", date_joined: "2021-01-01" }));
+    store.add(snap("2026-05-31", emp));
+    // Low training coverage (1 of 10) + low review completion (2 of 10) → Tech compounds.
+    store.add({ id: "ld_enrollment:2026-05-31", kind: "ld_enrollment", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full", rows: [{ employee_number: "E0", program_id: "P1", status: "Completed" }] });
+    const pms: Row[] = Array.from({ length: 10 }, (_, i) => ({ employee_number: "E" + i, cycle: "FY26-H1", manager_review_done: i < 2 }));
+    store.add({ id: "pms_review:FY26-H1", kind: "pms_review", asOf: "2026-05-31", periodLabel: "FY26-H1", sourceFile: "f", compatibility: "full", rows: pms });
+
+    const hot = buildBrain(store).findings.find((f) => f.id === "department_hotspots");
+    expect(hot).toBeTruthy();
+    expect(hot!.evidence.join(" ")).toMatch(/Tech/);
+    expect(hot!.remedy.length).toBeGreaterThanOrEqual(3);
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

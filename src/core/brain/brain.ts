@@ -69,6 +69,63 @@ const RULES: Rule[] = [
     };
   },
 
+  // Department hotspots — WHERE the people-risk concentrates. Reads the cross-
+  // functional compound-risk table (attrition + training + reviews per dept):
+  // departments at/over the high threshold are confirmed hotspots; those merely
+  // elevated surface as an emerging "possible" watch list.
+  (ctx) => {
+    const cf = ctx.domains.find((d) => d.kind === "cross_functional" && d.hasData);
+    const table = cf?.tables.find((t) => /compound risk by department/i.test(t.title));
+    if (!table || !table.rows.length) return null;
+    const scoreIdx = table.columns.length - 1; // "Risk score" is the last column
+    const ranked = table.rows
+      .map((r) => ({ dept: String(r[0]), score: Number(r[scoreIdx]) }))
+      .filter((x) => x.dept && Number.isFinite(x.score))
+      .sort((a, b) => b.score - a.score);
+    if (!ranked.length) return null;
+    const high = ranked.filter((r) => r.score >= 50);
+    const remedy = [
+      "Prioritise the highest-scoring departments ahead of any org-wide initiative.",
+      "For each, combine its specific gaps into ONE plan (e.g. clear reviews and launch targeted training together, not sequentially).",
+      "Assign an HRBP and the line manager to co-own each department with a 30-day checkpoint.",
+      "Re-score next period; if the risk hasn't fallen, escalate to the function head.",
+    ];
+    if (high.length) {
+      return {
+        id: "department_hotspots",
+        title: high.length === 1 ? `Department hotspot: ${high[0].dept}` : `${high.length} department hotspots (compounding risk)`,
+        category: "Cross-Functional",
+        owner: "HR Business Partners",
+        severity: high[0].score >= 65 ? "high" : "medium",
+        confidence: "likely",
+        evidence: high.slice(0, 6).map((r) => `${r.dept} — compound-risk score ${r.score}/100`),
+        reason:
+          "These departments show several people-risk signals at once — attrition, low training coverage and/or reviews behind. Overlapping risks compound: a team that's losing people AND under-trained AND behind on reviews spirals faster than any single gap, and org-wide programmes won't reach it in time.",
+        remedy,
+      };
+    }
+    const elevated = ranked.filter((r) => r.score >= 35);
+    if (elevated.length) {
+      return {
+        id: "department_hotspots",
+        title: "Departments approaching compound-risk",
+        category: "Cross-Functional",
+        owner: "HR Business Partners",
+        severity: "low",
+        confidence: "possible",
+        evidence: elevated.slice(0, 4).map((r) => `${r.dept} — compound-risk score ${r.score}/100 (watch)`),
+        reason:
+          "No department has crossed the high-risk threshold yet, but these sit closest — their attrition, training-coverage and review signals are starting to stack. Acting on the weakest single signal now is far cheaper than after they compound.",
+        remedy: [
+          "Watch the listed departments' attrition, training coverage and review completion together, not in isolation.",
+          "Fix each department's weakest current signal before the others pile on.",
+          "Re-check next period; promote any that cross the threshold to a priority plan.",
+        ],
+      };
+    }
+    return null;
+  },
+
   // Statutory compliance.
   (ctx) => {
     const v = ctx.num("Statutory On-time");
