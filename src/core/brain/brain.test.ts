@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBrain } from "./brain";
+import { buildBrain, buildRoadmap, type BrainFinding } from "./brain";
 import { MemoryStore } from "../store/memoryStore";
 import type { Snapshot } from "../store/types";
 import type { Row } from "../ingest/types";
@@ -52,6 +52,20 @@ describe("buildBrain", () => {
     expect(hot).toBeTruthy();
     expect(hot!.evidence.join(" ")).toMatch(/Tech/);
     expect(hot!.remedy.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("sequences findings into a prioritised Now/Next/Later roadmap", () => {
+    const f = (id: string, severity: BrainFinding["severity"], owner: string, remedy: string): BrainFinding => ({ id, title: id, category: "", owner, severity, confidence: "confirmed", evidence: [], reason: "", remedy: [remedy] });
+    const rm = buildRoadmap([f("statutory", "critical", "Payroll", "fix it"), f("emerging_trends", "low", "CHRO", "watch"), f("pay_gap", "high", "Total Rewards", "analyse")]);
+    const byId = Object.fromEntries(rm.map((r) => [r.id, r]));
+    expect(byId.statutory.horizon).toBe("Now"); // critical → Now
+    expect(byId.statutory.firstAction).toBe("fix it");
+    expect(byId.pay_gap.impact).toBe("High");
+    expect(byId.pay_gap.effort).toBe("High");
+    expect(byId.pay_gap.quadrant).toBe("Major initiative");
+    expect(byId.pay_gap.horizon).toBe("Next"); // high-impact major bet → Next
+    expect(byId.emerging_trends.horizon).toBe("Later"); // low impact → Later
+    expect(rm[0].horizon).toBe("Now"); // sorted, Now first
   });
 
   it("is empty-safe with no data", () => {

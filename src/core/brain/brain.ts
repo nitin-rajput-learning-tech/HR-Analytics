@@ -27,6 +27,51 @@ export interface BrainFinding {
 
 type Rule = (ctx: BrainContext) => BrainFinding | null;
 
+export type Level = "High" | "Medium" | "Low";
+export interface RoadmapItem {
+  id: string;
+  title: string;
+  owner: string;
+  impact: Level;
+  effort: Level;
+  horizon: "Now" | "Next" | "Later";
+  quadrant: "Quick win" | "Major initiative" | "Incremental" | "Deprioritise";
+  firstAction: string;
+  link?: { page: string; tab?: string };
+}
+
+// Severity → business impact. Effort is a per-finding heuristic (how much work a
+// people team realistically needs): compliance/data/chase fixes are Low; comp,
+// org-redesign and cross-cutting programmes are High.
+const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High", medium: "Medium", low: "Low" };
+const EFFORT_OF: Record<string, Level> = {
+  statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium",
+  pay_gap: "High", org_design: "High", compound_retention: "High",
+};
+const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
+
+// Sequence each finding into a Now / Next / Later horizon from its impact × effort
+// (the classic consulting prioritisation): criticals and quick wins go Now; high-
+// impact major bets go Next; low-impact or high-effort-low-payoff items go Later.
+export function buildRoadmap(findings: BrainFinding[]): RoadmapItem[] {
+  const items = findings.map((f): RoadmapItem => {
+    const impact = IMPACT_OF[f.severity];
+    const effort = EFFORT_OF[f.id] ?? "Medium";
+    let horizon: RoadmapItem["horizon"];
+    if (f.severity === "critical") horizon = "Now";
+    else if (effort === "Low" && impact !== "Low") horizon = "Now"; // quick wins
+    else if (impact === "Low") horizon = "Later";
+    else if (effort === "High" && impact === "Medium") horizon = "Later";
+    else horizon = "Next";
+    const quadrant: RoadmapItem["quadrant"] =
+      impact === "High" ? (effort === "Low" ? "Quick win" : "Major initiative") : effort === "High" ? "Deprioritise" : "Incremental";
+    return { id: f.id, title: f.title, owner: f.owner, impact, effort, horizon, quadrant, firstAction: f.remedy[0] ?? "", link: f.link };
+  });
+  const lvl = { High: 0, Medium: 1, Low: 2 };
+  return items.sort((a, b) => HORIZON_RANK[a.horizon] - HORIZON_RANK[b.horizon] || lvl[a.impact] - lvl[b.impact] || lvl[a.effort] - lvl[b.effort]);
+}
+
 // Where each finding's evidence lives — used to deep-link from a finding card to
 // the relevant analytic (People sub-tab, or another page).
 const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
@@ -408,6 +453,7 @@ export interface BrainResult {
   findings: BrainFinding[];
   summary: { total: number; critical: number; high: number; medium: number; low: number; known: number; possible: number };
   health: BrainHealth;
+  roadmap: RoadmapItem[];
 }
 
 // Multiplicative health: each open issue retains a fraction of health, so the
@@ -450,5 +496,5 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     known: findings.filter((f) => f.confidence === "confirmed").length,
     possible: findings.filter((f) => f.confidence !== "confirmed").length,
   };
-  return { findings, summary, health: computeHealth(findings, summary) };
+  return { findings, summary, health: computeHealth(findings, summary), roadmap: buildRoadmap(findings) };
 }
