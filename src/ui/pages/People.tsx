@@ -14,6 +14,7 @@ import { buildCompensation } from "../../core/metrics/compensation";
 import { buildRepresentation } from "../../core/metrics/representation";
 import { buildOrgHealth } from "../../core/metrics/orgHealth";
 import { buildMobility } from "../../core/metrics/mobility";
+import { buildWorkforceCost } from "../../core/metrics/workforceCost";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -49,6 +50,7 @@ export function People() {
     const risk = buildRisk({ employeeRows: filtered, asOf: snap.asOf, payrollRows: enrich.payrollRows, pmsRows: enrich.pmsRows });
     const payEquity = buildPayEquity({ employeeRows: filtered, payrollRows: enrich.payrollRows });
     const compensation = buildCompensation({ employeeRows: filtered, payrollRows: enrich.payrollRows, asOf: snap.asOf });
+    const workforceCost = buildWorkforceCost({ payrollRows: enrich.payrollRows, employeeRows: filtered });
     const representation = buildRepresentation({ employeeRows: filtered, asOf: snap.asOf });
     const orgHealth = buildOrgHealth(filtered);
     return [
@@ -58,6 +60,7 @@ export function People() {
       { key: "risk", label: risk.label, metrics: risk },
       { key: "org_health", label: orgHealth.label, metrics: orgHealth },
       { key: "compensation", label: compensation.label, metrics: compensation },
+      { key: "workforce_cost", label: workforceCost.label, metrics: workforceCost },
       { key: "representation", label: representation.label, metrics: representation },
       { key: "pay_equity", label: payEquity.label, metrics: payEquity },
     ];
