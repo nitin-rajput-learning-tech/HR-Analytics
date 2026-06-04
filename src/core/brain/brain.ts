@@ -46,6 +46,7 @@ export interface RoadmapItem {
 const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High", medium: "Medium", low: "Low" };
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low",
+  below_benchmark: "Medium",
   offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
 };
@@ -88,6 +89,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   cost_concentration: { page: "People Analytics", tab: "workforce_cost" },
   source_reconciliation: { page: "People Analytics", tab: "sources" },
   emerging_trends: { page: "Scorecard" },
+  below_benchmark: { page: "Scorecard" },
 };
 
 const SEV_RANK: Record<BrainSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -438,6 +440,30 @@ const RULES: Rule[] = [
         "Review the largest adverse movers with their owners.",
         "Decide whether each move is seasonal noise or a structural shift.",
         "Set a checkpoint next period and act before any of them cross target.",
+      ],
+    };
+  },
+
+  // Below industry norm — KPIs sitting worse than the typical benchmark band.
+  (ctx) => {
+    const below = ctx.scorecard.filter((r) => r.benchmarkPos === "worse");
+    if (below.length < 1) return null;
+    const redCount = below.filter((r) => r.rag === "red").length;
+    return {
+      id: "below_benchmark",
+      title: `${below.length} KPI${below.length === 1 ? "" : "s"} below industry norm`,
+      category: "Benchmarking",
+      owner: "CHRO",
+      severity: below.length >= 4 || redCount >= 3 ? "high" : "medium",
+      confidence: "likely", // benchmark bands are illustrative references, not a sourced survey
+      evidence: below.slice(0, 6).map((r) => `${r.label}: ${r.display} vs typical ${r.benchmark}`),
+      reason:
+        "Several headline metrics sit outside the typical range for comparable organisations. The bands here are illustrative references, so validate against real peer data — but a cluster of below-norm KPIs usually signals systemic, not isolated, gaps.",
+      remedy: [
+        "Confirm the gaps against a sourced benchmark for your sector and region.",
+        "Prioritise metrics that are BOTH below norm and below your own target.",
+        "Set improvement targets that close at least half the gap to typical this year.",
+        "Re-benchmark each cycle to confirm you're converging.",
       ],
     };
   },

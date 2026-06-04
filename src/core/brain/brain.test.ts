@@ -68,6 +68,14 @@ describe("buildBrain", () => {
     expect(rm[0].horizon).toBe("Now"); // sorted, Now first
   });
 
+  it("flags KPIs sitting below the industry benchmark", () => {
+    const { findings } = buildBrain(storeWithEarlyExits()); // first-year exit 100% vs typical 10–20%
+    const bench = findings.find((f) => f.id === "below_benchmark");
+    expect(bench).toBeTruthy();
+    expect(bench!.evidence.join(" ")).toMatch(/vs typical/);
+    expect(bench!.confidence).toBe("likely"); // illustrative bands → not "confirmed"
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
