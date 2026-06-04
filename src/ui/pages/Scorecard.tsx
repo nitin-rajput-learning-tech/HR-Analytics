@@ -12,6 +12,7 @@ export function Scorecard() {
     const n = Number(v);
     if (v.trim() !== "" && Number.isFinite(n)) setTargets({ ...targets, [id]: n });
   };
+  const hasCustom = Object.keys(targets).length > 0;
 
   return (
     <div className="scorecard">
@@ -28,6 +29,9 @@ export function Scorecard() {
         <span className="sc-chip amber"><span className="rag-dot amber" aria-hidden="true" /> {summary.amber} watch</span>
         <span className="sc-chip red"><span className="rag-dot red" aria-hidden="true" /> {summary.red} off target</span>
         <span className="sc-chip none"><span className="rag-dot none" aria-hidden="true" /> {rows.length - summary.tracked} no data</span>
+        {hasCustom ? (
+          <button type="button" className="sc-reset" onClick={() => setTargets({})}>Reset targets to defaults</button>
+        ) : null}
       </div>
 
       <div className="metric-table">
@@ -38,6 +42,7 @@ export function Scorecard() {
                 <th>KPI</th>
                 <th>Area</th>
                 <th>Current</th>
+                <th>vs last period</th>
                 <th>Target</th>
                 <th>Status</th>
               </tr>
@@ -48,6 +53,7 @@ export function Scorecard() {
                   <td>{r.label}</td>
                   <td className="muted">{r.group}</td>
                   <td><strong>{r.display}</strong></td>
+                  <td>{r.trend ? <span className={`sc-trend ${r.trendTone}`}>{r.trend}</span> : <span className="muted">—</span>}</td>
                   <td>
                     <span className="sc-target">
                       <input

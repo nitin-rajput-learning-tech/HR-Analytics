@@ -4,12 +4,13 @@
 // builders and reads their already-formatted KPI values (no new metric logic),
 // so the scorecard can never drift from the dashboards it summarises.
 
-import { parseKpiValue } from "./metrics/compare";
+import { parseKpiValue, deltaText } from "./metrics/compare";
 import { buildPeople } from "./metrics/people";
 import { buildAll } from "./metrics";
 import { buildPayEquity } from "./metrics/pay_equity";
 import { overviewKpis } from "./metrics/overview";
 import type { DataSource } from "./store/types";
+import { MemoryStore } from "./store/memoryStore";
 import type { MetricKPI } from "./metrics/base";
 
 export type Rag = "green" | "amber" | "red" | "none";
@@ -25,6 +26,10 @@ export interface ScorecardRow {
   higherIsBetter: boolean;
   rag: Rag;
   status: string;
+  prior: number | null; // value last period (null if no history)
+  delta: number | null; // value − prior
+  trend: string; // formatted change vs last period, e.g. "▲ +2.1pp"
+  trendTone: "good" | "bad" | "neutral";
 }
 
 interface Def {
@@ -66,29 +71,67 @@ function statusText(rag: Rag, higherIsBetter: boolean): string {
   return rag === "amber" ? `Just ${dir} target` : `${dir[0].toUpperCase()}${dir.slice(1)} target`;
 }
 
-export function buildScorecard(store: DataSource, targets: Record<string, number> = {}): ScorecardRow[] {
+// Collect every scorecard-relevant KPI from a store (People + functional + pay
+// equity), keyed by domain kind, reusing the existing builders so the scorecard
+// can never drift from the dashboards.
+function collect(store: DataSource): Map<string, MetricKPI[]> {
   const empSnap = store.getLatest("employee_master");
   const empRows = empSnap?.rows ?? [];
   const asOf = empSnap?.asOf ?? "";
   const activeHeadcount = empRows.length ? overviewKpis(empRows).active : 0;
-
   const byKind = new Map<string, MetricKPI[]>();
-  const allKpis: MetricKPI[] = [];
-  const add = (kind: string, kpis: MetricKPI[]) => { byKind.set(kind, [...(byKind.get(kind) ?? []), ...kpis]); allKpis.push(...kpis); };
+  const add = (kind: string, kpis: MetricKPI[]) => byKind.set(kind, [...(byKind.get(kind) ?? []), ...kpis]);
   if (empRows.length) for (const s of buildPeople(empRows, asOf)) add(s.metrics.kind, s.metrics.kpis);
   for (const d of buildAll(store, { activeHeadcount })) add(d.kind, d.kpis);
   const pe = buildPayEquity({ employeeRows: empRows, payrollRows: store.getLatest("payroll_record")?.rows ?? null });
   add(pe.kind, pe.kpis);
+  return byKind;
+}
+
+// Find a KPI's numeric value for a definition: primary lookup by (kind, label),
+// falling back to any domain with that label so a moved KPI never blanks a row.
+function findValue(byKind: Map<string, MetricKPI[]>, def: Def): { kpi?: MetricKPI; value: number | null } {
+  const kpi = (byKind.get(def.kind) ?? []).find((k) => k.label === def.kpiLabel) ?? [...byKind.values()].flat().find((k) => k.label === def.kpiLabel);
+  const parsed = kpi ? parseKpiValue(kpi.value) : null;
+  return { kpi, value: parsed ? parsed.n : null };
+}
+
+// Prior-period view of the store: the second-latest snapshot of each kind, so the
+// scorecard can show momentum vs last period. Null when there's no history.
+function priorStoreOf(store: DataSource): DataSource | null {
+  const prior = new MemoryStore();
+  for (const kind of new Set(store.allSnapshots().map((s) => s.kind))) {
+    const snaps = store.listByKind(kind); // ascending by asOf
+    if (snaps.length >= 2) prior.add(snaps[snaps.length - 2]);
+  }
+  return prior.allSnapshots().length ? prior : null;
+}
+
+export function buildScorecard(store: DataSource, targets: Record<string, number> = {}): ScorecardRow[] {
+  const cur = collect(store);
+  const priorStore = priorStoreOf(store);
+  const prior = priorStore ? collect(priorStore) : null;
 
   return DEFS.map((def) => {
-    // Primary lookup by (kind, label); fall back to any domain with that label so
-    // a renamed/moved KPI never silently blanks the scorecard row.
-    const kpi = (byKind.get(def.kind) ?? []).find((k) => k.label === def.kpiLabel) ?? allKpis.find((k) => k.label === def.kpiLabel);
-    const parsed = kpi ? parseKpiValue(kpi.value) : null;
-    const value = parsed ? parsed.n : null;
+    const { kpi, value } = findValue(cur, def);
+    const priorValue = prior ? findValue(prior, def).value : null;
     const target = typeof targets[def.id] === "number" && Number.isFinite(targets[def.id]) ? targets[def.id] : def.defaultTarget;
     const rag = ragFor(value, target, def.higherIsBetter);
-    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter) };
+
+    const delta = value !== null && priorValue !== null ? value - priorValue : null;
+    let trend = "";
+    let trendTone: "good" | "bad" | "neutral" = "neutral";
+    if (delta !== null) {
+      const floor = def.unit === "yrs" ? 0.05 : 0.5; // ignore rounding-level noise
+      if (Math.abs(delta) < floor) {
+        trend = "no change";
+      } else {
+        trend = deltaText(delta, def.unit === "%" ? "pct" : def.unit === "yrs" ? "yrs" : "count");
+        trendTone = (def.higherIsBetter ? delta > 0 : delta < 0) ? "good" : "bad";
+      }
+    }
+
+    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone };
   });
 }
 

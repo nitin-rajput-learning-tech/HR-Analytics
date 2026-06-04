@@ -43,4 +43,27 @@ describe("buildScorecard", () => {
     expect(buildScorecard(store, {}).find((r) => r.id === "offer_accept")?.target).toBe(80);
     expect(buildScorecard(store, { offer_accept: 60 }).find((r) => r.id === "offer_accept")?.target).toBe(60);
   });
+
+  it("computes period-over-period trend when history exists", () => {
+    const store = new MemoryStore();
+    const emp = (n: number) => Array.from({ length: n }, (_, i) => ({ employee_number: "E" + i, department: "Tech", employment_status: "Working", date_joined: "2020-01-01" }));
+    store.add(snap("employee_master", "2026-04-30", emp(30)));
+    store.add(snap("employee_master", "2026-05-31", emp(40)));
+    store.add(snap("ta_requisition", "2026-04-30", [{ requisition_id: "R1", status: "Filled", offers_made: 10, offers_accepted: 7 }])); // 70%
+    store.add(snap("ta_requisition", "2026-05-31", [{ requisition_id: "R2", status: "Filled", offers_made: 10, offers_accepted: 9 }])); // 90%
+    const offer = buildScorecard(store, {}).find((r) => r.id === "offer_accept");
+    expect(offer?.prior).not.toBe(null);
+    expect(offer?.delta ?? 0).toBeGreaterThan(0); // improved 70% -> 90%
+    expect(offer?.trendTone).toBe("good"); // higher-is-better, rising
+    expect(offer?.trend).toContain("pp");
+  });
+
+  it("leaves trend empty when there is no prior period", () => {
+    const store = new MemoryStore();
+    store.add(snap("employee_master", "2026-05-31", [{ employee_number: "E1", employment_status: "Working", date_joined: "2024-01-01" }]));
+    store.add(snap("ta_requisition", "2026-05-31", [{ requisition_id: "R1", status: "Filled", offers_made: 10, offers_accepted: 9 }]));
+    const offer = buildScorecard(store, {}).find((r) => r.id === "offer_accept");
+    expect(offer?.prior).toBe(null);
+    expect(offer?.trend).toBe("");
+  });
 });

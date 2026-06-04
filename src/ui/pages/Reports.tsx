@@ -151,6 +151,7 @@ export function Reports() {
                   <th>KPI</th>
                   <th>Area</th>
                   <th>Current</th>
+                  <th>vs last</th>
                   <th>Target</th>
                   <th>Status</th>
                 </tr>
@@ -161,6 +162,7 @@ export function Reports() {
                     <td>{r.label}</td>
                     <td>{r.group}</td>
                     <td>{r.display}</td>
+                    <td>{r.trend ? <span className={`sc-trend ${r.trendTone}`}>{r.trend}</span> : "—"}</td>
                     <td>{r.target}{r.unit === "%" ? "%" : r.unit ? ` ${r.unit}` : ""}</td>
                     <td><span className={`rag-dot ${r.rag}`} aria-hidden="true" /> {r.status}</td>
                   </tr>
