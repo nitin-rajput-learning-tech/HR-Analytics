@@ -40,6 +40,16 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     push();
   }
 
+  const scored = nl.scorecard.filter((r) => r.rag !== "none");
+  if (scored.length) {
+    push("## Scorecard vs Targets");
+    push();
+    push("| KPI | Area | Current | Target | Status |");
+    push("| --- | --- | --- | --- | --- |");
+    for (const r of scored) push(`| ${r.label} | ${r.group} | ${r.display} | ${r.target}${r.unit === "%" ? "%" : r.unit ? " " + r.unit : ""} | ${r.rag.toUpperCase()} — ${r.status} |`);
+    push();
+  }
+
   for (const s of nl.sections) {
     push(`## ${s.label}`);
     push();

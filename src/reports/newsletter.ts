@@ -18,6 +18,7 @@ import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
 import { joinClauses } from "../core/narrative";
 import { buildRisk } from "../core/metrics/risk";
 import { buildPayEquity } from "../core/metrics/pay_equity";
+import { buildScorecard, type ScorecardRow } from "../core/scorecard";
 import type { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../core/metrics/base";
 import type { LeaverEvent } from "../core/metrics/cross_functional";
 
@@ -63,6 +64,7 @@ export interface Newsletter {
   periodLabel: string;
   generatedAtLabel: string;
   execBrief: ExecBrief;
+  scorecard: ScorecardRow[];
   sections: NewsletterSection[];
   actionPlan: ActionItem[];
   domainsWithData: number;
@@ -75,6 +77,7 @@ export interface NewsletterOptions {
   generatedAtLabel?: string; // caller supplies (core stays free of Date.now)
   activeHeadcount?: number;
   leaverEvents?: LeaverEvent[] | null;
+  targets?: Record<string, number>;
 }
 
 const SEVERITY_RANK: Record<MetricWatchout["severity"], number> = { high: 3, medium: 2, low: 1 };
@@ -302,6 +305,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
 
   const functional = DOMAIN_ORDER.map((k) => buildDomainCompared(store, k, { activeHeadcount: opts.activeHeadcount }));
   const cross = buildCrossFunctional(store, { leaverEvents: opts.leaverEvents });
+  const scorecard = buildScorecard(store, opts.targets ?? {});
 
   // People-page differentiators that belong in the board brief: their watch-outs
   // (flight risk, gender pay gap) flow into the action plan + exec-brief risks
@@ -367,6 +371,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     periodLabel,
     generatedAtLabel,
     execBrief,
+    scorecard,
     sections,
     actionPlan,
     domainsWithData,

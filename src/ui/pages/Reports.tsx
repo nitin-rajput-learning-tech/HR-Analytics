@@ -8,7 +8,7 @@ import { leaverEvents } from "../../core/metrics/movement";
 import { downloadBlob } from "../download";
 
 export function Reports() {
-  const { store, branding, version } = useApp();
+  const { store, branding, version, targets } = useApp();
   // Stamp the generation date once per mount (lazy state init — stable across renders).
   const [generatedAtLabel] = useState(() =>
     new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
@@ -27,9 +27,10 @@ export function Reports() {
         activeHeadcount,
         generatedAtLabel,
         leaverEvents: leaverEvents(store.listByKind("employee_master")),
+        targets,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [store, version, branding.appName, activeHeadcount, generatedAtLabel],
+    [store, version, branding.appName, activeHeadcount, generatedAtLabel, targets],
   );
 
   function downloadFacts() {
@@ -66,6 +67,11 @@ export function Reports() {
             <li>
               <a href="#sec-exec">Executive Brief</a>
             </li>
+            {nl.scorecard.some((r) => r.rag !== "none") ? (
+              <li>
+                <a href="#sec-scorecard">Scorecard vs Targets</a>
+              </li>
+            ) : null}
             {nl.sections.map((s, i) => (
               <li key={s.anchor}>
                 <a href={`#${s.anchor}`}>
@@ -135,6 +141,34 @@ export function Reports() {
             </div>
           ) : null}
         </section>
+
+        {nl.scorecard.some((r) => r.rag !== "none") ? (
+          <section className="nl-scorecard" id="sec-scorecard">
+            <h2>Scorecard vs Targets</h2>
+            <table className="nl-sc-table">
+              <thead>
+                <tr>
+                  <th>KPI</th>
+                  <th>Area</th>
+                  <th>Current</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nl.scorecard.filter((r) => r.rag !== "none").map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.label}</td>
+                    <td>{r.group}</td>
+                    <td>{r.display}</td>
+                    <td>{r.target}{r.unit === "%" ? "%" : r.unit ? ` ${r.unit}` : ""}</td>
+                    <td><span className={`rag-dot ${r.rag}`} aria-hidden="true" /> {r.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
 
         {nl.sections.map((s, i) => (
           <section className="nl-section" id={s.anchor} key={s.anchor}>

@@ -132,6 +132,14 @@ describe("buildNewsletter", () => {
     expect(nl.execBrief.movers.some((m) => /Talent Acquisition/.test(m.text) && m.tone === "good")).toBe(true);
   });
 
+  it("includes a scorecard with RAG vs targets", () => {
+    const nl = buildNewsletter(populated(), { targets: { offer_accept: 50 } });
+    expect(nl.scorecard.length).toBeGreaterThan(0);
+    const offer = nl.scorecard.find((r) => r.id === "offer_accept");
+    expect(offer?.target).toBe(50);
+    expect(["green", "amber", "red", "none"]).toContain(offer?.rag);
+  });
+
   it("degrades to all-placeholder with an empty store", () => {
     const nl = buildNewsletter(new MemoryStore(), { appName: "X" });
     expect(nl.domainsWithData).toBe(0);

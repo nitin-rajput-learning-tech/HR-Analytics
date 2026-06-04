@@ -445,6 +445,12 @@ select, input[type="file"] { font: inherit; }
 .brief-movers .mover.bad { color: #b91c1c; }
 [data-theme="dark"] .brief-movers .mover.good { color: #4ade80; }
 [data-theme="dark"] .brief-movers .mover.bad { color: #f87171; }
+.nl-scorecard { margin: 22px 0; }
+.nl-scorecard h2 { color: var(--ink); }
+.nl-sc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
+.nl-sc-table th, .nl-sc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.nl-sc-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.nl-sc-table td:nth-child(3) { font-weight: 700; font-variant-numeric: tabular-nums; }
 .nl-section { margin: 24px 0; padding-top: 10px; border-top: 1px solid var(--border); }
 .nl-section h2 { color: var(--ink); }
 .action-plan ol { padding-left: 20px; } .action-plan li { margin-bottom: 11px; }
