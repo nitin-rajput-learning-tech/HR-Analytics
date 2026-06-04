@@ -9,7 +9,7 @@ const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 da
 export function HRBrain() {
   const { store, version, targets, benchmarks, goTo } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { findings, summary, health, roadmap } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
+  const { findings, summary, health, roadmap, maturity } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
 
@@ -105,6 +105,35 @@ export function HRBrain() {
                   </div>
                 );
               })}
+            </section>
+          ) : null}
+
+          {maturity.overall.score !== null ? (
+            <section className="brain-maturity">
+              <h3>HR maturity assessment</h3>
+              <p className="muted brain-maturity-sub">
+                Overall maturity <strong>{maturity.overall.score}/5 · {maturity.overall.stage}</strong> — capability across the
+                people function, scored from your data on a 1–5 scale (Ad-hoc → Optimised).
+              </p>
+              <div className="metric-table">
+                <div className="table-scroll" tabIndex={0} aria-label="HR maturity by dimension">
+                  <table>
+                    <thead>
+                      <tr><th>Dimension</th><th>Maturity</th><th>Stage</th><th>Basis</th></tr>
+                    </thead>
+                    <tbody>
+                      {maturity.dimensions.map((d) => (
+                        <tr key={d.key} title={d.level === null ? undefined : `To advance: ${d.advance}`}>
+                          <td>{d.label}</td>
+                          <td>{d.level === null ? <span className="muted">—</span> : <span className="mat-dots" aria-label={`${d.level} of 5`}>{"●".repeat(d.level)}<span className="mat-dots-empty">{"○".repeat(5 - d.level)}</span> <span className="mat-n">{d.level}/5</span></span>}</td>
+                          <td>{d.stage}</td>
+                          <td className="muted">{d.basis}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </section>
           ) : null}
 

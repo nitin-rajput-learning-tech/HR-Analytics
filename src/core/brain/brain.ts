@@ -6,6 +6,7 @@
 
 import type { DataSource } from "../store/types";
 import { gatherContext, type BrainContext } from "./context";
+import { buildMaturity, type MaturityResult } from "./maturity";
 
 export type BrainSeverity = "critical" | "high" | "medium" | "low";
 // "confirmed" = a hard threshold/fact breached (a KNOWN issue);
@@ -480,6 +481,7 @@ export interface BrainResult {
   summary: { total: number; critical: number; high: number; medium: number; low: number; known: number; possible: number };
   health: BrainHealth;
   roadmap: RoadmapItem[];
+  maturity: MaturityResult;
 }
 
 // Multiplicative health: each open issue retains a fraction of health, so the
@@ -522,5 +524,5 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     known: findings.filter((f) => f.confidence === "confirmed").length,
     possible: findings.filter((f) => f.confidence !== "confirmed").length,
   };
-  return { findings, summary, health: computeHealth(findings, summary), roadmap: buildRoadmap(findings) };
+  return { findings, summary, health: computeHealth(findings, summary), roadmap: buildRoadmap(findings), maturity: buildMaturity(ctx) };
 }

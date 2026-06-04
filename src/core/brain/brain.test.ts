@@ -76,6 +76,13 @@ describe("buildBrain", () => {
     expect(bench!.confidence).toBe("likely"); // illustrative bands → not "confirmed"
   });
 
+  it("scores HR maturity per dimension from the data", () => {
+    const { maturity } = buildBrain(storeWithEarlyExits()); // 100% first-year exits
+    const retention = maturity.dimensions.find((d) => d.key === "retention");
+    expect(retention?.level).toBe(1); // worst band → Ad-hoc
+    expect(maturity.overall.score).not.toBeNull();
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
