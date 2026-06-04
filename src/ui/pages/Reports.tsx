@@ -5,6 +5,7 @@ import { overviewKpis } from "../../core/metrics/overview";
 import { buildNewsletter } from "../../reports/newsletter";
 import { buildFactsMarkdown } from "../../reports/factsPack";
 import { leaverEvents } from "../../core/metrics/movement";
+import { combinedEmployeeSnapshot, employeePeriods } from "../../core/metrics/combineEmployees";
 import { downloadBlob } from "../download";
 
 export function Reports() {
@@ -15,7 +16,7 @@ export function Reports() {
   );
 
   const activeHeadcount = useMemo(() => {
-    const rows = store.getLatest("employee_master")?.rows;
+    const rows = combinedEmployeeSnapshot(store)?.rows;
     return rows && rows.length ? overviewKpis(rows).active : 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version]);
@@ -26,7 +27,7 @@ export function Reports() {
         appName: branding.appName,
         activeHeadcount,
         generatedAtLabel,
-        leaverEvents: leaverEvents(store.listByKind("employee_master")),
+        leaverEvents: leaverEvents(employeePeriods(store)),
         targets,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import * as N from "../../core/narrative";
 import { activeByDept, costByDeptFromAggregate, computeScenario, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
+import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
 import { tableToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -25,7 +26,7 @@ export function Scenario() {
   const [assumed, setAssumed] = useState(75000);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const base = useMemo(() => activeByDept(store.getLatest("employee_master")?.rows ?? []), [store, version]);
+  const base = useMemo(() => activeByDept(combinedEmployeeSnapshot(store)?.rows ?? []), [store, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const costByDept = useMemo(() => costByDeptFromAggregate(store.getLatest("payroll_aggregate")?.rows), [store, version]);
   const depts = useMemo(() => [...base.keys()].sort(), [base]);

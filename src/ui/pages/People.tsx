@@ -15,6 +15,11 @@ import { buildRepresentation } from "../../core/metrics/representation";
 import { buildOrgHealth } from "../../core/metrics/orgHealth";
 import { buildMobility } from "../../core/metrics/mobility";
 import { buildWorkforceCost } from "../../core/metrics/workforceCost";
+import { combinedEmployeeSnapshot, employeePeriods } from "../../core/metrics/combineEmployees";
+import { getSchema } from "../../core/datasets";
+
+const EMP_SCHEMA = getSchema("employee_master");
+const prettyField = (f: string) => EMP_SCHEMA.field(f)?.label ?? f;
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -33,10 +38,13 @@ export function People() {
   const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();
   const [activeKey, setActiveKey] = useState("overview");
 
+  // Combined "current" roster across all employee-master sources (e.g. a thin Keka
+  // export + a rich HR-maintained snapshot) — see combineEmployees. empSnaps is the
+  // period view: one combined period when sources were merged, else the raw series.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const snap = useMemo(() => store.getLatest("employee_master"), [store, version]);
+  const snap = useMemo(() => combinedEmployeeSnapshot(store), [store, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const empSnaps = useMemo(() => store.listByKind("employee_master"), [store, version]);
+  const empSnaps = useMemo(() => employeePeriods(store), [store, version]);
   const allRows = snap?.rows ?? [];
   const filtered = useMemo(() => filterRows(allRows, filters), [allRows, filters]);
   // Optional domains that sharpen the attrition-risk signals when loaded.
@@ -125,6 +133,12 @@ export function People() {
       </div>
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
+      {snap.combinedSources > 1 ? (
+        <p className="combined-note">
+          🔗 Combined <strong>{snap.combinedSources}</strong> employee data sources into one current roster
+          {snap.addedFields.length ? <> — added <strong>{snap.addedFields.map(prettyField).join(", ")}</strong> from the richer snapshot.</> : "."}
+        </p>
+      ) : null}
       <InsightsBanner items={topWatchouts} total={allWatchouts.length} />
       {sections.length === 0 || !activeSection || !activeGroup ? (
         <p className="muted placeholder">No employees match the current filters.</p>

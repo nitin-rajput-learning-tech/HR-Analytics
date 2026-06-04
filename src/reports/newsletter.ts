@@ -14,6 +14,7 @@
 import type { DataSource } from "../core/store/types";
 import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
 import { buildPeople } from "../core/metrics/people";
+import { combinedEmployeeSnapshot, employeePeriods } from "../core/metrics/combineEmployees";
 import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
 import { joinClauses } from "../core/narrative";
 import { buildRisk } from "../core/metrics/risk";
@@ -125,7 +126,7 @@ function toSection(d: DomainMetrics): NewsletterSection {
 }
 
 function peopleSection(store: DataSource): NewsletterSection {
-  const snap = store.getLatest("employee_master");
+  const snap = combinedEmployeeSnapshot(store);
   const base = { kind: "employee_master", anchor: "sec-employee_master", label: "People & Org" };
   if (!snap || snap.rows.length === 0) {
     return {
@@ -144,7 +145,7 @@ function peopleSection(store: DataSource): NewsletterSection {
   const people = buildPeople(snap.rows, snap.asOf);
   // Month-over-month deltas vs the prior employee snapshot (same pattern as the
   // People page), so headcount/attrition movement surfaces in the brief.
-  const empSnaps = store.listByKind("employee_master");
+  const empSnaps = employeePeriods(store);
   const priorSnap = empSnaps.length >= 2 ? empSnaps[empSnaps.length - 2] : null;
   const priorPeople = priorSnap ? buildPeople(priorSnap.rows, priorSnap.asOf) : null;
   const decorated = decoratePeopleDeltas(people, priorPeople, priorSnap ? prettyPeriod(priorSnap.periodLabel ?? priorSnap.asOf) : "");
@@ -300,7 +301,7 @@ function buildActionPlan(sections: NewsletterSection[]): ActionItem[] {
 
 export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {}): Newsletter {
   const appName = opts.appName ?? "HR Analytics";
-  const periodLabel = opts.periodLabel ?? store.getLatest("employee_master")?.periodLabel ?? "Latest period";
+  const periodLabel = opts.periodLabel ?? combinedEmployeeSnapshot(store)?.periodLabel ?? "Latest period";
   const generatedAtLabel = opts.generatedAtLabel ?? periodLabel;
 
   const functional = DOMAIN_ORDER.map((k) => buildDomainCompared(store, k, { activeHeadcount: opts.activeHeadcount }));
@@ -311,7 +312,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
   // (flight risk, gender pay gap) flow into the action plan + exec-brief risks
   // because every section's watchouts are rolled up. Built from the latest
   // snapshots; both degrade to placeholders when their inputs are absent.
-  const snap = store.getLatest("employee_master");
+  const snap = combinedEmployeeSnapshot(store);
   const empRows = snap?.rows ?? [];
   const payrollRows = store.getLatest("payroll_record")?.rows ?? null;
   const pmsRows = store.getLatest("pms_review")?.rows ?? null;

@@ -4,6 +4,7 @@ import { DomainView } from "../components/DomainView";
 import { overviewKpis } from "../../core/metrics/overview";
 import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER, DOMAIN_LABELS, type DomainKey } from "../../core/metrics";
 import { leaverEvents } from "../../core/metrics/movement";
+import { combinedEmployeeSnapshot, employeePeriods } from "../../core/metrics/combineEmployees";
 
 type Tab = DomainKey | "cross_functional";
 
@@ -18,13 +19,13 @@ export function FunctionAnalytics() {
 
   // Active headcount feeds L&D coverage; derived during render (not in an effect).
   const activeHeadcount = useMemo(() => {
-    const rows = store.getLatest("employee_master")?.rows;
+    const rows = combinedEmployeeSnapshot(store)?.rows;
     return rows && rows.length ? overviewKpis(rows).active : 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version]);
 
   const domain = useMemo(() => {
-    if (tab === "cross_functional") return buildCrossFunctional(store, { leaverEvents: leaverEvents(store.listByKind("employee_master")) });
+    if (tab === "cross_functional") return buildCrossFunctional(store, { leaverEvents: leaverEvents(employeePeriods(store)) });
     return buildDomainCompared(store, tab, { activeHeadcount });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version, tab, activeHeadcount]);

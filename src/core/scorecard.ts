@@ -9,6 +9,7 @@ import { buildPeople } from "./metrics/people";
 import { buildAll } from "./metrics";
 import { buildPayEquity } from "./metrics/pay_equity";
 import { buildOrgHealth } from "./metrics/orgHealth";
+import { combinedEmployeeSnapshot } from "./metrics/combineEmployees";
 import { overviewKpis } from "./metrics/overview";
 import type { DataSource } from "./store/types";
 import { MemoryStore } from "./store/memoryStore";
@@ -77,7 +78,7 @@ function statusText(rag: Rag, higherIsBetter: boolean): string {
 // equity), keyed by domain kind, reusing the existing builders so the scorecard
 // can never drift from the dashboards.
 function collect(store: DataSource): Map<string, MetricKPI[]> {
-  const empSnap = store.getLatest("employee_master");
+  const empSnap = combinedEmployeeSnapshot(store);
   const empRows = empSnap?.rows ?? [];
   const asOf = empSnap?.asOf ?? "";
   const activeHeadcount = empRows.length ? overviewKpis(empRows).active : 0;

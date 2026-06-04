@@ -4,6 +4,7 @@ import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "../../core/intake/demoData";
+import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
 import { issuesToCsv } from "../../core/ingest/validate";
 import type { SnapshotCandidate } from "../../core/ingest/types";
 import { downloadBlob } from "../download";
@@ -62,7 +63,7 @@ export function DataIntake() {
     setMsg("");
     setOk(null);
     try {
-      const empRows = store.getLatest("employee_master")?.rows ?? [];
+      const empRows = combinedEmployeeSnapshot(store)?.rows ?? [];
       const knownIds = new Set(empRows.map((r) => String(r.employee_number ?? "").trim()).filter(Boolean));
       // "today" lets the parser resolve a year-less filename date (e.g. "as on 5th
       // May") to the most recent matching date — keeps the core period parser pure.

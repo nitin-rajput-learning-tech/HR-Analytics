@@ -4,6 +4,7 @@ import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
 import { ViewsMenu } from "../components/ViewsMenu";
 import { directorySection, EMPLOYEE_FIELDS } from "../../core/metrics/people";
+import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
 import { filterRows, rowsToCsv, type Filters } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -12,7 +13,7 @@ export function Directory() {
   const [filters, setFilters] = useState<Filters>({});
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const snap = useMemo(() => store.getLatest("employee_master"), [store, version]);
+  const snap = useMemo(() => combinedEmployeeSnapshot(store), [store, version]);
   const allRows = snap?.rows ?? [];
   const filtered = useMemo(() => filterRows(allRows, filters), [allRows, filters]);
   const metrics = useMemo(() => directorySection(filtered), [filtered]);
