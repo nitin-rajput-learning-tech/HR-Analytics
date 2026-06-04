@@ -12,6 +12,7 @@ import { buildRisk } from "../../core/metrics/risk";
 import { buildPayEquity } from "../../core/metrics/pay_equity";
 import { buildCompensation } from "../../core/metrics/compensation";
 import { buildRepresentation } from "../../core/metrics/representation";
+import { buildOrgHealth } from "../../core/metrics/orgHealth";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -47,10 +48,12 @@ export function People() {
     const payEquity = buildPayEquity({ employeeRows: filtered, payrollRows: enrich.payrollRows });
     const compensation = buildCompensation({ employeeRows: filtered, payrollRows: enrich.payrollRows, asOf: snap.asOf });
     const representation = buildRepresentation({ employeeRows: filtered, asOf: snap.asOf });
+    const orgHealth = buildOrgHealth(filtered);
     return [
       ...people,
       { key: "movement", label: movement.label, metrics: movement },
       { key: "risk", label: risk.label, metrics: risk },
+      { key: "org_health", label: orgHealth.label, metrics: orgHealth },
       { key: "compensation", label: compensation.label, metrics: compensation },
       { key: "representation", label: representation.label, metrics: representation },
       { key: "pay_equity", label: payEquity.label, metrics: payEquity },
