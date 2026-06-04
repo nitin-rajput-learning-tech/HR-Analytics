@@ -64,7 +64,10 @@ export function DataIntake() {
     try {
       const empRows = store.getLatest("employee_master")?.rows ?? [];
       const knownIds = new Set(empRows.map((r) => String(r.employee_number ?? "").trim()).filter(Boolean));
-      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined, knownIds);
+      // "today" lets the parser resolve a year-less filename date (e.g. "as on 5th
+      // May") to the most recent matching date — keeps the core period parser pure.
+      const today = new Date().toISOString().slice(0, 10);
+      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined, knownIds, today);
       setPreview(cand);
     } catch (err) {
       setPreview(null);

@@ -89,6 +89,26 @@ describe("parseWorkbook (TA)", () => {
     expect(cand.availableColumns.includes("employment_status")).toBe(true);
   });
 
+  it("imports a full-schema 'Employee report … as on 5th May' by resolving the year from today", async () => {
+    const header = EMPLOYEE_MASTER.fields.map((fld) => fld.label); // canonical headers, incl. Gender/Employment Status
+    const row = (n: string, gender: string, status: string) => EMPLOYEE_MASTER.fields.map((fld) =>
+      fld.name === "employee_number" ? n : fld.name === "full_name" ? "Person " + n : fld.name === "gender" ? gender : fld.name === "employment_status" ? status : fld.name === "department" ? "Tech" : fld.name === "date_joined" ? "2020-01-01" : "");
+    const cand = await parseWorkbook(
+      buildSheet([header, row("1", "Male", "Working"), row("2", "Female", "Relieved")], "Employee report for L&D team"),
+      "15. Employee report for L&D team-airpay- as on 5th May (1).xlsx",
+      EMPLOYEE_MASTER,
+      undefined,
+      null,
+      "2026-06-04", // today → "5th May" resolves to 2026-05-05
+    );
+    expect(cand.status).toBe("imported");
+    expect(cand.asOf).toBe("2026-05-05");
+    expect(cand.compatibility).toBe("full");
+    expect(cand.rows[0].gender).toBe("Male");
+    expect(cand.rows[1].employment_status).toBe("Relieved"); // real status used, not defaulted
+    expect(cand.notes.join(" ")).toMatch(/inferred from the filename/i);
+  });
+
   it("parses a .csv file and surfaces row-level validation issues", async () => {
     const headers = ["Requisition ID", "Department", "Job Title", "Status", "Open Date", "Applications"];
     const rows = [

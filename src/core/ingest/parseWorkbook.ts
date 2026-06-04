@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { DatasetSchema } from "../datasets";
 import { coerce } from "./coerce";
-import { parsePeriod } from "./period";
+import { parsePeriod, resolveMonthDayYear } from "./period";
 import { validateRows, checkReferentialIntegrity } from "./validate";
 import type { Row, SnapshotCandidate } from "./types";
 
@@ -31,6 +31,7 @@ export async function parseWorkbook(
   schema: DatasetSchema,
   overrideAsOf?: string,
   knownEmployeeIds?: Set<string> | null,
+  fallbackToday?: string,
 ): Promise<SnapshotCandidate> {
   const wb = XLSX.read(data, { type: "array", cellDates: true });
   const alias = schema.aliasMap();
@@ -52,7 +53,9 @@ export async function parseWorkbook(
   }
 
   const period = parsePeriod(fileName, schema.periodKind);
-  const asOf = overrideAsOf ?? period.asOf;
+  // Override > filename date > (year-less filename month/day resolved against today).
+  let asOf = overrideAsOf ?? period.asOf;
+  if (!asOf && period.monthDay && fallbackToday) asOf = resolveMonthDayYear(period.monthDay.month, period.monthDay.day, fallbackToday) ?? null;
   const threshold = Math.max(1, Math.min(2, schema.keyFields.length));
   if (!best || best.score < threshold) {
     return reject(schema, fileName, asOf, period.periodLabel, "No sheet matched the template columns.");
@@ -100,7 +103,9 @@ export async function parseWorkbook(
   // Prefer an explicit override or a filename date; otherwise fall back to a date
   // harvested from an export trailer ("Generated on …").
   const effectiveAsOf = asOf ?? trailerAsOf;
+  const inferredFromMonthDay = !overrideAsOf && !period.asOf && !!period.monthDay && !!asOf;
   const trailerNote = !asOf && trailerAsOf ? `As-of ${trailerAsOf} read from the export's “Generated on” footer.` : null;
+  const asOfNote = inferredFromMonthDay ? `As-of ${asOf} inferred from the filename (no year given) — change it above if that's wrong.` : trailerNote;
   const missing = schema.columnNames.filter((c) => !available.has(c));
   const compatibility = determineCompatibility(available, schema);
   const status: SnapshotCandidate["status"] = compatibility !== "rejected" && effectiveAsOf ? "imported" : "rejected";
@@ -108,7 +113,7 @@ export async function parseWorkbook(
     kind: schema.kind,
     sourceFile: fileName,
     asOf: effectiveAsOf,
-    periodLabel: overrideAsOf ?? period.periodLabel ?? trailerAsOf,
+    periodLabel: overrideAsOf ?? period.periodLabel ?? asOf ?? trailerAsOf,
     detectedSheet: best.sheet,
     availableColumns: [...available].sort(),
     missingColumns: missing,
@@ -116,7 +121,7 @@ export async function parseWorkbook(
     rowCount: rows.length,
     status,
     rows,
-    notes: status === "imported" ? [trailerNote ?? period.note] : [period.note, "Rejected — missing required columns or period."],
+    notes: status === "imported" ? [asOfNote ?? period.note] : [period.note, "Rejected — missing required columns or period."],
     issues,
     rowsWithIssues,
   };
