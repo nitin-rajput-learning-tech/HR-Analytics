@@ -25,6 +25,10 @@ export class DatasetSchema {
     readonly filenameHint = "",
     readonly description = "",
     readonly grain: "detail" | "aggregate" = "detail",
+    // Values to fill in for fields whose column is ABSENT from an uploaded file
+    // (applied per-row only when the column isn't present). Lets an active-roster
+    // export with no status column still count as active headcount, etc.
+    readonly defaults: Readonly<Record<string, string>> = {},
   ) {}
 
   get tableName(): string {
@@ -69,11 +73,38 @@ const titleCase = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.
 
 const EMPLOYEE_DATE_FIELDS = new Set(["last_working_day", "exit_requested_on", "date_joined"]);
 
+// Header aliases for real-world HRMS exports (Keka "All Employees", plus common
+// Darwinbox / Zoho / GreytHR variants) whose column names differ from our
+// canonical labels. The label/name forms ("Employee Number", "Department",
+// "Job Title", "Sub Department", "Legal Entity", "Full Name", "Gender" …) already
+// map automatically; these cover the rest. Keys are matched case-insensitively.
+const EMPLOYEE_ALIASES: Record<string, string> = {
+  // Keka "All Employees" export
+  "email": "work_email", "email id": "work_email", "official email": "work_email",
+  "date of joining": "date_joined", "doj": "date_joined", "joining date": "date_joined",
+  "location": "current_city", "city": "current_city", "base location": "current_city",
+  "reporting to": "reporting_manager", "reporting manager name": "reporting_manager",
+  // Common variants across HRMS vendors (forward-compatibility)
+  "employee no": "employee_number", "emp no": "employee_number", "emp id": "employee_number",
+  "employee id": "employee_number", "employee code": "employee_number",
+  "display name": "full_name", "employee name": "full_name",
+  "designation": "job_title",
+  "mobile": "work_phone", "mobile number": "work_phone", "mobile phone": "work_phone", "phone": "work_phone",
+  "employee status": "employment_status", "employment status": "employment_status", "status": "employment_status",
+  "date of exit": "last_working_day", "exit date": "last_working_day", "last working date": "last_working_day", "relieving date": "last_working_day",
+  "resignation date": "exit_requested_on", "resigned on": "exit_requested_on",
+};
+
 export const EMPLOYEE_MASTER = new DatasetSchema(
   "employee_master", "Employee Master", "Core People", "as_of",
   EMPLOYEE_COLUMNS.map((n) => f(n, titleCase(n), EMPLOYEE_DATE_FIELDS.has(n) ? "date" : "string")),
-  ["employee_number"], {}, "Employee report ... as on <date>.xlsx",
-  "Monthly employee roster — the spine every other domain joins to.",
+  ["employee_number"], EMPLOYEE_ALIASES, "Employee report … as on <date>.xlsx, or a Keka “All Employees” export",
+  "Monthly employee roster — the spine every other domain joins to. Accepts Keka HRMS exports (banner/footer rows and the “Generated on …” as-of are handled automatically).",
+  "detail",
+  // Keka's active-roster export carries no status column — treat every listed
+  // person as Working so headcount/tenure/org analytics populate. A real status
+  // column (mapped above) overrides this.
+  { employment_status: "Working" },
 );
 
 // --------------------------------------------------------------- Talent Acquisition
