@@ -24,6 +24,11 @@ interface AppState {
   peopleFilters: Filters;
   setPeopleFilters: React.Dispatch<React.SetStateAction<Filters>>;
   drillToPeople(field: string, label: string): void;
+  // Active People sub-tab, lifted to shared state so other pages (e.g. HR Brain)
+  // can deep-link straight to a specific analytic.
+  peopleTab: string;
+  setPeopleTab(t: string): void;
+  goTo(page: string, peopleTab?: string): void;
   // Saved views — named page + filter presets, persisted with the workspace.
   savedViews: SavedView[];
   setSavedViews(v: SavedView[]): void;
@@ -66,6 +71,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [version, setVersion] = useState(0);
   const [page, setPage] = useState<string>("People Analytics");
   const [peopleFilters, setPeopleFilters] = useState<Filters>({});
+  const [peopleTab, setPeopleTab] = useState<string>("overview");
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [mode, setMode] = useState<"demo" | "live">("demo");
@@ -84,6 +90,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const setBranding = useCallback((b: Branding) => {
     setBrandingRaw(b);
     applyBranding(b);
+  }, []);
+  const goTo = useCallback((p: string, tab?: string) => {
+    if (tab) setPeopleTab(tab);
+    setPage(p);
   }, []);
   const drillToPeople = useCallback((field: string, label: string) => {
     setPeopleFilters((f) => {
@@ -222,7 +232,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets }}
     >
       {children}
     </Ctx.Provider>

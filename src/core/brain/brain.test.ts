@@ -23,6 +23,8 @@ describe("buildBrain", () => {
     expect(early!.reason.length).toBeGreaterThan(20);
     expect(early!.remedy.length).toBeGreaterThanOrEqual(3);
     expect(early!.evidence.length).toBeGreaterThan(0);
+    expect(early!.link?.page).toBe("People Analytics"); // deep-links to its evidence
+    expect(early!.link?.tab).toBe("retention");
     expect(summary.total).toBeGreaterThanOrEqual(1);
     expect(summary.known).toBeGreaterThanOrEqual(1); // early_attrition is a confirmed/known issue
   });

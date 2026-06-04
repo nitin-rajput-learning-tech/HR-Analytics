@@ -22,9 +22,28 @@ export interface BrainFinding {
   evidence: string[];
   reason: string;
   remedy: string[];
+  link?: { page: string; tab?: string }; // where to go to see the evidence
 }
 
 type Rule = (ctx: BrainContext) => BrainFinding | null;
+
+// Where each finding's evidence lives — used to deep-link from a finding card to
+// the relevant analytic (People sub-tab, or another page).
+const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
+  compound_retention: { page: "People Analytics", tab: "risk" },
+  department_hotspots: { page: "Function Analytics" },
+  statutory: { page: "Function Analytics" },
+  regrettable_attrition: { page: "People Analytics", tab: "retention" },
+  early_attrition: { page: "People Analytics", tab: "retention" },
+  pay_gap: { page: "People Analytics", tab: "pay_equity" },
+  review_completion: { page: "Function Analytics" },
+  offer_accept: { page: "Function Analytics" },
+  ld_coverage: { page: "Function Analytics" },
+  org_design: { page: "People Analytics", tab: "org_health" },
+  cost_concentration: { page: "People Analytics", tab: "workforce_cost" },
+  source_reconciliation: { page: "People Analytics", tab: "sources" },
+  emerging_trends: { page: "Scorecard" },
+};
 
 const SEV_RANK: Record<BrainSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const CONF_RANK: Record<BrainConfidence, number> = { confirmed: 0, likely: 1, possible: 2 };
@@ -416,7 +435,9 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     } catch {
       return null;
     }
-  }).filter((f): f is BrainFinding => !!f);
+  })
+    .filter((f): f is BrainFinding => !!f)
+    .map((f) => ({ ...f, link: FINDING_LINKS[f.id] }));
 
   findings.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity] || CONF_RANK[a.confidence] - CONF_RANK[b.confidence]);
 

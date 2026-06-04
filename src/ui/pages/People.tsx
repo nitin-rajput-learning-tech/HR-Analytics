@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useApp } from "../state";
 import { DomainView } from "../components/DomainView";
 import { FilterBar } from "../components/FilterBar";
@@ -36,8 +36,7 @@ const TAB_GROUPS: { label: string; keys: string[] }[] = [
 ];
 
 export function People() {
-  const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();
-  const [activeKey, setActiveKey] = useState("overview");
+  const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters, peopleTab: activeKey, setPeopleTab: setActiveKey } = useApp();
 
   // Combined "current" roster across all employee-master sources (e.g. a thin Keka
   // export + a rich HR-maintained snapshot) — see combineEmployees. empSnaps is the

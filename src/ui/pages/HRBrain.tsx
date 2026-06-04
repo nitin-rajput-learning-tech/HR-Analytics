@@ -6,7 +6,7 @@ const SEV_LABEL: Record<BrainFinding["severity"], string> = { critical: "Critica
 const CONF_LABEL: Record<BrainFinding["confidence"], string> = { confirmed: "Known", likely: "Likely", possible: "Possible" };
 
 export function HRBrain() {
-  const { store, version, targets } = useApp();
+  const { store, version, targets, goTo } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const { findings, summary, health } = useMemo(() => buildBrain(store, { targets }), [store, version, targets]);
   const hasData = !!store.getLatest("employee_master");
@@ -67,6 +67,11 @@ export function HRBrain() {
                   <div className="brain-label">Remedy plan</div>
                   <ol className="brain-remedy">{f.remedy.map((r, i) => <li key={i}>{r}</li>)}</ol>
                 </div>
+                {f.link ? (
+                  <button className="brain-link" onClick={() => goTo(f.link!.page, f.link!.tab)}>
+                    View the evidence →
+                  </button>
+                ) : null}
               </article>
             ))}
           </div>
