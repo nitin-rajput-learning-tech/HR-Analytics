@@ -18,9 +18,20 @@ import { buildWorkforceCost } from "../../core/metrics/workforceCost";
 import { filterRows, rowsToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
+// Group the (now 17) analytics tabs into a two-level nav so the strip never
+// overflows and related views sit together. Keys reference section keys built
+// below; any key not present (e.g. a domain with no data wired) is skipped.
+const TAB_GROUPS: { label: string; keys: string[] }[] = [
+  { label: "Workforce", keys: ["overview", "headcount", "tenure", "geography", "managers", "quality"] },
+  { label: "Diversity", keys: ["diversity", "representation", "pay_equity"] },
+  { label: "Attrition & Risk", keys: ["attrition", "retention", "risk"] },
+  { label: "Movement & Org", keys: ["movement", "mobility", "org_health"] },
+  { label: "Pay & Cost", keys: ["compensation", "workforce_cost"] },
+];
+
 export function People() {
   const { store, branding, version, peopleFilters: filters, setPeopleFilters: setFilters } = useApp();
-  const [tab, setTab] = useState(0);
+  const [activeKey, setActiveKey] = useState("overview");
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const snap = useMemo(() => store.getLatest("employee_master"), [store, version]);
@@ -78,6 +89,18 @@ export function People() {
     });
   }, []);
 
+  // Two-level navigation: resolve the active section by key (stable across filter
+  // rebuilds), then the group that contains it. Empty groups are dropped. These
+  // hooks must run before any early return (Rules of Hooks).
+  const byKey = useMemo(() => new Map(sections.map((s) => [s.key, s])), [sections]);
+  const groups = useMemo(
+    () =>
+      TAB_GROUPS.map((g) => ({ label: g.label, items: g.keys.flatMap((k) => { const s = byKey.get(k); return s ? [s] : []; }) })).filter(
+        (g) => g.items.length > 0,
+      ),
+    [byKey],
+  );
+
   if (!snap) {
     return (
       <div>
@@ -91,8 +114,8 @@ export function People() {
     downloadBlob(new Blob([rowsToCsv(filtered, EMPLOYEE_FIELDS)], { type: "text/csv;charset=utf-8" }), "employees-filtered.csv");
   }
 
-  const idx = Math.min(tab, Math.max(0, sections.length - 1));
-  const current = sections[idx];
+  const activeSection = byKey.get(activeKey) ?? groups[0]?.items[0];
+  const activeGroup = groups.find((g) => g.items.some((it) => it.key === activeSection?.key)) ?? groups[0];
 
   return (
     <div>
@@ -103,18 +126,39 @@ export function People() {
       <div className="views-bar"><ViewsMenu /></div>
       <FilterBar rows={allRows} filteredCount={filtered.length} filters={filters} onChange={setFilters} onExport={exportCsv} />
       <InsightsBanner items={topWatchouts} total={allWatchouts.length} />
-      {sections.length === 0 ? (
+      {sections.length === 0 || !activeSection || !activeGroup ? (
         <p className="muted placeholder">No employees match the current filters.</p>
       ) : (
         <>
+          <div className="tab-groups" role="tablist" aria-label="Analytics groups">
+            {groups.map((g) => {
+              const allEmpty = g.items.every((it) => !it.metrics.hasData);
+              return (
+                <button
+                  key={g.label}
+                  role="tab"
+                  aria-selected={g === activeGroup}
+                  className={`tab-group${g === activeGroup ? " active" : ""}${allEmpty ? " empty" : ""}`}
+                  onClick={() => setActiveKey(g.items[0].key)}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
           <div className="tabs">
-            {sections.map((s, i) => (
-              <button key={s.key} className={i === idx ? "tab active" : "tab"} onClick={() => setTab(i)}>
+            {activeGroup.items.map((s) => (
+              <button
+                key={s.key}
+                className={`tab${s.key === activeSection.key ? " active" : ""}${s.metrics.hasData ? "" : " empty"}`}
+                onClick={() => setActiveKey(s.key)}
+                title={s.metrics.hasData ? undefined : "No data yet — upload the relevant columns/domain"}
+              >
                 {s.label}
               </button>
             ))}
           </div>
-          <DomainView domain={current.metrics} accent={branding.accent} dark={branding.theme === "dark"} onDrill={onDrill} />
+          <DomainView domain={activeSection.metrics} accent={branding.accent} dark={branding.theme === "dark"} onDrill={onDrill} />
         </>
       )}
     </div>

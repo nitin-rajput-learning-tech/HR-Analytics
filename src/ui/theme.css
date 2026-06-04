@@ -151,6 +151,16 @@ a { color: var(--brand-accent); }
 }
 .tab:hover { border-color: var(--border-strong); color: var(--text); }
 .tab.active { background: var(--brand-accent); color: #fff; border-color: var(--brand-accent); box-shadow: var(--shadow-sm); }
+/* Tab group bar (level 1) — an underline segmented control above the pill sub-tabs */
+.tab-groups { display: flex; flex-wrap: wrap; gap: 2px; margin: 14px 0 0; border-bottom: 1px solid var(--border); }
+.tab-group { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 8px 14px; cursor: pointer; font-size: 0.9rem; font-weight: 700; color: var(--muted); transition: color 0.12s, border-color 0.12s; }
+.tab-group:hover { color: var(--text); }
+.tab-group.active { color: var(--brand-accent); border-bottom-color: var(--brand-accent); }
+.tab-group.empty { color: var(--faint); }
+.tab-group.empty.active { color: var(--brand-accent); }
+/* A sub-tab whose section has no data yet — dimmed + dashed, still clickable */
+.tab.empty { color: var(--faint); border-style: dashed; }
+.tab.empty.active { color: #fff; border-style: solid; }
 
 /* charts */
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 16px 0; }
