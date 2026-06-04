@@ -51,6 +51,9 @@ interface AppState {
   // Scorecard KPI targets (management-by-objective); persisted with the workspace.
   targets: Record<string, number>;
   setTargets(t: Record<string, number>): void;
+  // Edited benchmark bands per KPI (override the illustrative defaults); persisted.
+  benchmarks: Record<string, { low: number; high: number }>;
+  setBenchmarks(b: Record<string, { low: number; high: number }>): void;
 }
 
 const AUDIT_CAP = 250;
@@ -77,6 +80,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<"demo" | "live">("demo");
   const [ready, setReady] = useState(false);
   const [targets, setTargets] = useState<Record<string, number>>({});
+  const [benchmarks, setBenchmarks] = useState<Record<string, { low: number; high: number }>>({});
 
   const logAudit = useCallback((action: string, detail?: string) => {
     setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
@@ -140,6 +144,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setSavedViews(r.savedViews);
       setAuditLog(r.auditLog);
       setTargets(r.targets);
+      setBenchmarks(r.benchmarks);
     },
     [setStore, setBranding],
   );
@@ -183,13 +188,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated.current || mode === "demo") return;
     const id = window.setTimeout(() => {
       try {
-        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets));
+        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets, benchmarks));
       } catch {
         /* persistence is best-effort */
       }
     }, 800);
     return () => window.clearTimeout(id);
-  }, [store, version, branding, savedViews, auditLog, targets, mode]);
+  }, [store, version, branding, savedViews, auditLog, targets, benchmarks, mode]);
 
   // Once the user has their own data, ask the browser to keep it durable so the
   // local database isn't evicted under storage pressure. Idempotent; no-ops
@@ -210,6 +215,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setSavedViews([]);
         setAuditLog([]);
         setTargets({});
+        setBenchmarks({});
         setMode("live");
       } else {
         store.add(snap);
@@ -226,13 +232,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     void clearPersisted();
     loadDemo();
     setTargets({});
+    setBenchmarks({});
     setPeopleFilters({});
     toast("Your data was cleared — showing demo data");
   }, [loadDemo]);
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets, benchmarks, setBenchmarks }}
     >
       {children}
     </Ctx.Provider>

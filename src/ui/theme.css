@@ -587,6 +587,8 @@ select, input[type="file"] { font: inherit; }
 [data-theme="dark"] .rag-dot.amber { background: #fbbf24; }
 [data-theme="dark"] .sc-chip.red, [data-theme="dark"] .rag-dot.red { color: #f87171; }
 [data-theme="dark"] .rag-dot.red { background: #f87171; }
+.sc-bench-edit { display: inline-flex; align-items: center; gap: 4px; }
+.sc-bench-edit input { width: 52px; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 0.82rem; }
 .sc-bench { display: inline-flex; flex-direction: column; gap: 1px; line-height: 1.2; }
 .sc-bench-range { font-variant-numeric: tabular-nums; font-size: 0.84rem; white-space: nowrap; }
 .sc-bench-pos { font-size: 0.72rem; font-weight: 700; white-space: nowrap; }

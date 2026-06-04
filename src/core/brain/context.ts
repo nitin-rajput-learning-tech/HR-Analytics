@@ -39,7 +39,7 @@ export interface BrainContext {
   watchoutsMatching(re: RegExp): TaggedWatchout[];
 }
 
-export function gatherContext(store: DataSource, opts: { targets?: Record<string, number> } = {}): BrainContext {
+export function gatherContext(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainContext {
   const snap = combinedEmployeeSnapshot(store);
   const empRows: Row[] = snap?.rows ?? [];
   const asOf = snap?.asOf ?? "";
@@ -61,7 +61,7 @@ export function gatherContext(store: DataSource, opts: { targets?: Record<string
   }
   domains.push(buildCrossFunctional(store, { leaverEvents: leaverEvents(employeePeriods(store)) }));
 
-  const scorecard = buildScorecard(store, opts.targets ?? {});
+  const scorecard = buildScorecard(store, opts.targets ?? {}, opts.benchmarks ?? {});
 
   const kpiByLabel = new Map<string, { value: string; n: number | null }>();
   for (const d of domains) {

@@ -5,7 +5,7 @@
 // so the scorecard can never drift from the dashboards it summarises.
 
 import { parseKpiValue, deltaText } from "./metrics/compare";
-import { DEFAULT_BENCHMARKS, benchmarkPosition, formatBand, type BenchPos } from "./benchmarks";
+import { DEFAULT_BENCHMARKS, benchmarkPosition, formatBand, type BenchPos, type BenchmarkBand } from "./benchmarks";
 import { buildPeople } from "./metrics/people";
 import { buildAll } from "./metrics";
 import { buildPayEquity } from "./metrics/pay_equity";
@@ -35,6 +35,7 @@ export interface ScorecardRow {
   trendTone: "good" | "bad" | "neutral";
   benchmark: string; // typical industry range, e.g. "12–18%" ("—" if none)
   benchmarkPos: BenchPos; // where the value sits vs the typical band
+  benchmarkBand: BenchmarkBand | null; // raw effective band (for editing); null if none
 }
 
 interface Def {
@@ -115,7 +116,7 @@ function priorStoreOf(store: DataSource): DataSource | null {
   return prior.allSnapshots().length ? prior : null;
 }
 
-export function buildScorecard(store: DataSource, targets: Record<string, number> = {}): ScorecardRow[] {
+export function buildScorecard(store: DataSource, targets: Record<string, number> = {}, benchmarks: Record<string, BenchmarkBand> = {}): ScorecardRow[] {
   const cur = collect(store);
   const priorStore = priorStoreOf(store);
   const prior = priorStore ? collect(priorStore) : null;
@@ -139,8 +140,8 @@ export function buildScorecard(store: DataSource, targets: Record<string, number
       }
     }
 
-    const band = DEFAULT_BENCHMARKS[def.id];
-    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone, benchmark: formatBand(band, def.unit), benchmarkPos: benchmarkPosition(value, band, def.higherIsBetter) };
+    const band = benchmarks[def.id] ?? DEFAULT_BENCHMARKS[def.id];
+    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone, benchmark: formatBand(band, def.unit), benchmarkPos: benchmarkPosition(value, band, def.higherIsBetter), benchmarkBand: band ?? null };
   });
 }
 

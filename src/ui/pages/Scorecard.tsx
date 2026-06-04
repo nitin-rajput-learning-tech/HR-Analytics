@@ -1,18 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useApp } from "../state";
 import { buildScorecard, scorecardSummary } from "../../core/scorecard";
 
 export function Scorecard() {
-  const { store, version, targets, setTargets } = useApp();
+  const { store, version, targets, setTargets, benchmarks, setBenchmarks } = useApp();
+  const [editBench, setEditBench] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => buildScorecard(store, targets), [store, version, targets]);
+  const rows = useMemo(() => buildScorecard(store, targets, benchmarks), [store, version, targets, benchmarks]);
   const summary = scorecardSummary(rows);
 
   const setTarget = (id: string, v: string) => {
     const n = Number(v);
     if (v.trim() !== "" && Number.isFinite(n)) setTargets({ ...targets, [id]: n });
   };
+  // Edit one edge of a KPI's benchmark band, seeding from its current effective band.
+  const setBench = (id: string, edge: "low" | "high", v: string, current: { low: number; high: number } | null) => {
+    const n = Number(v);
+    if (v.trim() === "" || !Number.isFinite(n) || !current) return;
+    setBenchmarks({ ...benchmarks, [id]: { ...current, [edge]: n } });
+  };
   const hasCustom = Object.keys(targets).length > 0;
+  const hasCustomBench = Object.keys(benchmarks).length > 0;
 
   return (
     <div className="scorecard">
@@ -31,6 +39,12 @@ export function Scorecard() {
         <span className="sc-chip none"><span className="rag-dot none" aria-hidden="true" /> {rows.length - summary.tracked} no data</span>
         {hasCustom ? (
           <button type="button" className="sc-reset" onClick={() => setTargets({})}>Reset targets to defaults</button>
+        ) : null}
+        <button type="button" className="sc-reset" onClick={() => setEditBench((e) => !e)} aria-pressed={editBench}>
+          {editBench ? "Done editing benchmarks" : "Edit benchmarks"}
+        </button>
+        {hasCustomBench ? (
+          <button type="button" className="sc-reset" onClick={() => setBenchmarks({})}>Reset benchmarks</button>
         ) : null}
       </div>
 
@@ -56,7 +70,13 @@ export function Scorecard() {
                   <td><strong>{r.display}</strong></td>
                   <td>{r.trend ? <span className={`sc-trend ${r.trendTone}`}>{r.trend}</span> : <span className="muted">—</span>}</td>
                   <td>
-                    {r.benchmarkPos === "none" ? (
+                    {editBench && r.benchmarkBand ? (
+                      <span className="sc-bench-edit">
+                        <input type="number" aria-label={`Benchmark low for ${r.label}`} value={r.benchmarkBand.low} step={r.unit === "yrs" ? 0.5 : 1} onChange={(e) => setBench(r.id, "low", e.target.value, r.benchmarkBand)} />
+                        <span aria-hidden="true">–</span>
+                        <input type="number" aria-label={`Benchmark high for ${r.label}`} value={r.benchmarkBand.high} step={r.unit === "yrs" ? 0.5 : 1} onChange={(e) => setBench(r.id, "high", e.target.value, r.benchmarkBand)} />
+                      </span>
+                    ) : r.benchmarkPos === "none" ? (
                       <span className="muted">—</span>
                     ) : (
                       <span className="sc-bench">

@@ -68,7 +68,7 @@ export function AppShell() {
       toast("Enter a passphrase to encrypt the workspace", "error");
       return;
     }
-    let bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog, app.targets);
+    let bytes = saveWorkspace(app.store, app.branding, new Date().toISOString(), app.savedViews, app.auditLog, app.targets, app.benchmarks);
     let filename = "hr-workspace.json.gz";
     const willEncrypt = encrypt && !!passphrase.trim();
     if (willEncrypt) {
@@ -88,12 +88,13 @@ export function AppShell() {
   }
 
   function applyWorkspaceBytes(bytes: Uint8Array) {
-    const { store, branding, savedViews, auditLog, targets } = loadWorkspace(bytes);
+    const { store, branding, savedViews, auditLog, targets, benchmarks } = loadWorkspace(bytes);
     app.setStore(store);
     app.setBranding(branding);
     app.setSavedViews(savedViews);
     app.setAuditLog(auditLog);
     app.setTargets(targets);
+    app.setBenchmarks(benchmarks);
     app.markLive(); // a loaded workspace is the user's own data — persist it
     const emp = store.getLatest("employee_master")?.rows.length ?? 0;
     app.logAudit("Loaded workspace", emp ? `${emp.toLocaleString("en-IN")} employees` : `${store.allSnapshots().length} snapshot(s)`);

@@ -81,6 +81,7 @@ export interface NewsletterOptions {
   activeHeadcount?: number;
   leaverEvents?: LeaverEvent[] | null;
   targets?: Record<string, number>;
+  benchmarks?: Record<string, { low: number; high: number }>;
 }
 
 const SEVERITY_RANK: Record<MetricWatchout["severity"], number> = { high: 3, medium: 2, low: 1 };
@@ -308,7 +309,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
 
   const functional = DOMAIN_ORDER.map((k) => buildDomainCompared(store, k, { activeHeadcount: opts.activeHeadcount }));
   const cross = buildCrossFunctional(store, { leaverEvents: opts.leaverEvents });
-  const scorecard = buildScorecard(store, opts.targets ?? {});
+  const scorecard = buildScorecard(store, opts.targets ?? {}, opts.benchmarks ?? {});
 
   // People-page differentiators that belong in the board brief: their watch-outs
   // (flight risk, gender pay gap) flow into the action plan + exec-brief risks
@@ -368,7 +369,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     topActions: actionPlan.slice(0, 5),
   };
 
-  const brain = buildBrain(store, { targets: opts.targets ?? {} });
+  const brain = buildBrain(store, { targets: opts.targets ?? {}, benchmarks: opts.benchmarks ?? {} });
 
   return {
     appName,

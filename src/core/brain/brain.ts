@@ -499,7 +499,7 @@ export function computeHealth(findings: BrainFinding[], summary: BrainResult["su
   return { score, band, caption };
 }
 
-export function buildBrain(store: DataSource, opts: { targets?: Record<string, number> } = {}): BrainResult {
+export function buildBrain(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainResult {
   const ctx = gatherContext(store, opts);
   const findings = RULES.map((r) => {
     try {
