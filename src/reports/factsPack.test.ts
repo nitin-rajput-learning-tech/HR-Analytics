@@ -55,4 +55,15 @@ describe("buildFactsMarkdown", () => {
     expect(md.startsWith("# X — HR Newsletter")).toBe(true);
     expect(md).toContain("## People & Org");
   });
+
+  it("renders the scorecard with a Typical (benchmark) column showing range + position", () => {
+    const md = buildFactsMarkdown(buildNewsletter(store(), { appName: "Acme HR" }));
+    expect(md).toContain("| KPI | Area | Current | vs Last | Typical | Target | Status |");
+    // Review completion is 50% — below the typical 85–100% band → flagged "worse".
+    const row = md.split("\n").find((l) => l.startsWith("| Review Completion "));
+    expect(row).toBeTruthy();
+    expect(row).toMatch(/85.100%/); // 85–100% (en dash)
+    expect(row).toContain("(worse)");
+    expect(md).not.toContain("undefined"); // no missing-field leakage in the new column
+  });
 });

@@ -44,9 +44,12 @@ export function buildFactsMarkdown(nl: Newsletter): string {
   if (scored.length) {
     push("## Scorecard vs Targets");
     push();
-    push("| KPI | Area | Current | vs Last | Target | Status |");
-    push("| --- | --- | --- | --- | --- | --- |");
-    for (const r of scored) push(`| ${r.label} | ${r.group} | ${r.display} | ${r.trend || "—"} | ${r.target}${r.unit === "%" ? "%" : r.unit ? " " + r.unit : ""} | ${r.rag.toUpperCase()} — ${r.status} |`);
+    push("| KPI | Area | Current | vs Last | Typical | Target | Status |");
+    push("| --- | --- | --- | --- | --- | --- | --- |");
+    for (const r of scored) {
+      const typical = r.benchmarkPos === "none" ? "—" : `${r.benchmark} (${r.benchmarkPos})`;
+      push(`| ${r.label} | ${r.group} | ${r.display} | ${r.trend || "—"} | ${typical} | ${r.target}${r.unit === "%" ? "%" : r.unit ? " " + r.unit : ""} | ${r.rag.toUpperCase()} — ${r.status} |`);
+    }
     push();
   }
 

@@ -215,6 +215,7 @@ export function Reports() {
                   <th>Area</th>
                   <th>Current</th>
                   <th>vs last</th>
+                  <th>Benchmark</th>
                   <th>Target</th>
                   <th>Status</th>
                 </tr>
@@ -226,6 +227,18 @@ export function Reports() {
                     <td>{r.group}</td>
                     <td>{r.display}</td>
                     <td>{r.trend ? <span className={`sc-trend ${r.trendTone}`}>{r.trend}</span> : "—"}</td>
+                    <td>
+                      {r.benchmarkPos === "none" ? (
+                        "—"
+                      ) : (
+                        <span className="sc-bench">
+                          <span className="sc-bench-range">{r.benchmark}</span>{" "}
+                          <span className={`sc-bench-pos ${r.benchmarkPos}`}>
+                            {r.benchmarkPos === "better" ? "▲ better" : r.benchmarkPos === "worse" ? "▼ worse" : "● typical"}
+                          </span>
+                        </span>
+                      )}
+                    </td>
                     <td>{r.target}{r.unit === "%" ? "%" : r.unit ? ` ${r.unit}` : ""}</td>
                     <td><span className={`rag-dot ${r.rag}`} aria-hidden="true" /> {r.status}</td>
                   </tr>
