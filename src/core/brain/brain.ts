@@ -8,6 +8,8 @@ import type { DataSource } from "../store/types";
 import { gatherContext, type BrainContext } from "./context";
 import { buildMaturity, type MaturityResult } from "./maturity";
 import { humanizeMoneyInr } from "../narrative";
+import { priorStoreOf } from "../scorecard";
+import { prettyPeriod } from "../metrics/compare";
 
 export type BrainSeverity = "critical" | "high" | "medium" | "low";
 // "confirmed" = a hard threshold/fact breached (a KNOWN issue);
@@ -618,6 +620,12 @@ export interface BrainHealth {
   score: number; // 0–100
   band: "Excellent" | "Good" | "Fair" | "At Risk" | "Critical";
   caption: string;
+  // Period-over-period direction (null when there's no prior snapshot to compare).
+  prior: number | null; // prior-period score
+  delta: number | null; // score − prior (higher score is better)
+  trend: string | null; // formatted, e.g. "▲ +4" / "▼ −5" / "no change"
+  trendTone: "good" | "bad" | "neutral";
+  priorLabel: string | null; // friendly prior period, e.g. "Apr 2026"
 }
 
 export interface BrainResult {
@@ -642,11 +650,12 @@ export function computeHealth(findings: BrainFinding[], summary: BrainResult["su
   const caption = findings.length === 0
     ? "No material issues detected across the loaded data."
     : `${priority} priority issue${priority === 1 ? "" : "s"} of ${summary.total} open${findings[0] ? ` · lead concern: ${findings[0].title}` : ""}.`;
-  return { score, band, caption };
+  return { score, band, caption, prior: null, delta: null, trend: null, trendTone: "neutral", priorLabel: null };
 }
 
-export function buildBrain(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainResult {
-  const ctx = gatherContext(store, opts);
+// Run every rule against a context and roll the findings into the summary. Shared by
+// the current-period diagnosis and the prior-period health recompute (for the trend).
+function evaluate(ctx: BrainContext): { findings: BrainFinding[]; summary: BrainResult["summary"] } {
   const findings = RULES.map((r) => {
     try {
       return r(ctx);
@@ -656,9 +665,7 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
   })
     .filter((f): f is BrainFinding => !!f)
     .map((f) => ({ ...f, link: FINDING_LINKS[f.id] }));
-
   findings.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity] || CONF_RANK[a.confidence] - CONF_RANK[b.confidence]);
-
   const summary = {
     total: findings.length,
     critical: findings.filter((f) => f.severity === "critical").length,
@@ -668,6 +675,36 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     known: findings.filter((f) => f.confidence === "confirmed").length,
     possible: findings.filter((f) => f.confidence !== "confirmed").length,
   };
+  return { findings, summary };
+}
+
+export function buildBrain(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainResult {
+  const ctx = gatherContext(store, opts);
+  const { findings, summary } = evaluate(ctx);
+  const health = computeHealth(findings, summary);
+
+  // Period-over-period health: recompute the score on the prior snapshot of each kind
+  // so the headline shows DIRECTION, not just level. Deterministic and persistence-free
+  // — it reuses the snapshots already in the store, mirroring the scorecard's prior
+  // deltas. Higher health is better, so an increase is a "good" move.
+  const priorStore = priorStoreOf(store);
+  if (priorStore) {
+    const pctx = gatherContext(priorStore, opts);
+    const pe = evaluate(pctx);
+    const priorScore = computeHealth(pe.findings, pe.summary).score;
+    health.prior = priorScore;
+    health.delta = health.score - priorScore;
+    health.priorLabel = prettyPeriod(pctx.asOf);
+    if (Math.abs(health.delta) < 1) {
+      health.trend = "no change";
+      health.trendTone = "neutral";
+    } else {
+      const up = health.delta > 0;
+      health.trend = `${up ? "▲ +" : "▼ −"}${Math.abs(health.delta)}`;
+      health.trendTone = up ? "good" : "bad";
+    }
+  }
+
   // Attach an attrition value-at-stake (₹) to the single highest-priority retention
   // initiative — framed as the pool at risk, not a per-item saving (so it can't be
   // double-counted across items).
@@ -682,5 +719,5 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     return item;
   });
 
-  return { findings, summary, health: computeHealth(findings, summary), roadmap, maturity: buildMaturity(ctx) };
+  return { findings, summary, health, roadmap, maturity: buildMaturity(ctx) };
 }

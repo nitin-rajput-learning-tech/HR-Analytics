@@ -189,6 +189,33 @@ describe("buildBrain", () => {
     expect(f!.link?.page).toBe("Function Analytics");
   });
 
+  it("shows period-over-period health direction when there is a prior snapshot", () => {
+    const store = new MemoryStore();
+    // Identical, healthy employee feed in both months (employee_master snapshots are
+    // combined across periods, so the trend must come from a functional domain).
+    const emp: Row[] = Array.from({ length: 20 }, (_, i) => ({ employee_number: "E" + i, full_name: "W" + i, employment_status: "Working", department: "Tech", date_joined: "2020-01-01" }));
+    store.add(snap("2026-04-30", emp));
+    store.add(snap("2026-05-31", emp));
+    const ta = (id: string, asOf: string, period: string, rows: Row[]): Snapshot => ({ id, kind: "ta_requisition", asOf, periodLabel: period, sourceFile: "f", compatibility: "full", rows });
+    // Prior month: 5 requisitions open >90 days → an aging-requisitions finding → lower health.
+    store.add(ta("ta_requisition:2026-04-30", "2026-04-30", "2026-04", Array.from({ length: 5 }, (_, i) => ({ requisition_id: "R" + i, department: "Tech", status: "Open", open_date: "2026-01-01" }))));
+    // Current month: a single recently-opened req → no aging finding → higher health.
+    store.add(ta("ta_requisition:2026-05-31", "2026-05-31", "2026-05", [{ requisition_id: "R9", department: "Tech", status: "Open", open_date: "2026-05-15" }]));
+    const { health } = buildBrain(store);
+    expect(health.prior).not.toBeNull();
+    expect(health.priorLabel).toBe("Apr 2026");
+    expect(health.score).toBeGreaterThan(health.prior as number); // health improved month-over-month
+    expect(health.trend!.startsWith("▲")).toBe(true);
+    expect(health.trendTone).toBe("good"); // higher health is a good move
+  });
+
+  it("has no health trend when there is only one period", () => {
+    const r = buildBrain(storeWithEarlyExits()); // single snapshot
+    expect(r.health.prior).toBeNull();
+    expect(r.health.trend).toBeNull();
+    expect(r.health.trendTone).toBe("neutral");
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

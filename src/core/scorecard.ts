@@ -107,7 +107,7 @@ function findValue(byKind: Map<string, MetricKPI[]>, def: Def): { kpi?: MetricKP
 
 // Prior-period view of the store: the second-latest snapshot of each kind, so the
 // scorecard can show momentum vs last period. Null when there's no history.
-function priorStoreOf(store: DataSource): DataSource | null {
+export function priorStoreOf(store: DataSource): DataSource | null {
   const prior = new MemoryStore();
   for (const kind of new Set(store.allSnapshots().map((s) => s.kind))) {
     const snaps = store.listByKind(kind); // ascending by asOf

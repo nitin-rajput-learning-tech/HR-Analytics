@@ -57,7 +57,7 @@ export function buildFactsMarkdown(nl: Newsletter): string {
   if (nl.brain.findings.length) {
     push("## HR Brain — Diagnosis");
     push();
-    push(`**HR Health ${nl.brain.health.score}/100 · ${nl.brain.health.band}** — ${nl.brain.health.caption}`);
+    push(`**HR Health ${nl.brain.health.score}/100 · ${nl.brain.health.band}**${nl.brain.health.trend ? ` (${nl.brain.health.trend} vs ${nl.brain.health.priorLabel})` : ""} — ${nl.brain.health.caption}`);
     push();
     for (const f of nl.brain.findings) {
       push(`### ${f.title}  _(${f.severity} · ${findingScope(f)})_`);

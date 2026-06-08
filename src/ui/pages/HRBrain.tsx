@@ -30,7 +30,10 @@ export function HRBrain() {
           <div className={`brain-score band-${bandClass}`} role="status" aria-label={`HR health score ${health.score} of 100, ${health.band}`}>
             <div className="brain-score-num">{health.score}<span className="brain-score-of">/100</span></div>
             <div className="brain-score-meta">
-              <div className="brain-score-band">HR Health: {health.band}</div>
+              <div className="brain-score-band">
+                HR Health: {health.band}
+                {health.trend ? <span className={`brain-trend ${health.trendTone}`} title={`vs ${health.priorLabel}`}>{health.trend} vs {health.priorLabel}</span> : null}
+              </div>
               <div className="brain-score-caption">{health.caption}</div>
             </div>
           </div>

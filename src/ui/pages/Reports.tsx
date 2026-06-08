@@ -154,7 +154,8 @@ export function Reports() {
           <section className="nl-brain" id="sec-brain">
             <h2>HR Brain — Diagnosis</h2>
             <p className="nl-brain-score">
-              HR Health <strong>{nl.brain.health.score}/100</strong> · {nl.brain.health.band} — {nl.brain.health.caption}
+              HR Health <strong>{nl.brain.health.score}/100</strong> · {nl.brain.health.band}
+              {nl.brain.health.trend ? <span className={`sc-trend ${nl.brain.health.trendTone}`}> ({nl.brain.health.trend} vs {nl.brain.health.priorLabel})</span> : null} — {nl.brain.health.caption}
             </p>
             {nl.brain.findings.map((f) => (
               <div className={`nl-brain-finding sev-${f.severity}`} key={f.id}>
