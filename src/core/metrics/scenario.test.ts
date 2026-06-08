@@ -81,4 +81,19 @@ describe("scenario engine", () => {
     expect(r.hiredCount).toBe(4);
     expect(r.oneTimeHiringCost).toBeNull();
   });
+
+  it("rolls a year-1 cash impact = run-rate ×12 + one-time hiring", () => {
+    const cost = new Map([["Tech", 100000], ["Sales", 80000]]);
+    // hire 2 Tech @100k → +200k/mo run-rate; cost-per-hire 150k → +300k upfront
+    const r = computeScenario(activeByDept(rows), [op("hire", "Tech", 2)], cost, null, 150000);
+    expect(r.costDelta).toBe(200000);
+    expect(r.oneTimeHiringCost).toBe(300000);
+    expect(r.year1CashImpact).toBe(200000 * 12 + 300000);
+  });
+
+  it("has no year-1 cash impact without a run-rate cost basis", () => {
+    const r = computeScenario(activeByDept(rows), [op("hire", "Tech", 2)], null, null, 150000);
+    expect(r.costDelta).toBeNull();
+    expect(r.year1CashImpact).toBeNull(); // honest: can't state year-1 cash without the run-rate
+  });
 });

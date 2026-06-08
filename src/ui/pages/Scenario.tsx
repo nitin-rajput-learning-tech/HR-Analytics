@@ -82,6 +82,9 @@ export function Scenario() {
         ...(result.hiredCount > 0 && result.oneTimeHiringCost !== null
           ? [["One-time hiring cost (INR)", "", Math.round(result.oneTimeHiringCost), ""] as (string | number)[]]
           : []),
+        ...(result.year1CashImpact !== null
+          ? [["Year-1 cash impact (INR)", "", "", Math.round(result.year1CashImpact)] as (string | number)[]]
+          : []),
       ],
     );
     const depts = tableToCsv(["Department", "Baseline", "Scenario", "Delta"], result.depts.map((d) => [d.dept, d.base, d.scenario, d.delta]));
@@ -167,6 +170,13 @@ export function Scenario() {
                 ? "load TA cost or a payroll aggregate to price hires"
                 : `${result.hiredCount} hire${result.hiredCount === 1 ? "" : "s"} × ${N.humanizeMoneyInr(result.oneTimeHiringCost / result.hiredCount)}/hire (upfront)`}
             </div>
+          </div>
+        ) : null}
+        {result.year1CashImpact !== null ? (
+          <div className="kpi">
+            <div className="label">Year-1 Cash Impact</div>
+            <div className="value">{signedMoney(result.year1CashImpact)}</div>
+            <div className="hint">annualised run-rate{result.oneTimeHiringCost ? " + one-time hiring" : " (×12)"}</div>
           </div>
         ) : null}
       </div>
