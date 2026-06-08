@@ -137,6 +137,21 @@ describe("buildBrain", () => {
     expect(f!.link?.page).toBe("Function Analytics");
   });
 
+  it("downgrades the Performance Management maturity dimension when the PIP load is elevated", () => {
+    // Same review completion (18/20 = 90% → band 3); the only difference is the PIP cohort.
+    const perfDim = (onPip: number) => {
+      const store = new MemoryStore();
+      store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+      const pms: Row[] = Array.from({ length: 20 }, (_, i) => ({ employee_number: "P" + i, cycle: "FY26-H1", manager_review_done: i < 18, final_rating: 3, rating_scale: "1-5", on_pip: i < onPip, pip_outcome: i < onPip ? "Open" : "" }));
+      store.add({ id: "pms_review:FY26-H1", kind: "pms_review", asOf: "2026-05-31", periodLabel: "FY26-H1", sourceFile: "f", compatibility: "full", rows: pms });
+      return buildBrain(store).maturity.dimensions.find((d) => d.key === "perf");
+    };
+    expect(perfDim(0)!.level).toBe(3); // 90% reviews, no elevated PIP
+    const heavy = perfDim(4)!; // 4/20 on PIP → elevated
+    expect(heavy.level).toBe(2); // downgraded one band
+    expect(heavy.basis).toMatch(/PIP/);
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

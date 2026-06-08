@@ -50,10 +50,15 @@ export function buildMaturity(ctx: BrainContext): MaturityResult {
     const v = num("Offer-Accept Rate");
     dims.push(dim("ta", "Talent Acquisition", v === null ? null : bandHigher(v, [90, 85, 80, 70]), v === null ? "No requisition data" : `Offer-accept ${disp("Offer-Accept Rate")}`, "Lift offer competitiveness and candidate experience to raise acceptance."));
   }
-  // Performance Management — review completion.
+  // Performance Management — review completion, downgraded for an elevated PIP load
+  // (a clustered PIP population signals weaker performance management on top of any
+  // completion gap). Reuses the pms domain's own "elevated" threshold via its watch-out.
   {
     const v = num("Review Completion");
-    dims.push(dim("perf", "Performance Management", v === null ? null : bandHigher(v, [98, 95, 85, 70]), v === null ? "No PMS data" : `Reviews ${disp("Review Completion")} complete`, "Push review completion past 95% and calibrate before decisions."));
+    let lvl = v === null ? null : bandHigher(v, [98, 95, 85, 70]);
+    const elevatedPip = ctx.watchoutsMatching(/\bPIP\b/i).some((w) => w.kind === "pms_review");
+    if (lvl !== null && elevatedPip) lvl = clamp(lvl - 1);
+    dims.push(dim("perf", "Performance Management", lvl, v === null ? "No PMS data" : `Reviews ${disp("Review Completion")} complete${elevatedPip ? ", elevated PIP load" : ""}`, "Push review completion past 95%, calibrate before decisions, and keep the PIP population low."));
   }
   // Reward & Pay Equity — gender pay gap (lower is better).
   {
