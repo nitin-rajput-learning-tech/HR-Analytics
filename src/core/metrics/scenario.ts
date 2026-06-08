@@ -32,6 +32,8 @@ export interface ScenarioResult {
   scenarioCost: number | null;
   costDelta: number | null;
   costBasis: "payroll" | "assumed" | "none";
+  hiredCount: number; // gross external hires across the plan (moves are internal, so excluded)
+  oneTimeHiringCost: number | null; // hiredCount × cost-per-hire — the upfront recruitment spend; null if no basis
   depts: DeptRow[]; // every touched or non-empty department, sorted by |delta| then name
 }
 
@@ -92,6 +94,7 @@ export function computeScenario(
   ops: ScenarioOp[],
   costByDept: Map<string, number> | null,
   assumedCost: number | null,
+  costPerHire: number | null = null,
 ): ScenarioResult {
   const scenario = applyOps(base, ops);
 
@@ -113,6 +116,11 @@ export function computeScenario(
   const baseCost = cost(base);
   const scenarioCost = cost(scenario);
 
+  // Upfront recruitment cost: only external hires incur it (moves are internal,
+  // cuts none). Null when we have no cost-per-hire basis to price it.
+  const hiredCount = ops.reduce((s, o) => s + (o.kind === "hire" ? Math.max(0, Math.floor(o.count || 0)) : 0), 0);
+  const oneTimeHiringCost = costPerHire == null ? null : hiredCount * costPerHire;
+
   const allDepts = new Set<string>([...base.keys(), ...scenario.keys()]);
   const depts: DeptRow[] = [...allDepts]
     .map((dept) => ({ dept, base: base.get(dept) ?? 0, scenario: scenario.get(dept) ?? 0, delta: (scenario.get(dept) ?? 0) - (base.get(dept) ?? 0) }))
@@ -127,6 +135,8 @@ export function computeScenario(
     scenarioCost,
     costDelta: baseCost !== null && scenarioCost !== null ? scenarioCost - baseCost : null,
     costBasis,
+    hiredCount,
+    oneTimeHiringCost,
     depts,
   };
 }

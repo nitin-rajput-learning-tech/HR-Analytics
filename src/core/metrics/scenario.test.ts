@@ -66,4 +66,19 @@ describe("scenario engine", () => {
     expect(r.costBasis).toBe("none");
     expect(r.costDelta).toBe(null);
   });
+
+  it("prices the one-time hiring cost from cost-per-hire (external hires only)", () => {
+    const base = activeByDept(rows);
+    // 2 + 3 = 5 gross hires; a move and a cut recruit no-one externally.
+    const ops = [op("hire", "Tech", 2), op("move", "Tech", 1, "Sales"), op("cut", "Sales", 1), op("hire", "Sales", 3)];
+    const r = computeScenario(base, ops, null, 75000, 120000);
+    expect(r.hiredCount).toBe(5);
+    expect(r.oneTimeHiringCost).toBe(5 * 120000);
+  });
+
+  it("has no one-time hiring cost when cost-per-hire is unknown", () => {
+    const r = computeScenario(activeByDept(rows), [op("hire", "Tech", 4)], null, 75000); // no costPerHire → null
+    expect(r.hiredCount).toBe(4);
+    expect(r.oneTimeHiringCost).toBeNull();
+  });
 });

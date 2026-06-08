@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import * as N from "../../core/narrative";
 import { activeByDept, costByDeptFromAggregate, computeScenario, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
+import { estimateReplacementCost } from "../../core/metrics/cross_functional";
 import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
 import { tableToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
@@ -29,11 +30,18 @@ export function Scenario() {
   const base = useMemo(() => activeByDept(combinedEmployeeSnapshot(store)?.rows ?? []), [store, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const costByDept = useMemo(() => costByDeptFromAggregate(store.getLatest("payroll_aggregate")?.rows), [store, version]);
+  // Cost-per-hire (real TA cost/joined, else a payroll-derived proxy) — prices the
+  // upfront recruitment spend of the plan, reusing the attrition-economics estimate.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const costPerHire = useMemo(
+    () => estimateReplacementCost(store.getLatest("ta_requisition")?.rows, store.getLatest("payroll_aggregate")?.rows),
+    [store, version],
+  );
   const depts = useMemo(() => [...base.keys()].sort(), [base]);
 
   const result = useMemo(
-    () => computeScenario(base, ops, costByDept.size ? costByDept : null, assumed),
-    [base, ops, costByDept, assumed],
+    () => computeScenario(base, ops, costByDept.size ? costByDept : null, assumed, costPerHire),
+    [base, ops, costByDept, assumed, costPerHire],
   );
 
   if (base.size === 0) {
@@ -70,6 +78,9 @@ export function Scenario() {
         ["Active headcount", result.baseHeadcount, result.scenarioHeadcount, result.headcountDelta],
         ...(result.baseCost !== null && result.scenarioCost !== null
           ? [["Monthly cost (INR)", Math.round(result.baseCost), Math.round(result.scenarioCost), Math.round(result.costDelta ?? 0)] as (string | number)[]]
+          : []),
+        ...(result.hiredCount > 0 && result.oneTimeHiringCost !== null
+          ? [["One-time hiring cost (INR)", "", Math.round(result.oneTimeHiringCost), ""] as (string | number)[]]
           : []),
       ],
     );
@@ -147,6 +158,17 @@ export function Scenario() {
           <div className="value">{result.costDelta === null ? "—" : signedMoney(result.costDelta * 12)}</div>
           <div className="hint">vs baseline, ×12 months</div>
         </div>
+        {result.hiredCount > 0 ? (
+          <div className="kpi">
+            <div className="label">One-time Hiring Cost</div>
+            <div className="value">{result.oneTimeHiringCost === null ? "—" : N.humanizeMoneyInr(result.oneTimeHiringCost)}</div>
+            <div className="hint">
+              {result.oneTimeHiringCost === null
+                ? "load TA cost or a payroll aggregate to price hires"
+                : `${result.hiredCount} hire${result.hiredCount === 1 ? "" : "s"} × ${N.humanizeMoneyInr(result.oneTimeHiringCost / result.hiredCount)}/hire (upfront)`}
+            </div>
+          </div>
+        ) : null}
       </div>
       <p className="muted scn-basis">{costBasisNote}</p>
 

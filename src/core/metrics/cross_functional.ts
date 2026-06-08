@@ -337,7 +337,7 @@ function signalScore(
   return key === "attrition" ? clamp01(v / ATTRITION_REF) : clamp01(v);
 }
 
-function estimateReplacementCost(taRows?: Row[] | null, payrollAgg?: Row[] | null): number | null {
+export function estimateReplacementCost(taRows?: Row[] | null, payrollAgg?: Row[] | null): number | null {
   // Prefer real cost-per-hire from TA (total cost / joined, where both present).
   if (taRows && taRows.length && taRows.some((r) => "cost" in r) && taRows.some((r) => "joined" in r)) {
     let cost = 0;
