@@ -160,7 +160,7 @@ export function Reports() {
             {nl.brain.findings.map((f) => (
               <div className={`nl-brain-finding sev-${f.severity}`} key={f.id}>
                 <div className="nl-brain-head">
-                  <strong>{f.title}</strong> <span className="nl-brain-tag">{f.severity} · {findingScope(f)}</span>
+                  <strong>{f.title}</strong> <span className="nl-brain-tag">{f.severity} · {findingScope(f)}{f.isNew ? " · NEW" : ""}</span>
                 </div>
                 <p className="nl-brain-reason">{f.reason}</p>
                 <div className="nl-brain-remedy">Remedy: {f.remedy[0]}</div>

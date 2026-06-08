@@ -56,6 +56,7 @@ export function HRBrain() {
                 <header className="brain-card-head">
                   <span className={`brain-sev sev-${f.severity}`}>{SEV_LABEL[f.severity]}</span>
                   <span className={`brain-conf conf-${f.confidence}`}>{CONF_LABEL[f.confidence]}</span>
+                  {f.isNew ? <span className="brain-new" title="Newly emerged since last period">NEW</span> : null}
                   <h3>{f.title}</h3>
                   <span className="brain-owner">{findingScope(f)}</span>
                 </header>

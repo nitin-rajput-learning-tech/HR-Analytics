@@ -234,6 +234,22 @@ describe("buildBrain", () => {
     expect(gapped.basis).toMatch(/contract\/asset/);
   });
 
+  it("flags findings that newly emerged since the prior period", () => {
+    const store = new MemoryStore();
+    const emp: Row[] = Array.from({ length: 20 }, (_, i) => ({ employee_number: "E" + i, employment_status: "Working", department: "Tech", date_joined: "2020-01-01" }));
+    store.add(snap("2026-04-30", emp));
+    store.add(snap("2026-05-31", emp));
+    const statutory = (asOf: string): Snapshot => ({ id: "payroll_statutory:" + asOf, kind: "payroll_statutory", asOf, periodLabel: asOf, sourceFile: "f", compatibility: "full", rows: [{ pay_month: asOf.slice(0, 7), statutory_type: "PF", status: "Paid" }, { pay_month: asOf.slice(0, 7), statutory_type: "TDS", status: "Late" }] });
+    store.add(statutory("2026-04-30"));
+    store.add(statutory("2026-05-31")); // statutory issue present in BOTH periods → not new
+    const ta = (asOf: string, period: string, rows: Row[]): Snapshot => ({ id: "ta_requisition:" + asOf, kind: "ta_requisition", asOf, periodLabel: period, sourceFile: "f", compatibility: "full", rows });
+    store.add(ta("2026-04-30", "2026-04", [{ requisition_id: "R0", department: "Tech", status: "Open", open_date: "2026-04-20" }])); // recent → no aging
+    store.add(ta("2026-05-31", "2026-05", Array.from({ length: 5 }, (_, i) => ({ requisition_id: "R" + i, department: "Tech", status: "Open", open_date: "2026-01-01" })))); // 5 aging → NEW
+    const { findings } = buildBrain(store);
+    expect(findings.find((f) => f.id === "ta_throughput")?.isNew).toBe(true); // aging reqs only appeared this period
+    expect(findings.find((f) => f.id === "statutory")?.isNew).toBe(false); // statutory issue was there last period too
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

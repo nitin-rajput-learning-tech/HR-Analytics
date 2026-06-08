@@ -384,6 +384,7 @@ select, input[type="file"] { font: inherit; }
 .brain-sev.sev-low { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border-strong); }
 .brain-conf { font-size: 0.7rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--muted); }
 .brain-conf.conf-confirmed { color: var(--text); border-color: var(--text); }
+.brain-new { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px; background: #2563eb; color: #fff; }
 .brain-owner { width: 100%; color: var(--muted); font-size: 0.8rem; }
 .brain-section { margin-top: 9px; }
 .brain-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; margin-bottom: 3px; }

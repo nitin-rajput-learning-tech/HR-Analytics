@@ -27,6 +27,7 @@ export interface BrainFinding {
   reason: string;
   remedy: string[];
   link?: { page: string; tab?: string }; // where to go to see the evidence
+  isNew?: boolean; // newly appeared vs the prior period (undefined when there's no prior to compare)
 }
 
 // Format a finding's scope — its category and owner — collapsing the common case
@@ -691,6 +692,9 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
   if (priorStore) {
     const pctx = gatherContext(priorStore, opts);
     const pe = evaluate(pctx);
+    // Spotlight issues that newly emerged this period (id absent from the prior run).
+    const priorIds = new Set(pe.findings.map((f) => f.id));
+    for (const f of findings) f.isNew = !priorIds.has(f.id);
     const priorScore = computeHealth(pe.findings, pe.summary).score;
     health.prior = priorScore;
     health.delta = health.score - priorScore;
