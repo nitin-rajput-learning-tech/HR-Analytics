@@ -3,6 +3,7 @@
 // (optionally) hand to an external tool. No AI involved in generating it.
 
 import type { Newsletter } from "./newsletter";
+import { findingScope } from "../core/brain/brain";
 
 export function buildFactsMarkdown(nl: Newsletter): string {
   const out: string[] = [];
@@ -59,7 +60,7 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     push(`**HR Health ${nl.brain.health.score}/100 · ${nl.brain.health.band}** — ${nl.brain.health.caption}`);
     push();
     for (const f of nl.brain.findings) {
-      push(`### ${f.title}  _(${f.severity} · ${f.category} · ${f.owner})_`);
+      push(`### ${f.title}  _(${f.severity} · ${findingScope(f)})_`);
       push(`- **Likely reason:** ${f.reason}`);
       push(`- **Remedy plan:**`);
       for (const r of f.remedy) push(`  - ${r}`);

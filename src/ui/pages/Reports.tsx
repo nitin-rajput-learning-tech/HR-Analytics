@@ -6,6 +6,7 @@ import { buildNewsletter } from "../../reports/newsletter";
 import { buildFactsMarkdown } from "../../reports/factsPack";
 import { leaverEvents } from "../../core/metrics/movement";
 import { combinedEmployeeSnapshot, employeePeriods } from "../../core/metrics/combineEmployees";
+import { findingScope } from "../../core/brain/brain";
 import { downloadBlob } from "../download";
 
 export function Reports() {
@@ -158,7 +159,7 @@ export function Reports() {
             {nl.brain.findings.map((f) => (
               <div className={`nl-brain-finding sev-${f.severity}`} key={f.id}>
                 <div className="nl-brain-head">
-                  <strong>{f.title}</strong> <span className="nl-brain-tag">{f.severity} · {f.category} · {f.owner}</span>
+                  <strong>{f.title}</strong> <span className="nl-brain-tag">{f.severity} · {findingScope(f)}</span>
                 </div>
                 <p className="nl-brain-reason">{f.reason}</p>
                 <div className="nl-brain-remedy">Remedy: {f.remedy[0]}</div>

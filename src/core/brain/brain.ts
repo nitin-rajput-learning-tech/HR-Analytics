@@ -27,6 +27,13 @@ export interface BrainFinding {
   link?: { page: string; tab?: string }; // where to go to see the evidence
 }
 
+// Format a finding's scope — its category and owner — collapsing the common case
+// where they're identical (e.g. "Talent Acquisition · Talent Acquisition") to a
+// single label so the cards, newsletter and facts pack all read cleanly.
+export function findingScope(f: { category: string; owner: string }): string {
+  return f.category === f.owner ? f.category : `${f.category} · ${f.owner}`;
+}
+
 type Rule = (ctx: BrainContext) => BrainFinding | null;
 
 export type Level = "High" | "Medium" | "Low";

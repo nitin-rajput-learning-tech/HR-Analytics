@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useApp } from "../state";
-import { buildBrain, type BrainFinding } from "../../core/brain/brain";
+import { buildBrain, findingScope, type BrainFinding } from "../../core/brain/brain";
 
 const SEV_LABEL: Record<BrainFinding["severity"], string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 const CONF_LABEL: Record<BrainFinding["confidence"], string> = { confirmed: "Known", likely: "Likely", possible: "Possible" };
@@ -54,7 +54,7 @@ export function HRBrain() {
                   <span className={`brain-sev sev-${f.severity}`}>{SEV_LABEL[f.severity]}</span>
                   <span className={`brain-conf conf-${f.confidence}`}>{CONF_LABEL[f.confidence]}</span>
                   <h3>{f.title}</h3>
-                  <span className="brain-owner">{f.category} · {f.owner}</span>
+                  <span className="brain-owner">{findingScope(f)}</span>
                 </header>
                 <div className="brain-section">
                   <div className="brain-label">Evidence</div>

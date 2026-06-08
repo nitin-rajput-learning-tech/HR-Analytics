@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBrain, buildRoadmap, type BrainFinding } from "./brain";
+import { buildBrain, buildRoadmap, findingScope, type BrainFinding } from "./brain";
 import { MemoryStore } from "../store/memoryStore";
 import type { Snapshot } from "../store/types";
 import type { Row } from "../ingest/types";
@@ -14,6 +14,13 @@ function storeWithEarlyExits(): MemoryStore {
   store.add(snap("2026-05-31", [...working, ...relieved]));
   return store;
 }
+
+describe("findingScope", () => {
+  it("collapses category · owner when they're identical, keeps both otherwise", () => {
+    expect(findingScope({ category: "Talent Acquisition", owner: "Talent Acquisition" })).toBe("Talent Acquisition");
+    expect(findingScope({ category: "Compliance", owner: "L&D" })).toBe("Compliance · L&D");
+  });
+});
 
 describe("buildBrain", () => {
   it("detects early attrition with a reason and a remedy plan", () => {
