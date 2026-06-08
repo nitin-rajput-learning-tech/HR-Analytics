@@ -167,6 +167,21 @@ describe("buildBrain", () => {
     expect(f!.link?.page).toBe("Function Analytics");
   });
 
+  it("flags aging requisitions as a hiring-throughput risk", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+    // 5 requisitions open >90 days (opened 2026-01-01, as-of 2026-05-31) → high severity.
+    const reqs: Row[] = Array.from({ length: 5 }, (_, i) => ({ requisition_id: "R" + i, department: "Tech", status: "Open", open_date: "2026-01-01" }));
+    store.add({ id: "ta_requisition:2026-05-31", kind: "ta_requisition", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full", rows: reqs });
+    const f = buildBrain(store).findings.find((x) => x.id === "ta_throughput");
+    expect(f).toBeTruthy();
+    expect(f!.title).toBe("Aging requisitions"); // single watch-out → its own title
+    expect(f!.severity).toBe("high"); // 5 reqs open >90 days
+    expect(f!.evidence.join(" ")).toMatch(/90 days/);
+    expect(f!.owner).toBe("Talent Acquisition");
+    expect(f!.link?.page).toBe("Function Analytics");
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

@@ -50,7 +50,7 @@ const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High"
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low", compliance_training: "Low",
   below_benchmark: "Medium",
-  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium", ta_throughput: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
 };
 const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
@@ -88,6 +88,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   review_completion: { page: "Function Analytics" },
   performance_management: { page: "Function Analytics" },
   offer_accept: { page: "Function Analytics" },
+  ta_throughput: { page: "Function Analytics" },
   ld_coverage: { page: "Function Analytics" },
   compliance_training: { page: "Function Analytics" },
   org_design: { page: "People Analytics", tab: "org_health" },
@@ -363,6 +364,35 @@ const RULES: Rule[] = [
         "Capture decline reasons and review them monthly.",
         "Brief candidates on growth, role and culture before the offer stage.",
       ],
+    };
+  },
+
+  // Talent Acquisition throughput — aging requisitions and weak funnel conversion.
+  // Offer-accept has its own rule above; this covers the velocity/quality signals
+  // (reason + remedy adapt to whichever fired).
+  (ctx) => {
+    const w = ctx.watchoutsMatching(/aging|interview-to-offer|conversion|open for more than/i).filter((x) => x.kind === "ta_requisition");
+    if (!w.length) return null;
+    const aging = w.some((x) => /aging|open for more than/i.test(`${x.title} ${x.detail}`));
+    const conv = w.some((x) => /conversion|interview-to-offer/i.test(x.title));
+    const reason = [
+      aging ? "Roles open well past 90 days usually mean an unrealistic brief, an uncompetitive offer, or thin sourcing — and every extra week of vacancy is lost output, overloaded teammates and a thinner candidate pool." : "",
+      conv ? "Few interviews converting to offers points to a screening or interviewer-calibration gap — the wrong candidates reach the panel, or the panel can't align on the bar." : "",
+    ].filter(Boolean).join(" ");
+    const remedy: string[] = [];
+    if (aging) remedy.push("Triage every requisition open past 90 days: re-scope, re-grade, refresh sourcing channels, or pause it deliberately.", "Set a target time-to-fill per role family and review the oldest reqs weekly with hiring managers.");
+    if (conv) remedy.push("Tighten screening so interview slots go to better-fit candidates, and calibrate interviewers on a shared bar.", "Find the funnel stage with the steepest drop and fix that one first.");
+    remedy.push("Track time-to-fill and interview-to-offer conversion on the scorecard.");
+    return {
+      id: "ta_throughput",
+      title: w.length === 1 ? w[0].title : "Hiring throughput needs attention (aging roles / funnel)",
+      category: "Talent Acquisition",
+      owner: "Talent Acquisition",
+      severity: w.some((x) => x.severity === "high") ? "high" : "medium",
+      confidence: "confirmed",
+      evidence: w.slice(0, 4).map((x) => x.detail),
+      reason,
+      remedy,
     };
   },
 
