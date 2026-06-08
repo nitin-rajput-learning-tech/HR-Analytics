@@ -68,6 +68,11 @@ export function buildMaturity(ctx: BrainContext): MaturityResult {
     if (lvl !== null && reg > 0) lvl = clamp(lvl - 1);
     dims.push(dim("retention", "Retention", lvl, fy === null ? "No exit data" : `First-year exits ${disp("First-Year Exit Share")}${reg > 0 ? `, ${reg} regretted` : ""}`, "Run stay interviews and fix the biggest early-attrition drivers."));
   }
+  // Engagement — eNPS.
+  {
+    const v = num("eNPS");
+    dims.push(dim("engagement", "Engagement", v === null ? null : bandHigher(v, [40, 20, 0, -20]), v === null ? "No survey data" : `eNPS ${disp("eNPS")}`, "Act visibly on the weakest engagement drivers and re-survey to confirm the trend."));
+  }
   // Diversity & Inclusion — representation level (proxy).
   {
     const v = num("Female (overall)") ?? num("Female");

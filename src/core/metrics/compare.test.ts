@@ -13,6 +13,8 @@ describe("parseKpiValue", () => {
     expect(parseKpiValue("1 yr")).toEqual({ n: 1, unit: "yrs" });
     expect(parseKpiValue("42 days")).toEqual({ n: 42, unit: "days" });
     expect(parseKpiValue("1 day")).toEqual({ n: 1, unit: "days" });
+    expect(parseKpiValue("+3")).toEqual({ n: 3, unit: "count" }); // signed counts, e.g. eNPS
+    expect(parseKpiValue("-5")).toEqual({ n: -5, unit: "count" });
   });
   it("rejects non-numeric values", () => {
     expect(parseKpiValue("Engineering")).toBeNull();

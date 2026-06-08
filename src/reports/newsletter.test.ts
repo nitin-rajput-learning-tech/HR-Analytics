@@ -98,7 +98,7 @@ describe("buildNewsletter", () => {
 
   it("carries the HR maturity assessment in the brain block", () => {
     const nl = buildNewsletter(populated(), {});
-    expect(nl.brain.maturity.dimensions.length).toBe(8);
+    expect(nl.brain.maturity.dimensions.length).toBe(9);
     expect(nl.brain.roadmap.length).toBeGreaterThanOrEqual(0);
   });
 

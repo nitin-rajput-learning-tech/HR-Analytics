@@ -51,7 +51,7 @@ export function parseKpiValue(value: string | null | undefined): ParsedValue | n
     return Number.isFinite(n) ? { n, unit: "days" } : null;
   }
   const cleaned = s.replace(/,/g, "");
-  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
+  if (!/^[+-]?\d+(\.\d+)?$/.test(cleaned)) return null; // allow a leading + (e.g. eNPS "+3")
   const n = Number(cleaned);
   return Number.isFinite(n) ? { n, unit: "count" } : null;
 }
