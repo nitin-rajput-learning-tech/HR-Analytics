@@ -48,7 +48,7 @@ export interface RoadmapItem {
 // org-redesign and cross-cutting programmes are High.
 const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High", medium: "Medium", low: "Low" };
 const EFFORT_OF: Record<string, Level> = {
-  statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low",
+  statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low", compliance_training: "Low",
   below_benchmark: "Medium",
   offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
@@ -89,6 +89,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   performance_management: { page: "Function Analytics" },
   offer_accept: { page: "Function Analytics" },
   ld_coverage: { page: "Function Analytics" },
+  compliance_training: { page: "Function Analytics" },
   org_design: { page: "People Analytics", tab: "org_health" },
   cost_concentration: { page: "People Analytics", tab: "workforce_cost" },
   source_reconciliation: { page: "People Analytics", tab: "sources" },
@@ -384,6 +385,31 @@ const RULES: Rule[] = [
         "Set a minimum learning-hours target per employee per quarter.",
         "Prioritise teams that have both low coverage and high attrition.",
         "Track coverage on the scorecard.",
+      ],
+    };
+  },
+
+  // Mandatory / compliance training — distinct from general coverage above. An
+  // incomplete compliance curriculum is a regulatory/audit exposure, not merely a
+  // development gap, so it gets its own finding.
+  (ctx) => {
+    const w = ctx.watchoutsMatching(/mandatory|compliance/i).filter((x) => x.kind === "ld_enrollment");
+    if (!w.length) return null;
+    return {
+      id: "compliance_training",
+      title: "Mandatory / compliance training incomplete",
+      category: "Compliance",
+      owner: "L&D",
+      severity: w.some((x) => x.severity === "high") ? "high" : "medium",
+      confidence: "confirmed",
+      evidence: w.map((x) => x.detail),
+      reason:
+        "Some mandatory or compliance training is unfinished. Unlike general learning coverage, incomplete statutory modules (e.g. anti-harassment, code of conduct, data protection, safety) are a direct audit and legal exposure — the organisation can be held liable for what untrained staff do or fail to do.",
+      remedy: [
+        "Make every mandatory module assignment-based with a hard due date and manager-level visibility.",
+        "Chase the outstanding completions now and escalate non-completion to the function head.",
+        "Where feasible, gate the access or certification that depends on the training.",
+        "Report compliance-training completion separately from overall coverage so a gap can't be masked.",
       ],
     };
   },

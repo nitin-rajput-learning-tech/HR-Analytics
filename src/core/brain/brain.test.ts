@@ -152,6 +152,21 @@ describe("buildBrain", () => {
     expect(heavy.basis).toMatch(/PIP/);
   });
 
+  it("flags incomplete mandatory/compliance training as a compliance risk", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+    // 10 compliance enrollments, 7 complete → 70% (< 75%) → high severity.
+    const enroll: Row[] = Array.from({ length: 10 }, (_, i) => ({ employee_number: "E" + i, program_id: "C1", category: "Compliance", status: i < 7 ? "Completed" : "Enrolled" }));
+    store.add({ id: "ld_enrollment:2026-05", kind: "ld_enrollment", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full", rows: enroll });
+    const f = buildBrain(store).findings.find((x) => x.id === "compliance_training");
+    expect(f).toBeTruthy();
+    expect(f!.severity).toBe("high"); // 70% complete is below the 75% high-severity threshold
+    expect(f!.category).toBe("Compliance");
+    expect(f!.confidence).toBe("confirmed");
+    expect(f!.evidence.join(" ")).toMatch(/mandatory|compliance/i);
+    expect(f!.link?.page).toBe("Function Analytics");
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
