@@ -12,6 +12,7 @@ export function HRBrain() {
   const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
+  const newCount = findings.filter((f) => f.isNew).length;
 
   return (
     <div className="hr-brain">
@@ -46,6 +47,7 @@ export function HRBrain() {
             <>
           <div className="brain-summary" role="status">
             <span className="brain-chip total">{summary.total} finding{summary.total === 1 ? "" : "s"}</span>
+            {newCount > 0 ? <span className="brain-chip new">{newCount} new this period</span> : null}
             {summary.critical > 0 ? <span className="brain-chip critical">{summary.critical} critical</span> : null}
             {summary.high > 0 ? <span className="brain-chip high">{summary.high} high</span> : null}
             {summary.medium > 0 ? <span className="brain-chip medium">{summary.medium} medium</span> : null}

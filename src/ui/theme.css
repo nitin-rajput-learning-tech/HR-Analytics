@@ -366,6 +366,7 @@ select, input[type="file"] { font: inherit; }
 .brain-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
 .brain-chip { display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); }
 .brain-chip.total { background: var(--brand-accent); color: #fff; border-color: var(--brand-accent); }
+.brain-chip.new { background: #2563eb; color: #fff; border-color: #2563eb; }
 .brain-chip.critical { color: #b91c1c; border-color: #b91c1c; }
 .brain-chip.high { color: #b45309; }
 .brain-chip.medium { color: #475569; }
