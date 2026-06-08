@@ -186,6 +186,21 @@ export function Reports() {
                 })}
               </div>
             ) : null}
+            {nl.brain.maturity.overall.score !== null ? (
+              <div className="nl-maturity">
+                <h3>HR maturity</h3>
+                <p className="nl-maturity-score">
+                  Overall <strong>{nl.brain.maturity.overall.score}/5 · {nl.brain.maturity.overall.stage}</strong> (1–5: Ad-hoc → Optimised)
+                </p>
+                <ul className="nl-maturity-list">
+                  {nl.brain.maturity.dimensions.filter((d) => d.level !== null).map((d) => (
+                    <li key={d.key}>
+                      <strong>{d.label}</strong> — {d.level}/5 {d.stage} <em>· {d.basis}</em>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
         ) : null}
 

@@ -73,6 +73,14 @@ export function buildFactsMarkdown(nl: Newsletter): string {
       }
       push();
     }
+    if (nl.brain.maturity.overall.score !== null) {
+      push(`### HR maturity — overall ${nl.brain.maturity.overall.score}/5 (${nl.brain.maturity.overall.stage})`);
+      for (const d of nl.brain.maturity.dimensions) {
+        if (d.level === null) continue;
+        push(`- ${d.label}: ${d.level}/5 ${d.stage} — ${d.basis}`);
+      }
+      push();
+    }
   }
 
   for (const s of nl.sections) {

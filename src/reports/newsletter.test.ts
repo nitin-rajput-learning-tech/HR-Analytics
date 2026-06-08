@@ -96,6 +96,12 @@ describe("buildNewsletter", () => {
     expect(nl.execBrief.headlineKpis[0].label).toBe("People & Org · Active Headcount");
   });
 
+  it("carries the HR maturity assessment in the brain block", () => {
+    const nl = buildNewsletter(populated(), {});
+    expect(nl.brain.maturity.dimensions.length).toBe(8);
+    expect(nl.brain.roadmap.length).toBeGreaterThanOrEqual(0);
+  });
+
   it("writes a one-paragraph executive summary", () => {
     const nl = buildNewsletter(populated(), { periodLabel: "May 2026" });
     expect(nl.execBrief.summary).toContain("active employees");
