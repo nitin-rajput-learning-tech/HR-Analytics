@@ -97,13 +97,16 @@ export function buildMaturity(ctx: BrainContext): MaturityResult {
     if (lvl !== null && ls >= 3) lvl = clamp(lvl - 1);
     dims.push(dim("org", "Org Design", lvl, v === null ? "No reporting data" : `${disp("Org Layers")} layers${ls >= 3 ? `, ${ls} low-span managers` : ""}`, "Delayer and broaden under-spanned management lines."));
   }
-  // HR Operations & Compliance — statutory on-time, downgraded for feed gaps.
+  // HR Operations & Compliance — statutory on-time, downgraded once for an operational
+  // gap: source feeds disagreeing, or contract-renewal / asset-recovery items overdue.
   {
     const v = num("Statutory On-time");
     let lvl = v === null ? null : bandHigher(v, [100, 98, 95, 90]);
-    const gap = num("Active Only in Other Source") ?? 0;
-    if (lvl !== null && gap > 0) lvl = clamp(lvl - 1);
-    dims.push(dim("ops", "HR Operations & Compliance", lvl, v === null ? "No payroll/statutory data" : `Statutory ${disp("Statutory On-time")} on-time${gap > 0 ? ", source feeds disagree" : ""}`, "Automate the statutory calendar and reconcile data sources."));
+    const feedGap = (num("Active Only in Other Source") ?? 0) > 0;
+    const adminGap = ctx.watchoutsMatching(/renewal|contract|asset|offboard|recover|lost/i).some((w) => w.kind === "admin_asset");
+    if (lvl !== null && (feedGap || adminGap)) lvl = clamp(lvl - 1);
+    const notes = [feedGap ? "source feeds disagree" : "", adminGap ? "contract/asset gaps" : ""].filter(Boolean).join(", ");
+    dims.push(dim("ops", "HR Operations & Compliance", lvl, v === null ? "No payroll/statutory data" : `Statutory ${disp("Statutory On-time")} on-time${notes ? ", " + notes : ""}`, "Automate the statutory calendar, reconcile data sources, and stay ahead of contract renewals and asset recovery."));
   }
 
   const assessed = dims.filter((d) => d.level !== null);

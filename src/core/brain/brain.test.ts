@@ -216,6 +216,24 @@ describe("buildBrain", () => {
     expect(r.health.trendTone).toBe("neutral");
   });
 
+  it("downgrades HR Operations maturity for contract/asset gaps", () => {
+    const opsDim = (withAdminGap: boolean) => {
+      const store = new MemoryStore();
+      store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+      // Statutory 100% on-time → band 5 before any operational downgrade.
+      store.add({ id: "payroll_statutory:2026-05", kind: "payroll_statutory", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full", rows: [{ pay_month: "2026-05", statutory_type: "PF", status: "Paid" }, { pay_month: "2026-05", statutory_type: "TDS", status: "Paid" }] });
+      if (withAdminGap) {
+        // An expired contract → "Contract renewals due" watch-out (kind admin_asset).
+        store.add({ id: "admin_contract:2026-05-31", kind: "admin_contract", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full", rows: [{ contract_id: "C1", vendor_name: "Acme", expiry_date: "2026-01-01", annual_cost: 100000 }] });
+      }
+      return buildBrain(store).maturity.dimensions.find((d) => d.key === "ops");
+    };
+    expect(opsDim(false)!.level).toBe(5); // statutory 100% on-time, no operational gaps
+    const gapped = opsDim(true)!;
+    expect(gapped.level).toBe(4); // downgraded one band for the contract gap
+    expect(gapped.basis).toMatch(/contract\/asset/);
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
