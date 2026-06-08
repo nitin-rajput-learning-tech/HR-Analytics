@@ -119,6 +119,24 @@ describe("buildBrain", () => {
     expect(item?.quadrant).toBe("Quick win");
   });
 
+  it("surfaces performance-management risk from an elevated PIP population", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+    // 20 reviews, all complete (no review-cycle watch-out), mid-scale ratings (no
+    // leniency), but 4 on a PIP → only the "Elevated PIP population" watch-out fires.
+    const pms: Row[] = Array.from({ length: 20 }, (_, i) => ({ employee_number: "P" + i, cycle: "FY26-H1", manager_review_done: true, final_rating: 3, rating_scale: "1-5", on_pip: i < 4, pip_outcome: i < 4 ? "Open" : "" }));
+    store.add({ id: "pms_review:FY26-H1", kind: "pms_review", asOf: "2026-05-31", periodLabel: "FY26-H1", sourceFile: "f", compatibility: "full", rows: pms });
+    const f = buildBrain(store).findings.find((x) => x.id === "performance_management");
+    expect(f).toBeTruthy();
+    expect(f!.title).toBe("Elevated PIP population"); // single watch-out → its own title
+    expect(f!.severity).toBe("medium");
+    expect(f!.evidence.join(" ")).toMatch(/PIP/);
+    expect(f!.reason).toMatch(/performance plans|manager-capability/i);
+    expect(f!.remedy.length).toBeGreaterThanOrEqual(3);
+    expect(f!.owner).toBe("HR Business Partners");
+    expect(f!.link?.page).toBe("Function Analytics");
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

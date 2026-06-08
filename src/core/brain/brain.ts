@@ -50,7 +50,7 @@ const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High"
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low",
   below_benchmark: "Medium",
-  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
 };
 const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
@@ -86,6 +86,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   early_attrition: { page: "People Analytics", tab: "retention" },
   pay_gap: { page: "People Analytics", tab: "pay_equity" },
   review_completion: { page: "Function Analytics" },
+  performance_management: { page: "Function Analytics" },
   offer_accept: { page: "Function Analytics" },
   ld_coverage: { page: "Function Analytics" },
   org_design: { page: "People Analytics", tab: "org_health" },
@@ -309,6 +310,35 @@ const RULES: Rule[] = [
         "Run calibration only once completion clears 90%.",
         "Make review completion an explicit manager objective.",
       ],
+    };
+  },
+
+  // Performance management — rating calibration (leniency) and PIP load. The
+  // review-completion gap has its own rule above; this surfaces the pms domain's
+  // other quality signals (reason + remedy adapt to whichever fired).
+  (ctx) => {
+    const w = ctx.watchoutsMatching(/leniency|\bPIP\b/i).filter((x) => x.kind === "pms_review");
+    if (!w.length) return null;
+    const pip = w.some((x) => /\bPIP\b/i.test(x.title));
+    const lenient = w.some((x) => /leniency/i.test(x.title));
+    const reason = [
+      pip ? "A cluster of employees on performance plans often points to a hiring-quality or manager-capability gap rather than isolated under-performance — especially where the PIPs concentrate under particular managers." : "",
+      lenient ? "Ratings bunched at the top of the scale weaken the differentiation that fair pay and promotion decisions depend on." : "",
+    ].filter(Boolean).join(" ");
+    const remedy: string[] = [];
+    if (pip) remedy.push("Confirm every PIP has a clear plan, owner and end date, and check whether they cluster under particular managers or teams.", "Trace recurring PIPs back to hiring and onboarding to rule out a quality-of-hire issue.");
+    if (lenient) remedy.push("Calibrate ratings to a defensible distribution before any reward or promotion decisions.", "Coach managers whose ratings sit consistently above the calibrated curve.");
+    remedy.push("Re-check the rating mix and PIP load next cycle to confirm the signal is improving.");
+    return {
+      id: "performance_management",
+      title: w.length === 1 ? w[0].title : "Performance ratings and PIP load need review",
+      category: "Performance",
+      owner: "HR Business Partners",
+      severity: w.some((x) => x.severity === "high") ? "high" : "medium",
+      confidence: "likely", // calibration/PIP interpretation is inferential, not a hard breach
+      evidence: w.slice(0, 4).map((x) => x.detail),
+      reason,
+      remedy,
     };
   },
 
