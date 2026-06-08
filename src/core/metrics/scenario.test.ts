@@ -96,4 +96,18 @@ describe("scenario engine", () => {
     expect(r.costDelta).toBeNull();
     expect(r.year1CashImpact).toBeNull(); // honest: can't state year-1 cash without the run-rate
   });
+
+  it("estimates one-time exit cost (severance) from cuts, clamped to each baseline", () => {
+    const cost = new Map([["Tech", 100000], ["Sales", 80000]]);
+    // cut 3 Tech (@100k) + cut 8 Sales (only 5 exist → clamped); 2 months' severance.
+    const r = computeScenario(activeByDept(rows), [op("cut", "Tech", 3), op("cut", "Sales", 8)], cost, null, null, 2);
+    expect(r.cutCount).toBe(3 + 5); // Sales clamped 8 → 5
+    expect(r.oneTimeExitCost).toBe((3 * 100000 + 5 * 80000) * 2); // (₹3L + ₹4L) × 2 = ₹14L
+  });
+
+  it("has no exit cost when severance months is zero (the default)", () => {
+    const r = computeScenario(activeByDept(rows), [op("cut", "Tech", 2)], new Map([["Tech", 100000]]), null); // severanceMonths defaults to 0
+    expect(r.cutCount).toBe(2);
+    expect(r.oneTimeExitCost).toBeNull();
+  });
 });

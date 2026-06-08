@@ -25,6 +25,7 @@ export function Scenario() {
   const [toDept, setToDept] = useState("");
   const [count, setCount] = useState(1);
   const [assumed, setAssumed] = useState(75000);
+  const [severanceMonths, setSeveranceMonths] = useState(2);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const base = useMemo(() => activeByDept(combinedEmployeeSnapshot(store)?.rows ?? []), [store, version]);
@@ -40,8 +41,8 @@ export function Scenario() {
   const depts = useMemo(() => [...base.keys()].sort(), [base]);
 
   const result = useMemo(
-    () => computeScenario(base, ops, costByDept.size ? costByDept : null, assumed, costPerHire),
-    [base, ops, costByDept, assumed, costPerHire],
+    () => computeScenario(base, ops, costByDept.size ? costByDept : null, assumed, costPerHire, severanceMonths),
+    [base, ops, costByDept, assumed, costPerHire, severanceMonths],
   );
 
   if (base.size === 0) {
@@ -82,6 +83,9 @@ export function Scenario() {
         ...(result.hiredCount > 0 && result.oneTimeHiringCost !== null
           ? [["One-time hiring cost (INR)", "", Math.round(result.oneTimeHiringCost), ""] as (string | number)[]]
           : []),
+        ...(result.cutCount > 0 && result.oneTimeExitCost !== null
+          ? [["One-time exit cost / severance (INR)", "", Math.round(result.oneTimeExitCost), ""] as (string | number)[]]
+          : []),
         ...(result.year1CashImpact !== null
           ? [["Year-1 cash impact (INR)", "", "", Math.round(result.year1CashImpact)] as (string | number)[]]
           : []),
@@ -98,6 +102,9 @@ export function Scenario() {
       : result.costBasis === "assumed"
         ? "No payroll loaded — cost uses the assumed monthly figure below."
         : "Load a payroll aggregate (or set an assumed cost) to see cost impact.";
+
+  const oneTimeParts = [result.oneTimeHiringCost ? "hiring" : "", result.oneTimeExitCost ? "severance" : ""].filter(Boolean);
+  const year1Hint = oneTimeParts.length ? `run-rate ×12 + one-time ${oneTimeParts.join(" + ")}` : "annualised run-rate (×12)";
 
   return (
     <div>
@@ -172,11 +179,22 @@ export function Scenario() {
             </div>
           </div>
         ) : null}
+        {result.cutCount > 0 ? (
+          <div className="kpi">
+            <div className="label">One-time Exit Cost</div>
+            <div className="value">{result.oneTimeExitCost === null ? "—" : N.humanizeMoneyInr(result.oneTimeExitCost)}</div>
+            <div className="hint">
+              {result.oneTimeExitCost === null
+                ? "load payroll or set an assumed cost to estimate severance"
+                : `${result.cutCount} exit${result.cutCount === 1 ? "" : "s"} × ${severanceMonths} mo pay (severance, est.)`}
+            </div>
+          </div>
+        ) : null}
         {result.year1CashImpact !== null ? (
           <div className="kpi">
             <div className="label">Year-1 Cash Impact</div>
             <div className="value">{signedMoney(result.year1CashImpact)}</div>
-            <div className="hint">annualised run-rate{result.oneTimeHiringCost ? " + one-time hiring" : " (×12)"}</div>
+            <div className="hint">{year1Hint}</div>
           </div>
         ) : null}
       </div>
@@ -186,6 +204,12 @@ export function Scenario() {
         <label className="scn-assumed no-print">
           Assumed monthly cost / role (₹)
           <input type="number" min={0} step={5000} value={assumed} onChange={(e) => setAssumed(Number(e.target.value))} />
+        </label>
+      ) : null}
+      {result.cutCount > 0 ? (
+        <label className="scn-assumed no-print">
+          Assumed severance / exit (months of pay)
+          <input type="number" min={0} max={24} step={1} value={severanceMonths} onChange={(e) => setSeveranceMonths(Math.max(0, Number(e.target.value)))} />
         </label>
       ) : null}
 

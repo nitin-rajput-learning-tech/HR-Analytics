@@ -34,7 +34,9 @@ export interface ScenarioResult {
   costBasis: "payroll" | "assumed" | "none";
   hiredCount: number; // gross external hires across the plan (moves are internal, so excluded)
   oneTimeHiringCost: number | null; // hiredCount × cost-per-hire — the upfront recruitment spend; null if no basis
-  year1CashImpact: number | null; // first-year cash effect: monthly run-rate delta ×12 + one-time hiring; null if no cost basis
+  cutCount: number; // people cut (clamped to each department's baseline) — moves don't count
+  oneTimeExitCost: number | null; // severance: months × monthly cost of the cut roles; null without a cost basis or months
+  year1CashImpact: number | null; // first-year cash: run-rate delta ×12 + one-time hiring + severance; null if no cost basis
   depts: DeptRow[]; // every touched or non-empty department, sorted by |delta| then name
 }
 
@@ -96,6 +98,7 @@ export function computeScenario(
   costByDept: Map<string, number> | null,
   assumedCost: number | null,
   costPerHire: number | null = null,
+  severanceMonths: number = 0,
 ): ScenarioResult {
   const scenario = applyOps(base, ops);
 
@@ -122,10 +125,28 @@ export function computeScenario(
   const hiredCount = ops.reduce((s, o) => s + (o.kind === "hire" ? Math.max(0, Math.floor(o.count || 0)) : 0), 0);
   const oneTimeHiringCost = costPerHire == null ? null : hiredCount * costPerHire;
 
+  // Severance: aggregate cuts per department, clamp to that department's baseline (you
+  // can't sever more people than are there), and price at the dept's monthly cost ×
+  // the assumed months of pay. Moves are internal and incur none.
+  const cutByDept = new Map<string, number>();
+  for (const op of ops) {
+    if (op.kind !== "cut") continue;
+    cutByDept.set(op.dept, (cutByDept.get(op.dept) ?? 0) + Math.max(0, Math.floor(op.count || 0)));
+  }
+  let cutCount = 0;
+  let cutMonthlyCost = 0;
+  for (const [d, requested] of cutByDept) {
+    const actual = Math.min(requested, base.get(d) ?? 0);
+    cutCount += actual;
+    cutMonthlyCost += actual * costOf(d);
+  }
+  const oneTimeExitCost = costBasis === "none" || severanceMonths <= 0 ? null : cutMonthlyCost * severanceMonths;
+
   // First-year cash effect: 12 months of the incremental run-rate plus the upfront
-  // hiring spend — the single figure a proposal leads with. Null without a cost basis.
+  // one-time costs (hiring + severance) — the figure a proposal leads with. For a
+  // restructuring this nets the run-rate saving against the severance paid out.
   const costDelta = baseCost !== null && scenarioCost !== null ? scenarioCost - baseCost : null;
-  const year1CashImpact = costDelta == null ? null : costDelta * 12 + (oneTimeHiringCost ?? 0);
+  const year1CashImpact = costDelta == null ? null : costDelta * 12 + (oneTimeHiringCost ?? 0) + (oneTimeExitCost ?? 0);
 
   const allDepts = new Set<string>([...base.keys(), ...scenario.keys()]);
   const depts: DeptRow[] = [...allDepts]
@@ -143,6 +164,8 @@ export function computeScenario(
     costBasis,
     hiredCount,
     oneTimeHiringCost,
+    cutCount,
+    oneTimeExitCost,
     year1CashImpact,
     depts,
   };
