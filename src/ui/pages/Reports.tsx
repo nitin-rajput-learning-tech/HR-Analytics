@@ -99,6 +99,7 @@ export function Reports() {
         <section className="exec-brief" id="sec-exec">
           <h2>CHRO Executive Brief</h2>
           {nl.execBrief.summary ? <p className="brief-summary">{nl.execBrief.summary}</p> : null}
+          {nl.brain.periodDigest ? <p className="brief-digest">{nl.brain.periodDigest}</p> : null}
           {nl.execBrief.headlineKpis.length > 0 ? (
             <div className="kpis">
               {nl.execBrief.headlineKpis.map((k) => (

@@ -15,7 +15,7 @@ import type { DataSource } from "../core/store/types";
 import { buildDomainCompared, buildCrossFunctional, DOMAIN_ORDER } from "../core/metrics";
 import { buildPeople } from "../core/metrics/people";
 import { combinedEmployeeSnapshot, employeePeriods } from "../core/metrics/combineEmployees";
-import { buildBrain, type BrainFinding, type BrainHealth, type RoadmapItem } from "../core/brain/brain";
+import { buildBrain, periodDigest, type BrainFinding, type BrainHealth, type RoadmapItem } from "../core/brain/brain";
 import { type MaturityResult } from "../core/brain/maturity";
 import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
 import { joinClauses } from "../core/narrative";
@@ -67,7 +67,7 @@ export interface Newsletter {
   periodLabel: string;
   generatedAtLabel: string;
   execBrief: ExecBrief;
-  brain: { health: BrainHealth; findings: BrainFinding[]; roadmap: RoadmapItem[]; maturity: MaturityResult; resolved: { id: string; title: string }[] };
+  brain: { health: BrainHealth; findings: BrainFinding[]; roadmap: RoadmapItem[]; maturity: MaturityResult; resolved: { id: string; title: string }[]; periodDigest: string | null };
   scorecard: ScorecardRow[];
   sections: NewsletterSection[];
   actionPlan: ActionItem[];
@@ -378,7 +378,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     periodLabel,
     generatedAtLabel,
     execBrief,
-    brain: { health: brain.health, findings: brain.findings.slice(0, 6), roadmap: brain.roadmap, maturity: brain.maturity, resolved: brain.resolved },
+    brain: { health: brain.health, findings: brain.findings.slice(0, 6), roadmap: brain.roadmap, maturity: brain.maturity, resolved: brain.resolved, periodDigest: periodDigest(brain) },
     scorecard,
     sections,
     actionPlan,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBrain, buildRoadmap, findingScope, type BrainFinding } from "./brain";
+import { buildBrain, buildRoadmap, findingScope, periodDigest, type BrainFinding } from "./brain";
 import { MemoryStore } from "../store/memoryStore";
 import type { Snapshot } from "../store/types";
 import type { Row } from "../ingest/types";
@@ -19,6 +19,25 @@ describe("findingScope", () => {
   it("collapses category · owner when they're identical, keeps both otherwise", () => {
     expect(findingScope({ category: "Talent Acquisition", owner: "Talent Acquisition" })).toBe("Talent Acquisition");
     expect(findingScope({ category: "Compliance", owner: "L&D" })).toBe("Compliance · L&D");
+  });
+});
+
+describe("periodDigest", () => {
+  const health = (prior: number | null) => ({
+    score: 50, band: "Fair" as const, caption: "",
+    prior, delta: prior === null ? null : 50 - prior,
+    trend: prior === null ? null : "▼ −4", trendTone: "bad" as const,
+    priorLabel: prior === null ? null : "Apr 2026",
+  });
+  const f = (id: string, isNew: boolean): BrainFinding => ({ id, title: id, category: "", owner: "", severity: "low", confidence: "confirmed", evidence: [], reason: "", remedy: [], isNew });
+
+  it("summarises health direction plus new/resolved counts when a prior period exists", () => {
+    const r = { health: health(54), findings: [f("a", true), f("b", false), f("c", true)], resolved: [{ id: "x", title: "X" }] };
+    expect(periodDigest(r)).toBe("Since Apr 2026: HR Health ▼ −4 · 2 new · 1 resolved.");
+  });
+
+  it("returns null when there's no prior period", () => {
+    expect(periodDigest({ health: health(null), findings: [], resolved: [] })).toBeNull();
   });
 });
 

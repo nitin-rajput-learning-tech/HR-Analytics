@@ -37,6 +37,15 @@ export function findingScope(f: { category: string; owner: string }): string {
   return f.category === f.owner ? f.category : `${f.category} · ${f.owner}`;
 }
 
+// One-line "since last review" digest for the top of the board pack — health
+// direction plus the count of newly-emerged and resolved findings. Null when there's
+// no prior period to compare. Pass the FULL result so the new-count isn't truncated.
+export function periodDigest(r: { health: BrainHealth; findings: BrainFinding[]; resolved: { id: string; title: string }[] }): string | null {
+  if (r.health.prior === null) return null;
+  const newCount = r.findings.filter((f) => f.isNew).length;
+  return `Since ${r.health.priorLabel}: HR Health ${r.health.trend} · ${newCount} new · ${r.resolved.length} resolved.`;
+}
+
 type Rule = (ctx: BrainContext) => BrainFinding | null;
 
 export type Level = "High" | "Medium" | "Low";
