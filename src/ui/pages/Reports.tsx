@@ -157,6 +157,9 @@ export function Reports() {
               HR Health <strong>{nl.brain.health.score}/100</strong> · {nl.brain.health.band}
               {nl.brain.health.trend ? <span className={`sc-trend ${nl.brain.health.trendTone}`}> ({nl.brain.health.trend} vs {nl.brain.health.priorLabel})</span> : null} — {nl.brain.health.caption}
             </p>
+            {nl.brain.resolved.length > 0 ? (
+              <p className="nl-brain-resolved">✓ Resolved since {nl.brain.health.priorLabel ?? "last period"}: {nl.brain.resolved.map((r) => r.title).join(", ")}.</p>
+            ) : null}
             {nl.brain.findings.map((f) => (
               <div className={`nl-brain-finding sev-${f.severity}`} key={f.id}>
                 <div className="nl-brain-head">

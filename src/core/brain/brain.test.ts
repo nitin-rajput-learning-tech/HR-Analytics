@@ -250,6 +250,19 @@ describe("buildBrain", () => {
     expect(findings.find((f) => f.id === "statutory")?.isNew).toBe(false); // statutory issue was there last period too
   });
 
+  it("reports findings resolved since the prior period", () => {
+    const store = new MemoryStore();
+    const emp: Row[] = Array.from({ length: 20 }, (_, i) => ({ employee_number: "E" + i, employment_status: "Working", department: "Tech", date_joined: "2020-01-01" }));
+    store.add(snap("2026-04-30", emp));
+    store.add(snap("2026-05-31", emp));
+    const ta = (asOf: string, period: string, rows: Row[]): Snapshot => ({ id: "ta_requisition:" + asOf, kind: "ta_requisition", asOf, periodLabel: period, sourceFile: "f", compatibility: "full", rows });
+    store.add(ta("2026-04-30", "2026-04", Array.from({ length: 5 }, (_, i) => ({ requisition_id: "R" + i, department: "Tech", status: "Open", open_date: "2026-01-01" })))); // aging → finding last period
+    store.add(ta("2026-05-31", "2026-05", [{ requisition_id: "R9", department: "Tech", status: "Open", open_date: "2026-05-20" }])); // recent → cleared this period
+    const r = buildBrain(store);
+    expect(r.resolved.some((x) => x.id === "ta_throughput")).toBe(true); // open last period, gone now
+    expect(r.findings.some((f) => f.id === "ta_throughput")).toBe(false);
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

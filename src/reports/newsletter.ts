@@ -67,7 +67,7 @@ export interface Newsletter {
   periodLabel: string;
   generatedAtLabel: string;
   execBrief: ExecBrief;
-  brain: { health: BrainHealth; findings: BrainFinding[]; roadmap: RoadmapItem[]; maturity: MaturityResult };
+  brain: { health: BrainHealth; findings: BrainFinding[]; roadmap: RoadmapItem[]; maturity: MaturityResult; resolved: { id: string; title: string }[] };
   scorecard: ScorecardRow[];
   sections: NewsletterSection[];
   actionPlan: ActionItem[];
@@ -378,7 +378,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     periodLabel,
     generatedAtLabel,
     execBrief,
-    brain: { health: brain.health, findings: brain.findings.slice(0, 6), roadmap: brain.roadmap, maturity: brain.maturity },
+    brain: { health: brain.health, findings: brain.findings.slice(0, 6), roadmap: brain.roadmap, maturity: brain.maturity, resolved: brain.resolved },
     scorecard,
     sections,
     actionPlan,

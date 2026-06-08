@@ -59,6 +59,10 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     push();
     push(`**HR Health ${nl.brain.health.score}/100 · ${nl.brain.health.band}**${nl.brain.health.trend ? ` (${nl.brain.health.trend} vs ${nl.brain.health.priorLabel})` : ""} — ${nl.brain.health.caption}`);
     push();
+    if (nl.brain.resolved.length) {
+      push(`**Resolved since ${nl.brain.health.priorLabel ?? "last period"}:** ${nl.brain.resolved.map((r) => r.title).join(", ")}.`);
+      push();
+    }
     for (const f of nl.brain.findings) {
       push(`### ${f.title}  _(${f.severity} · ${findingScope(f)}${f.isNew ? " · new this period" : ""})_`);
       push(`- **Likely reason:** ${f.reason}`);

@@ -9,7 +9,7 @@ const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 da
 export function HRBrain() {
   const { store, version, targets, benchmarks, goTo } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { findings, summary, health, roadmap, maturity } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
+  const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
 
@@ -37,6 +37,9 @@ export function HRBrain() {
               <div className="brain-score-caption">{health.caption}</div>
             </div>
           </div>
+          {resolved.length > 0 ? (
+            <p className="brain-resolved">✓ Resolved since {health.priorLabel ?? "last period"}: {resolved.map((r) => r.title).join(", ")}.</p>
+          ) : null}
           {findings.length === 0 ? (
             <p className="brain-clear">✅ No material issues detected. HR Brain will flag problems here as they emerge.</p>
           ) : (

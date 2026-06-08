@@ -635,6 +635,7 @@ export interface BrainResult {
   health: BrainHealth;
   roadmap: RoadmapItem[];
   maturity: MaturityResult;
+  resolved: { id: string; title: string }[]; // findings open last period but cleared this one (progress)
 }
 
 // Multiplicative health: each open issue retains a fraction of health, so the
@@ -688,13 +689,17 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
   // so the headline shows DIRECTION, not just level. Deterministic and persistence-free
   // — it reuses the snapshots already in the store, mirroring the scorecard's prior
   // deltas. Higher health is better, so an increase is a "good" move.
+  let resolved: { id: string; title: string }[] = [];
   const priorStore = priorStoreOf(store);
   if (priorStore) {
     const pctx = gatherContext(priorStore, opts);
     const pe = evaluate(pctx);
-    // Spotlight issues that newly emerged this period (id absent from the prior run).
+    // Spotlight issues that newly emerged this period (id absent from the prior run)…
     const priorIds = new Set(pe.findings.map((f) => f.id));
     for (const f of findings) f.isNew = !priorIds.has(f.id);
+    // …and the mirror image: issues open last period but cleared this one (progress).
+    const currentIds = new Set(findings.map((f) => f.id));
+    resolved = pe.findings.filter((pf) => !currentIds.has(pf.id)).map((pf) => ({ id: pf.id, title: pf.title }));
     const priorScore = computeHealth(pe.findings, pe.summary).score;
     health.prior = priorScore;
     health.delta = health.score - priorScore;
@@ -723,5 +728,5 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     return item;
   });
 
-  return { findings, summary, health, roadmap, maturity: buildMaturity(ctx) };
+  return { findings, summary, health, roadmap, maturity: buildMaturity(ctx), resolved };
 }
