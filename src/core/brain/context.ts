@@ -18,6 +18,7 @@ import { buildRepresentation } from "../metrics/representation";
 import { buildOrgHealth } from "../metrics/orgHealth";
 import { buildWorkforceCost } from "../metrics/workforceCost";
 import { buildSourceReconciliation } from "../metrics/sourceReconciliation";
+import { attritionEconomics } from "../metrics/cross_functional";
 import { buildScorecard, type ScorecardRow } from "../scorecard";
 
 export type TaggedWatchout = MetricWatchout & { kind: string };
@@ -37,6 +38,8 @@ export interface BrainContext {
   has(kind: string): boolean;
   /** Watchouts whose title or detail matches a pattern. */
   watchoutsMatching(re: RegExp): TaggedWatchout[];
+  /** Attrition economics (raw numbers) for ROI / value-at-stake. */
+  attrition: { costPerHire: number | null; leavers12m: number; totalCost: number | null };
 }
 
 export function gatherContext(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainContext {
@@ -59,7 +62,15 @@ export function gatherContext(store: DataSource, opts: { targets?: Record<string
     domains.push(buildWorkforceCost({ payrollRows, employeeRows: empRows }));
     domains.push(buildSourceReconciliation(store.listByKind("employee_master")));
   }
-  domains.push(buildCrossFunctional(store, { leaverEvents: leaverEvents(employeePeriods(store)) }));
+  const leavers = leaverEvents(employeePeriods(store));
+  domains.push(buildCrossFunctional(store, { leaverEvents: leavers }));
+  const attrition = attritionEconomics({
+    employeeRows: empRows,
+    taRows: store.getLatest("ta_requisition")?.rows ?? null,
+    payrollAggregateRows: store.getLatest("payroll_aggregate")?.rows ?? null,
+    leaverEvents: leavers,
+    asOf,
+  });
 
   const scorecard = buildScorecard(store, opts.targets ?? {}, opts.benchmarks ?? {});
 
@@ -87,5 +98,6 @@ export function gatherContext(store: DataSource, opts: { targets?: Record<string
     display: (label) => kpiByLabel.get(label)?.value ?? null,
     has: (kind) => hasKind.has(kind),
     watchoutsMatching: (re) => watchouts.filter((w) => re.test(w.title) || re.test(w.detail)),
+    attrition,
   };
 }

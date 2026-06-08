@@ -303,6 +303,17 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
   return { kind: KIND, label: LABEL, hasData: true, blurb, kpis, charts, tables, watchouts };
 }
 
+// Attrition economics as RAW numbers (compute() emits only a formatted KPI string).
+// Reused by HR Brain to attach a value-at-stake to retention initiatives. Pure.
+export function attritionEconomics(input: CrossFunctionalInput): { costPerHire: number | null; leavers12m: number; totalCost: number | null } {
+  const ref = input.asOf ? new Date(Date.parse(input.asOf)) : new Date();
+  const cutoff12 = new Date(ref.getTime());
+  cutoff12.setMonth(cutoff12.getMonth() - 12);
+  const costPerHire = estimateReplacementCost(input.taRows, input.payrollAggregateRows);
+  const leavers12m = recentLeavers(input.leaverEvents, ref, cutoff12);
+  return { costPerHire, leavers12m, totalCost: costPerHire && leavers12m ? costPerHire * leavers12m : null };
+}
+
 // --------------------------------------------------------------------------- helpers
 
 const round1 = (x: number): number => Math.round(x * 10) / 10;

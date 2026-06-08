@@ -178,6 +178,7 @@ export function Reports() {
                         {items.map((it) => (
                           <li key={it.id}>
                             {it.title} <em>— {it.impact} impact · {it.effort} effort · {it.owner}</em>
+                            {it.roi ? <strong className="nl-rm-roi"> · {it.roi.label} at stake</strong> : null}
                           </li>
                         ))}
                       </ul>

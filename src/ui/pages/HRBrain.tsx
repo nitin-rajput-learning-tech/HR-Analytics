@@ -100,6 +100,7 @@ export function HRBrain() {
                           <span className="rm-owner">{it.owner}</span>
                         </div>
                         {it.firstAction ? <div className="rm-action"><strong>First action:</strong> {it.firstAction}</div> : null}
+                        {it.roi ? <div className="rm-roi"><strong>{it.roi.label}</strong> at stake <span className="rm-roi-note">— {it.roi.note}</span></div> : null}
                       </div>
                     ))}
                   </div>

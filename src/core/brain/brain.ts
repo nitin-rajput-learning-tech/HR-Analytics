@@ -7,6 +7,7 @@
 import type { DataSource } from "../store/types";
 import { gatherContext, type BrainContext } from "./context";
 import { buildMaturity, type MaturityResult } from "./maturity";
+import { humanizeMoneyInr } from "../narrative";
 
 export type BrainSeverity = "critical" | "high" | "medium" | "low";
 // "confirmed" = a hard threshold/fact breached (a KNOWN issue);
@@ -39,6 +40,7 @@ export interface RoadmapItem {
   quadrant: "Quick win" | "Major initiative" | "Incremental" | "Deprioritise";
   firstAction: string;
   link?: { page: string; tab?: string };
+  roi?: { label: string; note: string }; // estimated value-at-stake (₹), where quantifiable
 }
 
 // Severity → business impact. Effort is a per-finding heuristic (how much work a
@@ -524,5 +526,19 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
     known: findings.filter((f) => f.confidence === "confirmed").length,
     possible: findings.filter((f) => f.confidence !== "confirmed").length,
   };
-  return { findings, summary, health: computeHealth(findings, summary), roadmap: buildRoadmap(findings), maturity: buildMaturity(ctx) };
+  // Attach an attrition value-at-stake (₹) to the single highest-priority retention
+  // initiative — framed as the pool at risk, not a per-item saving (so it can't be
+  // double-counted across items).
+  const retentionIds = new Set(["compound_retention", "regrettable_attrition", "early_attrition", "department_hotspots"]);
+  let roiDone = false;
+  const roadmap = buildRoadmap(findings).map((item) => {
+    if (!roiDone && ctx.attrition.totalCost && retentionIds.has(item.id)) {
+      roiDone = true;
+      const { totalCost, leavers12m, costPerHire } = ctx.attrition;
+      return { ...item, roi: { label: humanizeMoneyInr(totalCost), note: `est. annual attrition replacement cost (${leavers12m} exits × ${humanizeMoneyInr(costPerHire ?? 0)}/replacement)` } };
+    }
+    return item;
+  });
+
+  return { findings, summary, health: computeHealth(findings, summary), roadmap, maturity: buildMaturity(ctx) };
 }

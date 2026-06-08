@@ -69,7 +69,7 @@ export function buildFactsMarkdown(nl: Newsletter): string {
         if (!items.length) continue;
         const hint = h === "Now" ? "0–30 days" : h === "Next" ? "1–3 months" : "3–12 months";
         push(`- **${h}** (${hint}):`);
-        for (const it of items) push(`  - ${it.title} — ${it.impact} impact · ${it.effort} effort · ${it.owner}`);
+        for (const it of items) push(`  - ${it.title} — ${it.impact} impact · ${it.effort} effort · ${it.owner}${it.roi ? ` · ${it.roi.label} at stake` : ""}`);
       }
       push();
     }

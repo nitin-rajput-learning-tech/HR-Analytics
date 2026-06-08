@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compute, type LeaverEvent } from "./cross_functional";
+import { compute, attritionEconomics, type LeaverEvent } from "./cross_functional";
 import type { Row } from "../ingest/types";
 
 function fixture() {
@@ -100,5 +100,19 @@ describe("cross_functional.compute", () => {
     expect(d.hasData).toBe(true);
     const kpi = Object.fromEntries(d.kpis.map((k) => [k.label, k.value]));
     expect(kpi["Compound-Risk Depts"]).toBe("0");
+  });
+});
+
+describe("attritionEconomics", () => {
+  it("computes cost-per-hire × trailing-12-month leavers as raw numbers", () => {
+    const f = fixture();
+    const r = attritionEconomics({ ...f, asOf: "2026-05-31" });
+    expect(r.costPerHire).toBe(100000); // 300,000 cost / 3 joined
+    expect(r.leavers12m).toBe(3);
+    expect(r.totalCost).toBe(300000);
+  });
+
+  it("returns a null total when cost or leavers are missing", () => {
+    expect(attritionEconomics({ employeeRows: [], asOf: "2026-05-31" }).totalCost).toBeNull();
   });
 });
