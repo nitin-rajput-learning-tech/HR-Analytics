@@ -48,7 +48,7 @@ export interface RoadmapItem {
 // org-redesign and cross-cutting programmes are High.
 const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High", medium: "Medium", low: "Low" };
 const EFFORT_OF: Record<string, Level> = {
-  statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low",
+  statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low",
   below_benchmark: "Medium",
   offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
@@ -94,6 +94,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   emerging_trends: { page: "Scorecard" },
   below_benchmark: { page: "Scorecard" },
   low_engagement: { page: "Function Analytics" },
+  hr_operations: { page: "Function Analytics" },
 };
 
 const SEV_RANK: Record<BrainSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -422,6 +423,30 @@ const RULES: Rule[] = [
         "Stress-test the budget against that team's attrition scenarios.",
         "Document succession for the most expensive critical roles.",
         "Review the span and level mix in the concentrated team.",
+      ],
+    };
+  },
+
+  // HR Operations — vendor contract renewals, offboarding asset recovery and lost
+  // assets (the admin domain's watch-outs, surfaced as one operational finding).
+  (ctx) => {
+    const w = ctx.watchoutsMatching(/renewal|contract|asset|offboard|recover|lost/i).filter((x) => x.kind === "admin_asset");
+    if (!w.length) return null;
+    return {
+      id: "hr_operations",
+      title: w.length === 1 ? w[0].title : "HR operations risks (contracts & assets)",
+      category: "HR Operations",
+      owner: "HR Admin",
+      severity: w.some((x) => x.severity === "high") ? "high" : "medium",
+      confidence: "confirmed",
+      evidence: w.slice(0, 5).map((x) => x.detail),
+      reason:
+        "Operational items need attention: vendor contracts are approaching — or past — their renewal date, and/or company assets weren't recovered when people left. A missed renewal risks a lapse in cover or an unwanted auto-renewal at the old price; an unrecovered asset is a direct financial loss and a security exposure.",
+      remedy: [
+        "Action contracts expiring in the next 30 / 60 / 90 days — renew, renegotiate or exit each one deliberately rather than by default.",
+        "Chase asset recovery for recent leavers and hold final settlement on any outstanding high-value items.",
+        "Put every renewal on a shared calendar with a named owner and a reminder 60 days out.",
+        "Make asset return a gated step in the offboarding checklist, reconciled with IT before sign-off.",
       ],
     };
   },

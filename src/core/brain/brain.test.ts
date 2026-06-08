@@ -93,6 +93,32 @@ describe("buildBrain", () => {
     expect(f!.severity).toBe("high"); // negative eNPS
   });
 
+  it("surfaces HR Operations risk from contract renewals (and sequences it as a quick win)", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", [{ employee_number: "E1", employment_status: "Working", department: "Tech" }]));
+    // ref = the admin_contract snapshot's as-of (2026-05-31): one already expired, two expiring within 30 days.
+    store.add({
+      id: "admin_contract:2026-05-31", kind: "admin_contract", asOf: "2026-05-31", periodLabel: "2026-05", sourceFile: "f", compatibility: "full",
+      rows: [
+        { contract_id: "C1", vendor_name: "Acme", expiry_date: "2026-01-01", annual_cost: 100000 }, // expired
+        { contract_id: "C2", vendor_name: "Globex", expiry_date: "2026-06-20", annual_cost: 50000 }, // ≤30d
+        { contract_id: "C3", vendor_name: "Initech", expiry_date: "2026-06-25", annual_cost: 50000 }, // ≤30d
+      ],
+    });
+    const { findings, roadmap } = buildBrain(store);
+    const f = findings.find((x) => x.id === "hr_operations");
+    expect(f).toBeTruthy();
+    expect(f!.severity).toBe("high"); // an expired contract escalates the watch-out to high
+    expect(f!.owner).toBe("HR Admin");
+    expect(f!.confidence).toBe("confirmed");
+    expect(f!.evidence.join(" ")).toMatch(/expired|expiring/i);
+    expect(f!.remedy.length).toBeGreaterThanOrEqual(3);
+    expect(f!.link?.page).toBe("Function Analytics");
+    const item = roadmap.find((r) => r.id === "hr_operations");
+    expect(item?.horizon).toBe("Now"); // high impact + low (chase/calendar) effort → quick win
+    expect(item?.quadrant).toBe("Quick win");
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);
