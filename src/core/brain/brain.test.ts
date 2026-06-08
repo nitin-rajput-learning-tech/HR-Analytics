@@ -83,6 +83,16 @@ describe("buildBrain", () => {
     expect(maturity.overall.score).not.toBeNull();
   });
 
+  it("flags low employee engagement (eNPS)", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", [{ employee_number: "1", employment_status: "Working", department: "Tech" }]));
+    // 5 detractor responses (score 3) → eNPS -100
+    store.add({ id: "engagement_survey:2026-05", kind: "engagement_survey", asOf: "2026-05-31", periodLabel: "2026-Q2", sourceFile: "f", compatibility: "full", rows: Array.from({ length: 5 }, () => ({ survey_period: "2026-Q2", department: "Tech", recommend_score: 3 })) });
+    const f = buildBrain(store).findings.find((x) => x.id === "low_engagement");
+    expect(f).toBeTruthy();
+    expect(f!.severity).toBe("high"); // negative eNPS
+  });
+
   it("is empty-safe with no data", () => {
     const r = buildBrain(new MemoryStore());
     expect(r.summary.total).toBe(0);

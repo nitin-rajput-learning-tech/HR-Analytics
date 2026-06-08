@@ -50,7 +50,7 @@ const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High"
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low",
   below_benchmark: "Medium",
-  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
 };
 const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
@@ -93,6 +93,7 @@ const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   source_reconciliation: { page: "People Analytics", tab: "sources" },
   emerging_trends: { page: "Scorecard" },
   below_benchmark: { page: "Scorecard" },
+  low_engagement: { page: "Function Analytics" },
 };
 
 const SEV_RANK: Record<BrainSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -352,6 +353,29 @@ const RULES: Rule[] = [
         "Set a minimum learning-hours target per employee per quarter.",
         "Prioritise teams that have both low coverage and high attrition.",
         "Track coverage on the scorecard.",
+      ],
+    };
+  },
+
+  // Low employee engagement (eNPS).
+  (ctx) => {
+    const v = ctx.num("eNPS");
+    if (v === null || v >= 10) return null;
+    return {
+      id: "low_engagement",
+      title: "Low employee engagement (eNPS)",
+      category: "Engagement",
+      owner: "HR Leadership",
+      severity: v < 0 ? "high" : "medium",
+      confidence: "confirmed",
+      evidence: [`eNPS ${ctx.display("eNPS")}${ctx.display("Responses") ? ` · ${ctx.display("Responses")} responses` : ""}`],
+      reason:
+        "Employee engagement (eNPS) is low — detractors rival or outnumber promoters. Disengagement precedes attrition and depresses productivity, and it usually traces back to manager quality, growth, recognition or workload.",
+      remedy: [
+        "Share results with managers and run team-level listening sessions on the weakest drivers.",
+        "Act visibly on the top two themes within 30 days — closing the loop matters more than the survey itself.",
+        "Coach managers in the lowest-scoring teams.",
+        "Re-survey next cycle and track the trend, not just the level.",
       ],
     };
   },
