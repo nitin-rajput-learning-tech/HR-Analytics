@@ -425,6 +425,20 @@ select, input[type="file"] { font: inherit; }
 .rm-roi strong { color: #15803d; font-weight: 800; }
 .rm-roi-note { color: var(--muted); }
 [data-theme="dark"] .rm-roi strong { color: #4ade80; }
+/* action tracking (BUILD-2) */
+.rm-track { font-size: 0.74rem; font-weight: 700; padding: 3px 9px; border: 1px solid var(--brand-accent); color: var(--brand-accent); background: none; border-radius: 999px; cursor: pointer; }
+.rm-track:hover { background: var(--surface-2); }
+.rm-tracked { font-size: 0.74rem; font-weight: 700; color: #15803d; }
+[data-theme="dark"] .rm-tracked { color: #4ade80; }
+.brain-actions { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); }
+.brain-actions h3 { margin: 0 0 2px; }
+.brain-actions-sub { margin: 0 0 12px; font-size: 0.84rem; }
+.act-overdue { color: #b91c1c; font-weight: 700; }
+[data-theme="dark"] .act-overdue { color: #f87171; }
+.act-status, .act-due { padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 0.82rem; }
+.act-row-done td { color: var(--muted); }
+.act-del { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px; }
+.act-del:hover { color: #b91c1c; }
 .nl-rm-roi { color: #15803d; }
 [data-theme="dark"] .rm-chip.imp-high { color: #f87171; border-color: #f87171; }
 /* HR maturity assessment */

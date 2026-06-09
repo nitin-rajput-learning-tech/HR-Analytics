@@ -1,18 +1,31 @@
 import { useMemo } from "react";
 import { useApp } from "../state";
-import { buildBrain, findingScope, type BrainFinding } from "../../core/brain/brain";
+import { buildBrain, findingScope, type BrainFinding, type RoadmapItem } from "../../core/brain/brain";
+import { actionFromRoadmap, withStatus, hasOpenActionForFinding, actionSummary, ACTION_STATUSES, ACTION_STATUS_LABEL, type ActionStatus } from "../../core/actions";
 
 const SEV_LABEL: Record<BrainFinding["severity"], string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 const CONF_LABEL: Record<BrainFinding["confidence"], string> = { confirmed: "Known", likely: "Likely", possible: "Possible" };
 const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 days", Next: "1–3 months", Later: "3–12 months" };
 
 export function HRBrain() {
-  const { store, version, targets, benchmarks, goTo } = useApp();
+  const { store, version, targets, benchmarks, goTo, actions, setActions } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
   const newCount = findings.filter((f) => f.isNew).length;
+
+  // Action tracking: turn a roadmap item into a tracked commitment, then manage status.
+  const trackAction = (it: RoadmapItem) => {
+    if (hasOpenActionForFinding(actions, it.id)) return;
+    setActions((prev) => [...prev, actionFromRoadmap(it, new Date().toISOString())]);
+  };
+  const setActionStatus = (id: string, status: ActionStatus) =>
+    setActions((prev) => prev.map((a) => (a.id === id ? withStatus(a, status, new Date().toISOString()) : a)));
+  const setActionDue = (id: string, due: string | null) =>
+    setActions((prev) => prev.map((a) => (a.id === id ? { ...a, due } : a)));
+  const removeAction = (id: string) => setActions((prev) => prev.filter((a) => a.id !== id));
+  const actSummary = actions.length ? actionSummary(actions, new Date().toISOString().slice(0, 10)) : null;
 
   return (
     <div className="hr-brain">
@@ -107,6 +120,9 @@ export function HRBrain() {
                           <span className="rm-chip eff">{it.effort} effort</span>
                           <span className="rm-quadrant">{it.quadrant}</span>
                           <span className="rm-owner">{it.owner}</span>
+                          {hasOpenActionForFinding(actions, it.id)
+                            ? <span className="rm-tracked" title="Added to tracked actions">✓ Tracked</span>
+                            : <button className="rm-track no-print" onClick={() => trackAction(it)}>+ Track</button>}
                         </div>
                         {it.firstAction ? <div className="rm-action"><strong>First action:</strong> {it.firstAction}</div> : null}
                         {it.roi ? <div className="rm-roi"><strong>{it.roi.label}</strong> at stake <span className="rm-roi-note">— {it.roi.note}</span></div> : null}
@@ -153,6 +169,42 @@ export function HRBrain() {
           </p>
             </>
           )}
+
+          {actions.length > 0 ? (
+            <section className="brain-actions">
+              <h3>Tracked actions</h3>
+              {actSummary ? (
+                <p className="muted brain-actions-sub">
+                  {actSummary.open} open · {actSummary.in_progress} in progress · {actSummary.done} done
+                  {actSummary.overdue ? <span className="act-overdue"> · {actSummary.overdue} overdue</span> : null}
+                </p>
+              ) : null}
+              <div className="metric-table">
+                <div className="table-scroll" tabIndex={0} aria-label="Tracked actions">
+                  <table>
+                    <thead>
+                      <tr><th>Action</th><th>Owner</th><th>Status</th><th>Due</th><th className="no-print" aria-label="Remove"></th></tr>
+                    </thead>
+                    <tbody>
+                      {actions.map((a) => (
+                        <tr key={a.id} className={a.status === "done" ? "act-row-done" : ""}>
+                          <td>{a.title}</td>
+                          <td>{a.owner}</td>
+                          <td>
+                            <select className="act-status" value={a.status} onChange={(e) => setActionStatus(a.id, e.target.value as ActionStatus)} aria-label={`Status for ${a.title}`}>
+                              {ACTION_STATUSES.map((s) => <option key={s} value={s}>{ACTION_STATUS_LABEL[s]}</option>)}
+                            </select>
+                          </td>
+                          <td><input className="act-due" type="date" value={a.due ?? ""} onChange={(e) => setActionDue(a.id, e.target.value || null)} aria-label={`Due date for ${a.title}`} /></td>
+                          <td className="no-print"><button className="act-del" aria-label={`Remove ${a.title}`} onClick={() => removeAction(a.id)}>✕</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </>
       )}
     </div>

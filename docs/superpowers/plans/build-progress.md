@@ -13,7 +13,7 @@
 ## First Wave
 - [x] **FIX-1 Ingestion robustness** — ✅ s1 header normalisation · ✅ s2 widened alias coverage (SAP/Workday/ADP) · ↪ s3 mapping report folded into BUILD-1
 - [x] **BUILD-1 Column-mapping importer** — ✅ s1 engine · ✅ s2a parser override · ✅ s2b mapping UI + preview · ✅ s3 saved profiles (auto-apply on re-upload)
-- [ ] **BUILD-2 Action-tracking loop** — ✅ s1a action model + helpers · ✅ s1b workspace persistence + state threading · ⬜ s2 UI panel on HR Brain · ⬜ s3 newsletter integration
+- [ ] **BUILD-2 Action-tracking loop** — ✅ s1a model · ✅ s1b persistence + state · ✅ s2 UI (track from roadmap + status panel) · ⬜ s3 newsletter integration
 - [ ] **UP-1 Longitudinal trends** — s1 timeseries builder · s2 sparkline component + KPI cards · s3 health-history chart
 - [ ] **UP-7 Flight-risk scoring** — s1 feature extraction · s2 weighted explainable score · s3 Brain cohort finding
 - [ ] **BUILD-7 Benchmark pack** — s1 loadable pack format + provenance · s2 Scorecard pack picker
@@ -48,6 +48,7 @@
 ## Log
 - **BUILD-2 s1a** — `src/core/actions.ts`: Action model (status open/in_progress/done, owner, due, findingId link) + pure helpers `actionSummary` (counts + overdue), `actionFromRoadmap`, `withStatus`, `hasOpenActionForFinding`. 4 tests. 283 tests, build 2.77 MB. Next: s1b workspace persistence + state threading.
 - **BUILD-2 s1b** — `actions` now persists in the workspace (additive optional field, `saveWorkspace`/`loadWorkspace`, defaults []) and is threaded through `state.tsx` (state + `setActions`, restore on load, reset on demo→live and clearData, included in autosave). Round-trip test added. 284 tests, build 2.77 MB. Next: s2 actions UI panel on HR Brain (browser-verify).
+- **BUILD-2 s2** — HR Brain: "+ Track" on each roadmap item creates a tracked action (deduped via `hasOpenActionForFinding`, shows "✓ Tracked"); a "Tracked actions" panel with per-row status select (Open/In progress/Done), due-date input, remove, and a live open/in-progress/done/overdue summary. **Browser-verified**: 16 track buttons on the demo; tracked an item → panel row + "1 open"; set Done → summary updated; 0 console errors. 284 tests, build 2.77 MB. Next: s3 newsletter integration (open actions + committed-vs-done in the board pack).
 - **FIX-1 s1** — `normalizeHeader()` (lower-case + unify `_-./` separators + collapse whitespace) applied to both alias-map keys and incoming headers, so real-world export drift matches. New header-drift test + existing Keka round-trip both green. 270 tests, build 2.76 MB.
 - **FIX-1 s2** — widened EMPLOYEE_ALIASES with SAP/Workday/ADP synonyms (Staff ID / Personnel Number, Hire Date, Title, Work Location, Company, Sex, Dept, …). New alias test green; FIX-1 complete. 271 tests, build 2.76 MB. Next: BUILD-1 (column-mapping importer).
 - **BUILD-1 s1** — `src/core/ingest/mapping.ts`: `suggestColumnMapping` (auto-suggest header→field + unmapped/missing-required gaps) and `validateColumnMapping` (ambiguous/invalid mapping detection). Pure + deterministic, 5 tests. 276 tests, build 2.76 MB. Next: s2 mapping UI + preview (needs browser-verify).
