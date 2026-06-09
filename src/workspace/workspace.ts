@@ -3,6 +3,7 @@ import { MemoryStore } from "../core/store/memoryStore";
 import type { DataSource, Snapshot } from "../core/store/types";
 import { DEFAULT_BRANDING, sanitizeBranding, type Branding } from "../branding/branding";
 import type { Filters } from "../core/filters";
+import type { Action } from "../core/actions";
 
 const FORMAT = "hr-analytics-workspace";
 // Bump whenever the on-disk shape changes, and add a matching MIGRATIONS entry.
@@ -33,6 +34,7 @@ interface WorkspaceFile {
   auditLog?: AuditEntry[];
   targets?: Record<string, number>; // scorecard KPI targets (additive; old files default {})
   benchmarks?: Record<string, { low: number; high: number }>; // edited benchmark bands (additive; old files default {})
+  actions?: Action[]; // tracked HR actions / commitments (additive; old files default [])
 }
 
 // Migration ladder: each entry upgrades a parsed file from version K to K+1.
@@ -70,6 +72,7 @@ export function saveWorkspace(
   auditLog: AuditEntry[] = [],
   targets: Record<string, number> = {},
   benchmarks: Record<string, { low: number; high: number }> = {},
+  actions: Action[] = [],
 ): Uint8Array {
   const payload: WorkspaceFile = {
     format: FORMAT,
@@ -81,6 +84,7 @@ export function saveWorkspace(
     auditLog,
     targets,
     benchmarks,
+    actions,
   };
   return pako.gzip(JSON.stringify(payload));
 }
@@ -92,6 +96,7 @@ export function loadWorkspace(bytes: Uint8Array): {
   auditLog: AuditEntry[];
   targets: Record<string, number>;
   benchmarks: Record<string, { low: number; high: number }>;
+  actions: Action[];
 } {
   const json = pako.ungzip(bytes, { to: "string" });
   const file = migrate(JSON.parse(json) as Record<string, unknown>);
@@ -106,5 +111,6 @@ export function loadWorkspace(bytes: Uint8Array): {
     auditLog: file.auditLog ?? [],
     targets: t && typeof t === "object" ? t : {},
     benchmarks: b && typeof b === "object" ? b : {},
+    actions: Array.isArray(file.actions) ? file.actions : [],
   };
 }

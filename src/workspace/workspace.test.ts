@@ -76,6 +76,15 @@ describe("workspace versioning & migration", () => {
     expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).benchmarks).toEqual({});
   });
 
+  it("round-trips tracked actions and defaults them to [] when absent", () => {
+    const store = new MemoryStore();
+    const actions = [{ id: "a1", title: "Fix statutory", owner: "Payroll", status: "open" as const, due: null, note: "", source: "brain" as const, findingId: "statutory", createdAt: "2026-06-01T00:00:00Z", doneAt: null }];
+    const restored = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING, "now", [], [], {}, {}, actions));
+    expect(restored.actions).toHaveLength(1);
+    expect(restored.actions[0].findingId).toBe("statutory");
+    expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).actions).toEqual([]);
+  });
+
   it("migrates a v1 file (no audit log) forward, defaulting auditLog to []", () => {
     const v1 = rawWorkspace({
       format: "hr-analytics-workspace",

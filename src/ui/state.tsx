@@ -9,6 +9,7 @@ import { demoWorkspaceBytes } from "../demo/demo";
 import type { Filters } from "../core/filters";
 import type { SavedView, AuditEntry } from "../workspace/workspace";
 import type { Snapshot } from "../core/store/types";
+import type { Action } from "../core/actions";
 
 interface AppState {
   store: MemoryStore;
@@ -54,6 +55,9 @@ interface AppState {
   // Edited benchmark bands per KPI (override the illustrative defaults); persisted.
   benchmarks: Record<string, { low: number; high: number }>;
   setBenchmarks(b: Record<string, { low: number; high: number }>): void;
+  // Tracked HR actions / commitments (from the Brain roadmap or manual); persisted.
+  actions: Action[];
+  setActions: React.Dispatch<React.SetStateAction<Action[]>>;
 }
 
 const AUDIT_CAP = 250;
@@ -81,6 +85,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [targets, setTargets] = useState<Record<string, number>>({});
   const [benchmarks, setBenchmarks] = useState<Record<string, { low: number; high: number }>>({});
+  const [actions, setActions] = useState<Action[]>([]);
 
   const logAudit = useCallback((action: string, detail?: string) => {
     setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
@@ -145,6 +150,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setAuditLog(r.auditLog);
       setTargets(r.targets);
       setBenchmarks(r.benchmarks);
+      setActions(r.actions);
     },
     [setStore, setBranding],
   );
@@ -188,13 +194,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated.current || mode === "demo") return;
     const id = window.setTimeout(() => {
       try {
-        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets, benchmarks));
+        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets, benchmarks, actions));
       } catch {
         /* persistence is best-effort */
       }
     }, 800);
     return () => window.clearTimeout(id);
-  }, [store, version, branding, savedViews, auditLog, targets, benchmarks, mode]);
+  }, [store, version, branding, savedViews, auditLog, targets, benchmarks, actions, mode]);
 
   // Once the user has their own data, ask the browser to keep it durable so the
   // local database isn't evicted under storage pressure. Idempotent; no-ops
@@ -216,6 +222,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setAuditLog([]);
         setTargets({});
         setBenchmarks({});
+        setActions([]);
         setMode("live");
       } else {
         store.add(snap);
@@ -233,13 +240,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     loadDemo();
     setTargets({});
     setBenchmarks({});
+    setActions([]);
     setPeopleFilters({});
     toast("Your data was cleared — showing demo data");
   }, [loadDemo]);
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets, benchmarks, setBenchmarks }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets, benchmarks, setBenchmarks, actions, setActions }}
     >
       {children}
     </Ctx.Provider>
