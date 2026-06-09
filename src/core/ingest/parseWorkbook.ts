@@ -32,6 +32,10 @@ export async function parseWorkbook(
   overrideAsOf?: string,
   knownEmployeeIds?: Set<string> | null,
   fallbackToday?: string,
+  // Guided-importer override: header (verbatim) → canonical field, or null to drop a
+  // column. Takes precedence over alias detection, and its presence means the user is
+  // mapping explicitly, so the auto-detection score threshold is bypassed.
+  mappingOverride?: Record<string, string | null>,
 ): Promise<SnapshotCandidate> {
   const wb = XLSX.read(data, { type: "array", cellDates: true });
   const alias = schema.aliasMap();
@@ -56,12 +60,16 @@ export async function parseWorkbook(
   // Override > filename date > (year-less filename month/day resolved against today).
   let asOf = overrideAsOf ?? period.asOf;
   if (!asOf && period.monthDay && fallbackToday) asOf = resolveMonthDayYear(period.monthDay.month, period.monthDay.day, fallbackToday) ?? null;
+  const detectedHeaders = best?.headers ?? [];
   const threshold = Math.max(1, Math.min(2, schema.keyFields.length));
-  if (!best || best.score < threshold) {
-    return reject(schema, fileName, asOf, period.periodLabel, "No sheet matched the template columns.");
+  if (!best || (best.score < threshold && !mappingOverride)) {
+    return reject(schema, fileName, asOf, period.periodLabel, "No sheet matched the template columns.", detectedHeaders);
   }
 
-  const headerToField = best.headers.map((h) => alias[normalizeHeader(h)]);
+  // A user mapping (verbatim header → field, or null to drop) wins over alias detection.
+  const fieldFor = (h: string): string | undefined =>
+    mappingOverride && h in mappingOverride ? (mappingOverride[h] ?? undefined) : alias[normalizeHeader(h)];
+  const headerToField = best.headers.map(fieldFor);
   const available = new Set(headerToField.filter((c): c is string => !!c && canonical.has(c)));
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[best.sheet], { header: 1, blankrows: false });
   const rows: Row[] = [];
@@ -115,6 +123,7 @@ export async function parseWorkbook(
     asOf: effectiveAsOf,
     periodLabel: overrideAsOf ?? period.periodLabel ?? asOf ?? trailerAsOf,
     detectedSheet: best.sheet,
+    detectedHeaders,
     availableColumns: [...available].sort(),
     missingColumns: missing,
     compatibility,
@@ -145,6 +154,7 @@ function reject(
   asOf: string | null,
   label: string | null,
   msg: string,
+  detectedHeaders: string[] = [],
 ): SnapshotCandidate {
   return {
     kind: schema.kind,
@@ -152,6 +162,7 @@ function reject(
     asOf,
     periodLabel: label,
     detectedSheet: null,
+    detectedHeaders,
     availableColumns: [],
     missingColumns: [...schema.columnNames],
     compatibility: "rejected",

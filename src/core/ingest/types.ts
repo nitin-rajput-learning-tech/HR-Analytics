@@ -8,6 +8,9 @@ export interface SnapshotCandidate {
   asOf: string | null;
   periodLabel: string | null;
   detectedSheet: string | null;
+  // The header cells of the best-scoring row — surfaced even on a near-miss so the
+  // guided importer can offer manual column mapping against the real headers.
+  detectedHeaders: string[];
   availableColumns: string[];
   missingColumns: string[];
   compatibility: "full" | "compatible_with_warnings" | "partial" | "rejected";

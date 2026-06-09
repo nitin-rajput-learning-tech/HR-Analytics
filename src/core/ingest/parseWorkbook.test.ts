@@ -73,6 +73,23 @@ describe("parseWorkbook (TA)", () => {
     expect(r.current_city).toBe("Pune"); // Work Location
   });
 
+  it("surfaces detected headers and imports with a user mapping override (bypassing auto-detection)", async () => {
+    const headers = ["Code", "Dept X", "Role X", "State", "Opened", "Apps"]; // none alias cleanly
+    const rows = [["REQ-7", "Tech", "SDE", "Open", "2026-04-01", "30"]];
+    // Auto-detection fails, but the real headers are still surfaced for manual mapping.
+    const auto = await parseWorkbook(buildXlsx(headers, rows), "TA_2026-05.xlsx", TA_REQUISITION);
+    expect(auto.status).toBe("rejected");
+    expect(auto.detectedHeaders).toEqual(headers);
+    // The user's column mapping is applied and the file imports.
+    const override = { "Code": "requisition_id", "Dept X": "department", "Role X": "job_title", "State": "status", "Opened": "open_date", "Apps": "applications" };
+    const mapped = await parseWorkbook(buildXlsx(headers, rows), "TA_2026-05.xlsx", TA_REQUISITION, undefined, null, undefined, override);
+    expect(mapped.status).toBe("imported");
+    expect(mapped.rows[0].requisition_id).toBe("REQ-7");
+    expect(mapped.rows[0].department).toBe("Tech");
+    expect(mapped.rows[0].job_title).toBe("SDE");
+    expect(mapped.rows[0].applications).toBe(30);
+  });
+
   it("rejects an unrelated sheet", async () => {
     const cand = await parseWorkbook(buildXlsx(["totally", "unrelated"], [[1, 2]]), "x_2026-05.xlsx", TA_REQUISITION);
     expect(cand.status).toBe("rejected");
