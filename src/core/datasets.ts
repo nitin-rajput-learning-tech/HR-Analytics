@@ -3,6 +3,15 @@
 
 export type DType = "string" | "integer" | "number" | "date" | "boolean";
 
+// Normalise a header for tolerant column matching: lower-case, unify separators
+// (_ - . /) to spaces, collapse whitespace runs, and trim. So real-world export
+// drift like "Employee_Number", "Employee  Number" and "employee-number" all match
+// the same alias key ("employee number"). Used on BOTH the alias map keys and the
+// incoming headers so matching stays symmetric.
+export function normalizeHeader(s: string): string {
+  return String(s ?? "").toLowerCase().replace(/[_\-./]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export interface DatasetField {
   name: string;
   label: string;
@@ -46,10 +55,10 @@ export class DatasetSchema {
   aliasMap(): Record<string, string> {
     const m: Record<string, string> = {};
     for (const f of this.fields) {
-      m[f.name.toLowerCase()] = f.name;
-      m[f.label.toLowerCase()] = f.name;
+      m[normalizeHeader(f.name)] = f.name;
+      m[normalizeHeader(f.label)] = f.name;
     }
-    for (const [raw, canon] of Object.entries(this.headerAliases)) m[raw.toLowerCase()] = canon;
+    for (const [raw, canon] of Object.entries(this.headerAliases)) m[normalizeHeader(raw)] = canon;
     return m;
   }
 }

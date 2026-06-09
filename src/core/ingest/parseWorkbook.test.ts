@@ -44,6 +44,18 @@ describe("parseWorkbook (TA)", () => {
     expect(cand.compatibility).toBe("full");
   });
 
+  it("tolerates separator / whitespace drift in headers (underscores, hyphens, double spaces)", async () => {
+    const headers = ["Requisition_ID", "  Department ", "Job  Title", "Status", "Open-Date", "Applications"];
+    const rows = [["REQ-9", "Tech", "SDE", "Open", "2026-04-01", "12"]];
+    const cand = await parseWorkbook(buildXlsx(headers, rows), "TA_requisitions_2026-05.xlsx", TA_REQUISITION);
+    expect(cand.status).toBe("imported");
+    expect(cand.rows[0].requisition_id).toBe("REQ-9"); // "Requisition_ID" → requisition_id
+    expect(cand.rows[0].department).toBe("Tech"); // "  Department " → department
+    expect(cand.rows[0].job_title).toBe("SDE"); // "Job  Title" → job_title
+    expect(cand.rows[0].open_date).toBe("2026-04-01"); // "Open-Date" → open_date
+    expect(cand.rows[0].applications).toBe(12); // coerced
+  });
+
   it("rejects an unrelated sheet", async () => {
     const cand = await parseWorkbook(buildXlsx(["totally", "unrelated"], [[1, 2]]), "x_2026-05.xlsx", TA_REQUISITION);
     expect(cand.status).toBe("rejected");

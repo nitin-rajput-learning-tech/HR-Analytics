@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { DatasetSchema } from "../datasets";
+import { DatasetSchema, normalizeHeader } from "../datasets";
 import { coerce } from "./coerce";
 import { parsePeriod, resolveMonthDayYear } from "./period";
 import { validateRows, checkReferentialIntegrity } from "./validate";
@@ -45,7 +45,7 @@ export async function parseWorkbook(
     for (let r = 0; r < scan; r++) {
       const headers = (aoa[r] || []).map((v) => (v == null ? "" : String(v).trim()));
       const mapped = headers
-        .map((h) => alias[h.toLowerCase()])
+        .map((h) => alias[normalizeHeader(h)])
         .filter((c): c is string => !!c && canonical.has(c));
       const score = new Set(mapped).size;
       if (!best || score > best.score) best = { sheet: sheetName, headerRow: r, headers, score };
@@ -61,7 +61,7 @@ export async function parseWorkbook(
     return reject(schema, fileName, asOf, period.periodLabel, "No sheet matched the template columns.");
   }
 
-  const headerToField = best.headers.map((h) => alias[h.toLowerCase()]);
+  const headerToField = best.headers.map((h) => alias[normalizeHeader(h)]);
   const available = new Set(headerToField.filter((c): c is string => !!c && canonical.has(c)));
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[best.sheet], { header: 1, blankrows: false });
   const rows: Row[] = [];
