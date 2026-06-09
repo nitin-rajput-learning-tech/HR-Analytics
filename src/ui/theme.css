@@ -113,7 +113,9 @@ a { color: var(--brand-accent); }
 .sidebar .side-foot { margin-top: auto; }
 .sidebar .muted-label { color: var(--faint); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; padding: 4px 6px; }
 
-.content { padding: 26px 30px; max-width: 1200px; width: 100%; margin: 0 auto; }
+/* min-width:0 lets the content grid column shrink below its widest child so a wide
+   table/chart scrolls inside its own container instead of forcing page-wide scroll. */
+.content { padding: 26px 30px; max-width: 1200px; width: 100%; margin: 0 auto; min-width: 0; }
 .page-head { margin-bottom: 6px; }
 .page-sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; max-width: 70ch; }
 .muted { color: var(--muted); }
