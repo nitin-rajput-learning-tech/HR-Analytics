@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>HR Analytics — CHRO Guidebook</title>
+<style>
+  :root {
+    --ink: #0f172a; --body: #1f2937; --muted: #56627a; --faint: #8a93a6;
+    --accent: #1d4ed8; --accent-soft: #eef3ff; --line: #d9dee8; --line-soft: #eaeef5;
+    --good: #15803d; --warn: #b45309; --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
+    color: var(--body); font-size: 10.6pt; line-height: 1.5; margin: 0;
+  }
+  h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; }
+  h2 { font-size: 19pt; margin: 0 0 2px; }
+  h3 { font-size: 13pt; margin: 22px 0 6px; }
+  h4 { font-size: 11pt; margin: 16px 0 4px; }
+  p { margin: 7px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  strong { color: var(--ink); }
+  ul, ol { margin: 7px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { background: var(--line-soft); padding: 1px 5px; border-radius: 4px; font-size: 9.2pt; }
+  .muted { color: var(--muted); }
+
+  /* ---- page model ---- */
+  @page {
+    size: A4; margin: 18mm 16mm 16mm;
+    @bottom-center { content: "HR Analytics — CHRO Guidebook"; font-family: "Segoe UI", sans-serif; font-size: 8pt; color: #8a93a6; }
+    @bottom-right { content: counter(page); font-family: "Segoe UI", sans-serif; font-size: 8pt; color: #8a93a6; }
+  }
+  @page :first { margin: 0; @bottom-center { content: ""; } @bottom-right { content: ""; } }
+
+  section.page { break-before: page; padding-top: 2px; }
+  section.page:first-of-type { break-before: auto; }
+  .kicker { text-transform: uppercase; letter-spacing: 0.12em; font-size: 8.5pt; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .lead { font-size: 11.4pt; color: var(--body); }
+
+  /* ---- cover ---- */
+  .cover { height: 297mm; padding: 34mm 22mm 22mm; background: linear-gradient(150deg, #0b1f4d 0%, #1d4ed8 64%, #2563eb 100%); color: #fff; display: flex; flex-direction: column; }
+  .cover .brandline { text-transform: uppercase; letter-spacing: 0.28em; font-size: 10pt; font-weight: 700; opacity: 0.85; }
+  .cover h1 { color: #fff; font-size: 40pt; line-height: 1.05; margin: 16px 0 10px; max-width: 16ch; }
+  .cover .sub { font-size: 14pt; opacity: 0.92; max-width: 46ch; line-height: 1.45; }
+  .cover .spacer { flex: 1; }
+  .cover .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 26px; }
+  .cover .pill { border: 1px solid rgba(255,255,255,0.45); border-radius: 999px; padding: 5px 13px; font-size: 9.5pt; font-weight: 600; }
+  .cover .meta { border-top: 1px solid rgba(255,255,255,0.3); padding-top: 14px; font-size: 9.5pt; opacity: 0.9; display: flex; justify-content: space-between; }
+
+  /* ---- callouts ---- */
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: #fbfcfe; border-radius: 6px; padding: 11px 15px; margin: 12px 0; }
+  .box.good { border-left-color: var(--good); }
+  .box.warn { border-left-color: var(--warn); }
+  .box .box-h { font-weight: 800; color: var(--ink); font-size: 10pt; margin-bottom: 3px; }
+  .box.small { font-size: 9.6pt; }
+
+  figure { margin: 12px 0 6px; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); border-radius: 7px; box-shadow: 0 2px 10px rgba(15,23,42,0.08); display: block; }
+  figcaption { font-size: 8.6pt; color: var(--muted); margin-top: 5px; text-align: center; font-style: italic; }
+
+  table.t { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.5pt; break-inside: avoid; }
+  table.t th { background: var(--accent); color: #fff; text-align: left; padding: 7px 9px; font-size: 8.6pt; text-transform: uppercase; letter-spacing: 0.04em; }
+  table.t td { border-bottom: 1px solid var(--line-soft); padding: 6px 9px; vertical-align: top; }
+  table.t tr:nth-child(even) td { background: #f7f9fc; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .feat { border: 1px solid var(--line); border-radius: 7px; padding: 10px 13px; break-inside: avoid; }
+  .feat h4 { margin: 0 0 3px; }
+  .feat .how { font-size: 9.4pt; }
+
+  .toc-list { list-style: none; padding: 0; margin: 14px 0; }
+  .toc-list li { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding: 7px 0; font-size: 11pt; }
+  .toc-list .n { color: var(--accent); font-weight: 800; width: 26px; }
+  .toc-list .t2 { flex: 1; color: var(--ink); font-weight: 600; }
+  .toc-list .pg { color: var(--faint); }
+
+  .step { display: flex; gap: 12px; margin: 9px 0; break-inside: avoid; }
+  .step .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 10pt; }
+  .step .b { flex: 1; }
+  .step .b b { color: var(--ink); }
+
+  .tag { display: inline-block; font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px; }
+  .tag.now { background: #dcfce7; color: #166534; } .tag.next { background: #fef9c3; color: #854d0e; } .tag.later { background: #e2e8f0; color: #475569; }
+  hr.soft { border: 0; border-top: 1px solid var(--line-soft); margin: 16px 0; }
+  .small { font-size: 9.3pt; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="brandline">Workforce Analytics</div>
+  <h1>The HR Analytics Platform</h1>
+  <div class="sub">A complete, board-grade view of your people function — analytics, an on-device diagnostic brain, and proposal modelling — running entirely on your own machine.</div>
+  <div class="spacer"></div>
+  <div class="pills">
+    <span class="pill">100% offline</span>
+    <span class="pill">No AI service · no data leaves the device</span>
+    <span class="pill">Single self-contained file</span>
+    <span class="pill">White-label</span>
+  </div>
+  <div class="pills" style="margin-top:-6px">
+    <span class="pill">People &amp; Org</span>
+    <span class="pill">Talent Acquisition</span>
+    <span class="pill">Performance</span>
+    <span class="pill">Payroll &amp; Cost</span>
+    <span class="pill">L&amp;D</span>
+    <span class="pill">HR Operations</span>
+  </div>
+  <div class="meta">
+    <span><strong>CHRO Guidebook</strong> · Product overview, feature guide &amp; implementation plan</span>
+    <span>v1 · 2026</span>
+  </div>
+</div>
+
+<!-- ============ CONTENTS ============ -->
+<section class="page">
+  <div class="kicker">Contents</div>
+  <h2>What's in this guidebook</h2>
+  <p class="muted">Written for the CHRO and people-leadership team. It explains what the platform is, what it does, how every feature works, and how to roll it out across the function.</p>
+  <ul class="toc-list">
+    <li><span class="n">1</span><span class="t2">Executive overview — what this is and why it matters</span><span class="pg">3</span></li>
+    <li><span class="n">2</span><span class="t2">How it works — architecture, privacy &amp; the data model</span><span class="pg">4</span></li>
+    <li><span class="n">3</span><span class="t2">People Analytics — the workforce dashboard</span><span class="pg">5</span></li>
+    <li><span class="n">4</span><span class="t2">HR Brain — the on-device recommendation engine</span><span class="pg">6</span></li>
+    <li><span class="n">5</span><span class="t2">Function Analytics — the five HR functions</span><span class="pg">8</span></li>
+    <li><span class="n">6</span><span class="t2">Scorecard — targets &amp; industry benchmarks</span><span class="pg">9</span></li>
+    <li><span class="n">7</span><span class="t2">Scenario Planner — model hires, cuts &amp; cost</span><span class="pg">10</span></li>
+    <li><span class="n">8</span><span class="t2">HR Newsletter — the automated board pack</span><span class="pg">11</span></li>
+    <li><span class="n">9</span><span class="t2">Data Intake &amp; the Directory</span><span class="pg">12</span></li>
+    <li><span class="n">10</span><span class="t2">Implementation plan — a phased rollout</span><span class="pg">13</span></li>
+    <li><span class="n">11</span><span class="t2">Governance, cadence &amp; appendix</span><span class="pg">14</span></li>
+  </ul>
+  <div class="box small">
+    <div class="box-h">A note on the screenshots</div>
+    Every screen in this guide is shown running on a <strong>sample organisation ("Acme")</strong> in demo mode. Your own logo, colours and name apply throughout (the platform is white-label), and your real data replaces the sample the moment you upload it.
+  </div>
+</section>
+
+<!-- ============ 1. EXECUTIVE OVERVIEW ============ -->
+<section class="page">
+  <div class="kicker">1 · Executive overview</div>
+  <h2>One place to see, diagnose and act on the people function</h2>
+  <p class="lead">The HR Analytics platform turns the workbooks your teams already produce — the Keka employee master, recruitment trackers, payroll registers, the L&amp;D log — into a single, board-ready view of the workforce. It then goes a step further than a dashboard: a built-in <strong>HR Brain</strong> reads every domain, flags the issues that matter, explains the likely cause, and proposes a remedy plan — all computed on your own device.</p>
+
+  <h3>The problem it solves</h3>
+  <p>People data lives in silos — an HRMS export here, a recruiter's spreadsheet there, payroll in a third system. Pulling it together for a board pack is a manual monthly scramble, and by the time it's assembled it answers <em>"what happened"</em> but rarely <em>"what should we do about it."</em> This platform closes both gaps.</p>
+
+  <div class="grid2">
+    <div class="feat"><h4>See</h4><div class="how muted">A unified dashboard across People, Talent Acquisition, Performance, Payroll, L&amp;D and HR Operations — headcount, attrition, diversity, cost, funnel, completion, compliance.</div></div>
+    <div class="feat"><h4>Diagnose</h4><div class="how muted">The HR Brain inspects all domains and surfaces known &amp; emerging issues, each with evidence, a likely root cause and a step-by-step remedy — plus an HR Health score and trend.</div></div>
+    <div class="feat"><h4>Decide</h4><div class="how muted">A prioritised Now / Next / Later roadmap with impact, effort and the rupee value at stake — and a Scenario Planner to cost hiring and restructuring before you commit.</div></div>
+    <div class="feat"><h4>Report</h4><div class="how muted">A one-click monthly Newsletter — a polished, print-ready board pack with an executive brief, a scorecard, the diagnosis and a prioritised action plan.</div></div>
+  </div>
+
+  <h3>What makes it different</h3>
+  <ul>
+    <li><strong>It runs entirely on your machine.</strong> No server, no cloud, no AI service. Sensitive people data never leaves the device — a non-negotiable for HR.</li>
+    <li><strong>It recommends, not just reports.</strong> The HR Brain is a deterministic, transparent rules engine: every finding shows the exact evidence and logic behind it. It is decision support you can audit, not a black box.</li>
+    <li><strong>It works with the data you already have</strong> and degrades gracefully — start with the employee master alone and switch on each function as its feed comes online.</li>
+    <li><strong>It is white-label and board-ready</strong> out of the box.</li>
+  </ul>
+
+  <div class="box">
+    <div class="box-h">The honest framing</div>
+    The HR Brain is a sophisticated set of HR heuristics, not an oracle. Benchmarks are illustrative reference bands until calibrated to your sector; cost-per-hire and severance figures are estimates. Every recommendation is a starting point for a human decision — and the tool always shows its working.
+  </div>
+</section>
+
+<!-- ============ 2. HOW IT WORKS ============ -->
+<section class="page">
+  <div class="kicker">2 · How it works</div>
+  <h2>Architecture, privacy &amp; the data model</h2>
+
+  <h3>A single file that runs in your browser</h3>
+  <p>The entire platform is one self-contained file (about 2.8&nbsp;MB) that opens in any modern browser. There is nothing to install, no database to provision and no network connection required. You can run it from a shared drive, email it to a colleague, or host it behind your own SSO — it behaves identically.</p>
+
+  <table class="t">
+    <thead><tr><th>Concern</th><th>How the platform handles it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Data residency</strong></td><td>All processing is in-browser, on your device. No data is ever transmitted anywhere.</td></tr>
+      <tr><td><strong>Persistence</strong></td><td>Your working data is auto-saved locally in the browser. You can also export a single encrypted, compressed workspace file to move between machines.</td></tr>
+      <tr><td><strong>Security</strong></td><td>Optional passphrase encryption on the saved workspace. No credentials, no accounts, no telemetry.</td></tr>
+      <tr><td><strong>AI / external services</strong></td><td>None. The HR Brain's narrative and recommendations are generated by local, deterministic rules.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The "true HR suite" data model</h3>
+  <p>The platform spans the CHRO's direct functions. Each team submits a standardised workbook; the suite ingests each as its own dataset and computes that domain's metrics, then layers cross-functional intelligence on top.</p>
+  <table class="t">
+    <thead><tr><th>Domain</th><th>Feed</th><th>Drives</th></tr></thead>
+    <tbody>
+      <tr><td>Core People</td><td>Employee master (e.g. Keka export)</td><td>Headcount, org structure, movement, tenure, diversity, attrition</td></tr>
+      <tr><td>Talent Acquisition</td><td>Requisition tracker</td><td>Funnel, time-to-fill, offer-accept, ageing requisitions, cost/quality of hire</td></tr>
+      <tr><td>Performance (PMS)</td><td>Review cycle export</td><td>Completion, rating mix, 9-box, PIP load, calibration</td></tr>
+      <tr><td>Payroll &amp; Cost</td><td>Payroll register / aggregate + statutory</td><td>Cost per head, overtime, variable pay, statutory compliance</td></tr>
+      <tr><td>Learning &amp; Development</td><td>Programme + enrolment log</td><td>Completion, coverage, mandatory/compliance training, spend</td></tr>
+      <tr><td>HR Operations</td><td>Assets, contracts, on/off-boarding</td><td>Asset recovery, contract renewals, lifecycle checklists</td></tr>
+      <tr><td>Engagement</td><td>Survey export</td><td>eNPS, driver scores</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box good small">
+    <div class="box-h">Two feeds, reconciled</div>
+    The platform is built to consume <strong>both</strong> the system-generated employee master (Keka) <strong>and</strong> the snapshot your HR team maintains by hand — treating the HR-maintained file as the master where they differ, and surfacing any disagreement between the two so headcount is never quietly wrong.
+  </div>
+</section>
+
+<!-- ============ 3. PEOPLE ANALYTICS ============ -->
+<section class="page">
+  <div class="kicker">3 · People Analytics</div>
+  <h2>The workforce dashboard</h2>
+  <p class="lead">The default view: a complete read of your active workforce, organised into tabs for Workforce, Diversity, Attrition &amp; Risk, Movement &amp; Org, and Pay &amp; Cost. Every chart and table can be filtered (by department, location, level, etc.) and exported.</p>
+  <figure><img src="img/01-people-analytics.png" alt="People Analytics dashboard" /><figcaption>People Analytics — headcount, tenure, diversity and movement on the sample organisation.</figcaption></figure>
+  <h3>How to use it</h3>
+  <div class="step"><div class="num">1</div><div class="b"><b>Pick a lens.</b> Use the sub-tabs (Workforce, Diversity, Attrition &amp; Risk, Movement &amp; Org, Pay &amp; Cost) to move between the major people questions.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Filter.</b> Narrow to a department, entity or location with the filter bar; every KPI and chart updates instantly. Save a filter combination as a named view to return to it.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Compare periods.</b> When you have more than one monthly snapshot, KPI cards show the change versus the prior period, coloured for good/bad direction.</div></div>
+  <div class="step"><div class="num">4</div><div class="b"><b>Export.</b> Any table exports to CSV; any chart to PNG for slides.</div></div>
+</section>
+
+<!-- ============ 4. HR BRAIN ============ -->
+<section class="page">
+  <div class="kicker">4 · HR Brain — the flagship</div>
+  <h2>An on-device recommendation engine</h2>
+  <p class="lead">HR Brain reads every domain at once and produces a CHRO-grade diagnosis: an <strong>HR Health score</strong> with period-over-period direction, a ranked list of <strong>findings</strong> (each with evidence, a likely cause and a remedy plan), a prioritised <strong>action roadmap</strong>, and an <strong>HR maturity</strong> assessment. It is fully local and deterministic — no AI service is involved.</p>
+  <figure><img src="img/02-hr-brain-top.png" alt="HR Brain health score and findings" /><figcaption>HR Brain — health score (with trend vs last period), summary chips, and findings with evidence, likely reason and remedy.</figcaption></figure>
+
+  <h3>Reading the page, top to bottom</h3>
+  <table class="t">
+    <thead><tr><th>Element</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HR Health score</strong> (0–100)</td><td>An overall measure that falls as material issues accumulate (a critical issue costs far more than a minor one). The band reads Excellent → Critical.</td></tr>
+      <tr><td><strong>Trend chip</strong> (e.g. ▼ −4 vs Apr 2026)</td><td>Direction versus the prior period — the single most exec-relevant signal. Computed by re-running the diagnosis on last period's data.</td></tr>
+      <tr><td><strong>Summary chips</strong></td><td>Counts by severity and confidence, plus <em>"N new this period"</em> — how many issues newly emerged.</td></tr>
+      <tr><td><strong>Finding cards</strong></td><td>Each issue, ranked by severity, with: the <em>evidence</em> that triggered it, a <em>likely reason</em>, a <em>remedy plan</em>, the accountable owner, and a "View the evidence" deep-link to the underlying analytic.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Known vs. emerging, new vs. resolved</h4>
+  <p>Each finding is tagged <strong>Known</strong> (a hard threshold breached), <strong>Likely</strong> or <strong>Possible</strong> (inferred or early-warning). Findings that appeared this period carry a blue <strong>NEW</strong> badge; issues that cleared since last period are celebrated in a <strong>"Resolved since last period"</strong> line — so the page shows progress, not just problems.</p>
+
+  <div class="box small"><div class="box-h">What the Brain diagnoses today</div>
+  Retention (compounding risk, regrettable &amp; early attrition, department hotspots), pay equity, statutory compliance, performance management (review completion, PIP load, rating calibration), talent-acquisition throughput (offer-accept, ageing requisitions), L&amp;D coverage &amp; mandatory-training compliance, employee engagement, organisation design, workforce-cost concentration, HR-operations risk (contract renewals, asset recovery), data-source reconciliation, plus benchmark and early-warning watch lists.</div>
+</section>
+
+<section class="page">
+  <div class="kicker">4 · HR Brain — continued</div>
+  <h2>From diagnosis to a prioritised plan</h2>
+  <p>Below the findings, HR Brain sequences the work into a consulting-style roadmap and scores your HR maturity.</p>
+  <figure><img src="img/03-hr-brain-roadmap.png" alt="HR Brain roadmap and maturity" /><figcaption>The prioritised Now / Next / Later roadmap (with value at stake) and the 1–5 HR maturity heat-map.</figcaption></figure>
+
+  <h3>The action roadmap</h3>
+  <p>Every finding is placed on an impact × effort grid and sorted into three horizons. Quick wins and anything critical go <span class="tag now">Now</span>; high-impact major initiatives go <span class="tag next">Next</span>; low-impact or high-effort/low-payoff items go <span class="tag later">Later</span>. The single highest-priority retention initiative carries an estimated <strong>rupee value at stake</strong> (annual attrition replacement cost) so the business case is explicit.</p>
+
+  <h3>HR maturity assessment</h3>
+  <p>Nine capability dimensions — Talent Acquisition, Performance, Reward &amp; Pay Equity, Retention, Engagement, Diversity &amp; Inclusion, Learning &amp; Development, Org Design, and HR Operations &amp; Compliance — are each scored 1–5 (Ad-hoc → Optimised) from your data, with a transparent basis and a "to advance" hint. Dimensions degrade when secondary signals stack (e.g. Performance drops when the PIP load is elevated on top of a completion gap).</p>
+
+  <div class="box small"><div class="box-h">How to work it in a monthly review</div>
+  Start at the health trend (are we improving?), scan the NEW badges (what just emerged?), then work the <strong>Now</strong> column of the roadmap with the named owners. Re-check next month — the trend and new/resolved markers tell you whether the actions are landing.</div>
+</section>
+
+<!-- ============ 5. FUNCTION ANALYTICS ============ -->
+<section class="page">
+  <div class="kicker">5 · Function Analytics</div>
+  <h2>The five HR functions, in depth</h2>
+  <p class="lead">A dedicated tab per function — Talent Acquisition, Performance, Learning &amp; Development, Payroll &amp; Cost, HR Operations, Engagement, plus a Cross-Functional view. Each shows that team's KPIs, charts, tables and its own watch-outs.</p>
+  <figure><img src="img/04-function-analytics.png" alt="Function Analytics" /><figcaption>Function Analytics — here the Talent Acquisition view: hiring funnel, open requisitions, offer-accept rate and cost per hire.</figcaption></figure>
+  <h3>What each function surfaces</h3>
+  <table class="t">
+    <thead><tr><th>Function</th><th>Headline metrics &amp; watch-outs</th></tr></thead>
+    <tbody>
+      <tr><td>Talent Acquisition</td><td>Funnel conversion, offer-accept rate, ageing requisitions (&gt;90 days), cost per hire, source mix</td></tr>
+      <tr><td>Performance (PMS)</td><td>Review completion, rating distribution, 9-box, promotions recommended, PIP population &amp; outcomes</td></tr>
+      <tr><td>Learning &amp; Development</td><td>Completion rate, coverage, mandatory/compliance completion, training hours, spend per learner</td></tr>
+      <tr><td>Payroll &amp; Cost</td><td>Cost per head, overtime %, variable %, statutory on-time, payroll errors</td></tr>
+      <tr><td>HR Operations</td><td>Assets allocated/lost, contract renewal pipeline, on/off-boarding checklist completion, asset recovery</td></tr>
+      <tr><td>Cross-Functional</td><td>Compound risk by department, attrition economics, regrettable attrition</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Functions with no data yet show an "awaiting first upload" placeholder — the suite fills in automatically as each team's feed comes online.</p>
+</section>
+
+<!-- ============ 6. SCORECARD ============ -->
+<section class="page">
+  <div class="kicker">6 · Scorecard</div>
+  <h2>Targets &amp; industry benchmarks</h2>
+  <p class="lead">The management-by-objective layer: your headline KPIs as a RAG (red/amber/green) scorecard against targets you set, with period-over-period movement and an industry benchmark band for context.</p>
+  <figure><img src="img/05-scorecard.png" alt="Scorecard vs targets and benchmarks" /><figcaption>The Scorecard — current value, change vs last period, the typical industry band (better/typical/worse), your target, and RAG status.</figcaption></figure>
+  <h3>How to use it</h3>
+  <div class="step"><div class="num">1</div><div class="b"><b>Set targets.</b> Edit any KPI's target inline; the RAG status recomputes immediately. Targets persist with your workspace.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Calibrate benchmarks.</b> The platform ships illustrative industry bands; click "Edit benchmarks" to replace them with sourced figures for your sector and region.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Read the position.</b> Each KPI shows whether you're <span style="color:var(--good)">▲ better</span>, <span class="muted">● typical</span>, or <span style="color:var(--bad)">▼ worse</span> than the band — direction-aware, so "lower is better" metrics read correctly.</div></div>
+  <div class="box small warn"><div class="box-h">Honesty by design</div>The default benchmark bands are general reference ranges, not a sourced survey — the platform labels them as such, and the Brain treats "below benchmark" as a <em>likely</em>, not confirmed, signal until you supply real peer data.</div>
+</section>
+
+<!-- ============ 7. SCENARIO ============ -->
+<section class="page">
+  <div class="kicker">7 · Scenario Planner</div>
+  <h2>Model hires, cuts &amp; restructures — with the full cost</h2>
+  <p class="lead">A what-if sandbox for proposals. Build a plan from hire / cut / move operations and watch the headcount and cost impact recompute instantly — including the upfront one-time costs a board paper needs.</p>
+  <figure><img src="img/06-scenario.png" alt="Scenario Planner" /><figcaption>Scenario Planner — a plan combining hires and cuts, with run-rate, one-time hiring and severance costs, and the Year-1 cash impact.</figcaption></figure>
+  <h3>What it computes</h3>
+  <table class="t">
+    <thead><tr><th>Output</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Active headcount</strong></td><td>Resulting headcount and the change vs baseline, by department.</td></tr>
+      <tr><td><strong>Monthly &amp; annualised cost</strong></td><td>The ongoing run-rate change, using real per-department payroll cost (or an assumption you set).</td></tr>
+      <tr><td><strong>One-time hiring cost</strong></td><td>Upfront recruitment spend = external hires × cost-per-hire.</td></tr>
+      <tr><td><strong>One-time exit cost</strong></td><td>Severance = months of pay × the cost of the roles cut (an editable assumption).</td></tr>
+      <tr><td><strong>Year-1 cash impact</strong></td><td>The headline figure: run-rate ×12 plus the one-time costs — for a restructuring it nets the saving against severance, showing the payback.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Export the whole scenario — operations, summary and per-department impact — to CSV to attach to a proposal.</p>
+</section>
+
+<!-- ============ 8. NEWSLETTER ============ -->
+<section class="page">
+  <div class="kicker">8 · HR Newsletter</div>
+  <h2>The automated board pack</h2>
+  <p class="lead">One click assembles a polished, print-ready monthly newsletter for the CHRO and function heads — the deliverable a consulting firm would charge for, generated from your live data in seconds.</p>
+  <figure><img src="img/07-newsletter.png" alt="HR Newsletter board pack" /><figcaption>The HR Newsletter — a CHRO executive brief leading with the "since last review" digest, followed by the scorecard, diagnosis and action plan.</figcaption></figure>
+  <h3>What's in the pack</h3>
+  <ul>
+    <li><strong>CHRO executive brief</strong> — a one-paragraph summary, headline KPIs, wins, risks and movers, led by a <em>"Since &lt;last period&gt;: HR Health ▼ −4 · N new · M resolved"</em> digest.</li>
+    <li><strong>Scorecard vs targets</strong> — with the industry-benchmark column.</li>
+    <li><strong>HR Brain diagnosis</strong> — health &amp; trend, findings (each with reason and remedy), the Now/Next/Later roadmap with value at stake, and the maturity assessment.</li>
+    <li><strong>One section per function</strong> — and a prioritised, owner-tagged action plan to close.</li>
+  </ul>
+  <h3>How to use it</h3>
+  <div class="step"><div class="num">1</div><div class="b"><b>Open the Newsletter tab</b> — it builds automatically from whatever data is loaded.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Print to PDF</b> — the layout is print-optimised (one function per page, tables and cards never split). Use the browser's "Save as PDF".</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Or export the facts pack</b> — a plain-Markdown version to paste into email or Slack.</div></div>
+</section>
+
+<!-- ============ 9. DATA INTAKE & DIRECTORY ============ -->
+<section class="page">
+  <div class="kicker">9 · Data Intake &amp; Directory</div>
+  <h2>Getting your data in</h2>
+  <p class="lead">Data Intake is where each team loads its workbook. The platform provides a standard template per domain, reads the as-of date automatically, and validates as it goes.</p>
+  <figure><img src="img/08-data-intake.png" alt="Data Intake" /><figcaption>Data Intake — pick the domain, optionally override the as-of date, download the template, and upload the .xlsx / .csv.</figcaption></figure>
+  <h3>How to use it</h3>
+  <div class="step"><div class="num">1</div><div class="b"><b>Pick the domain</b> (Employee Master, Talent Acquisition, Performance, Payroll, L&amp;D, HR Operations, Engagement).</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Download the template</b> if the team needs the exact columns — it lists required vs optional fields and the join key.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Upload the file.</b> The as-of date is read from the filename or the export footer; override it only if needed. The platform confirms what it loaded and flags any issues.</div></div>
+  <h3>The Directory</h3>
+  <p>A searchable, filterable, sortable roster of the full employee population, with saved views and CSV export — the operational lookup that complements the analytical views.</p>
+  <div class="box good small"><div class="box-h">Graceful by design</div>It works on day one with just the employee master, accepts both per-employee detail and aggregate-only variants, and ignores fields you've retired (for example, the legacy pay-band column).</div>
+</section>
+
+<!-- ============ 10. IMPLEMENTATION ============ -->
+<section class="page">
+  <div class="kicker">10 · Implementation plan</div>
+  <h2>A phased rollout</h2>
+  <p class="lead">You can be live with real analytics in an afternoon, then switch on each function as its feed becomes available. A suggested sequence:</p>
+
+  <h3><span class="tag now">Phase 0</span> &nbsp;Stand up — Week 1</h3>
+  <ul>
+    <li>Open the platform and upload the current <strong>employee master</strong> (the Keka export) plus the HR-maintained snapshot. People Analytics, the Directory and the first HR Brain findings light up immediately.</li>
+    <li>Apply your <strong>branding</strong> (logo, colours, name) on the Branding tab.</li>
+    <li>Confirm the two feeds reconcile; resolve any headcount disagreement.</li>
+  </ul>
+
+  <h3><span class="tag next">Phase 1</span> &nbsp;Bring the functions online — Weeks 2–6</h3>
+  <p>Onboard one feed at a time, in priority order. Each unlocks its Function Analytics tab and the matching HR Brain rules.</p>
+  <table class="t">
+    <thead><tr><th>Week</th><th>Feed</th><th>Unlocks</th></tr></thead>
+    <tbody>
+      <tr><td>2</td><td>Talent Acquisition</td><td>Funnel, offer-accept, ageing requisitions, cost-of-hire</td></tr>
+      <tr><td>3</td><td>Performance (PMS)</td><td>Completion, 9-box, PIP load, calibration</td></tr>
+      <tr><td>4</td><td>Payroll + statutory</td><td>Cost per head, statutory compliance, scenario cost basis</td></tr>
+      <tr><td>5</td><td>Learning &amp; Development</td><td>Coverage, mandatory-training compliance, spend</td></tr>
+      <tr><td>6</td><td>HR Operations + Engagement</td><td>Contracts, assets, lifecycle; eNPS</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="tag next">Phase 2</span> &nbsp;Calibrate — Week 7</h3>
+  <ul>
+    <li>Set <strong>targets</strong> on the Scorecard to your commitments.</li>
+    <li>Replace the illustrative <strong>benchmark bands</strong> with sourced figures for your sector and region.</li>
+    <li>Set the Scenario <strong>cost assumptions</strong> (cost-per-hire, severance months) for your context.</li>
+  </ul>
+
+  <h3><span class="tag later">Phase 3</span> &nbsp;Operate — ongoing monthly cadence</h3>
+  <div class="step"><div class="num">1</div><div class="b"><b>Refresh feeds</b> after month-end close (each owner re-uploads their workbook).</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Review HR Brain</b> — health trend, new issues, the Now column of the roadmap.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Generate the Newsletter</b> and circulate the board pack.</div></div>
+  <div class="step"><div class="num">4</div><div class="b"><b>Action &amp; track</b> — assign the roadmap items to owners; next month's trend and resolved markers confirm whether they landed.</div></div>
+</section>
+
+<!-- ============ 11. GOVERNANCE & APPENDIX ============ -->
+<section class="page">
+  <div class="kicker">11 · Governance &amp; appendix</div>
+  <h2>Running it well</h2>
+
+  <h3>Ownership &amp; cadence</h3>
+  <table class="t">
+    <thead><tr><th>Feed</th><th>Owner</th><th>Cadence</th></tr></thead>
+    <tbody>
+      <tr><td>Employee master</td><td>HR Operations / HRIS</td><td>Monthly (post-close)</td></tr>
+      <tr><td>Recruitment tracker</td><td>Talent Acquisition lead</td><td>Monthly</td></tr>
+      <tr><td>Performance export</td><td>HRBP / PMS owner</td><td>Per review cycle</td></tr>
+      <tr><td>Payroll + statutory</td><td>Payroll lead</td><td>Monthly</td></tr>
+      <tr><td>L&amp;D log</td><td>L&amp;D lead</td><td>Monthly</td></tr>
+      <tr><td>HR Operations</td><td>HR Admin</td><td>Monthly</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Data quality &amp; privacy</h3>
+  <ul>
+    <li>Keep the join key (<code>employee_number</code>) consistent across feeds so cross-functional views line up.</li>
+    <li>Use the Data Sources reconciliation tab to keep the two employee feeds in agreement.</li>
+    <li>Save an <strong>encrypted</strong> workspace if moving it between machines; nothing is ever uploaded.</li>
+  </ul>
+
+  <h3>Glossary</h3>
+  <table class="t">
+    <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+    <tbody>
+      <tr><td>HR Health score</td><td>0–100 overall measure; falls as open issues accumulate, weighted by severity.</td></tr>
+      <tr><td>Finding confidence</td><td>Known (threshold breached) · Likely (inferred) · Possible (early warning).</td></tr>
+      <tr><td>Regrettable attrition</td><td>Exits of high-rated / high-potential people.</td></tr>
+      <tr><td>eNPS</td><td>Employee Net Promoter Score — promoters minus detractors.</td></tr>
+      <tr><td>9-box</td><td>Performance × potential grid used in talent reviews.</td></tr>
+      <tr><td>Value at stake</td><td>Estimated annual attrition replacement cost attached to the top retention initiative.</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="soft" />
+  <p class="small muted">This guidebook describes the platform running on a sample organisation. All analytics, recommendations and figures shown are generated locally from sample data; your own data and branding replace them on first use. Recommendations are decision support, not automated action — every finding shows the evidence and logic behind it.</p>
+  <p class="small muted" style="text-align:center; margin-top:14px;">— End of guidebook —</p>
+</section>
+
+</body>
+</html>
