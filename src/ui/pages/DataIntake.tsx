@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { suggestColumnMapping } from "../../core/ingest/mapping";
+import { findMappingProfile, saveMappingProfile, resolveProfileForFile } from "../../core/ingest/mappingProfiles";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "../../core/intake/demoData";
@@ -49,6 +50,7 @@ export function DataIntake() {
   const [fileName, setFileName] = useState<string>("");
   const [override, setOverride] = useState<Record<string, string | null> | null>(null);
   const [showMapping, setShowMapping] = useState<boolean>(false);
+  const [mappingNote, setMappingNote] = useState<string>("");
 
   const schema = getSchema(kind);
 
@@ -58,6 +60,7 @@ export function DataIntake() {
     setFileBuf(null);
     setFileName("");
     setShowMapping(false);
+    setMappingNote("");
   }
 
   // Re-parse the held file bytes with a (possibly null) column-mapping override.
@@ -103,9 +106,19 @@ export function DataIntake() {
       const buf = await file.arrayBuffer();
       setFileBuf(buf);
       setFileName(file.name);
-      setOverride(null);
       setShowMapping(false);
-      const cand = await parseWorkbook(buf, file.name, schema, asOfOverride || undefined, knownIds, today);
+      let cand = await parseWorkbook(buf, file.name, schema, asOfOverride || undefined, knownIds, today);
+      // Auto-apply a saved mapping profile for this domain when the file's shape matches.
+      const prof = findMappingProfile(kind, cand.detectedHeaders);
+      if (prof) {
+        const ov = resolveProfileForFile(prof, cand.detectedHeaders);
+        setOverride(ov);
+        setMappingNote(`Applied your saved column mapping for ${schema.label}. Adjust it below if needed.`);
+        cand = await parseWorkbook(buf, file.name, schema, asOfOverride || undefined, knownIds, today, ov);
+      } else {
+        setOverride(null);
+        setMappingNote("");
+      }
       setPreview(cand);
     } catch (err) {
       setPreview(null);
@@ -131,6 +144,8 @@ export function DataIntake() {
     const label = getSchema(preview.kind).label;
     if (wasDemo) logAudit("Exited demo — started your workspace");
     logAudit(`Published ${label}`, `${preview.rowCount} rows · as of ${preview.asOf}${preview.rowsWithIssues ? ` · ${preview.rowsWithIssues} flagged` : ""}`);
+    // Remember the column mapping for this export shape so the next upload auto-applies it.
+    if (override && preview.detectedHeaders.length) saveMappingProfile(preview.kind, preview.detectedHeaders, override, new Date().toISOString());
     setOk(true);
     setMsg(`Imported ${preview.rowCount.toLocaleString("en-IN")} rows into ${label} (as of ${preview.asOf}).`);
     resetUpload();
@@ -229,6 +244,7 @@ export function DataIntake() {
             </span>
           </div>
 
+          {mappingNote ? <p className="muted mapping-applied">↺ {mappingNote}</p> : null}
           {preview.detectedHeaders.length > 0 ? (
             <div className="ip-mapping no-print">
               <button type="button" className="link-btn" onClick={() => setShowMapping((v) => !v)}>
