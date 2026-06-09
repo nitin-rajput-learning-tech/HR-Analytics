@@ -12,7 +12,7 @@
 
 ## First Wave
 - [x] **FIX-1 Ingestion robustness** — ✅ s1 header normalisation · ✅ s2 widened alias coverage (SAP/Workday/ADP) · ↪ s3 mapping report folded into BUILD-1
-- [ ] **BUILD-1 Column-mapping importer** — s1 mapping model + engine · s2 mapping UI + preview · s3 saved profiles
+- [ ] **BUILD-1 Column-mapping importer** — ✅ s1 mapping engine (suggest + validate) · ⬜ s2 mapping UI + preview · ⬜ s3 saved profiles
 - [ ] **BUILD-2 Action-tracking loop** — s1 model + persistence · s2 UI panel on HR Brain · s3 newsletter integration
 - [ ] **UP-1 Longitudinal trends** — s1 timeseries builder · s2 sparkline component + KPI cards · s3 health-history chart
 - [ ] **UP-7 Flight-risk scoring** — s1 feature extraction · s2 weighted explainable score · s3 Brain cohort finding
@@ -47,3 +47,4 @@
 ## Log
 - **FIX-1 s1** — `normalizeHeader()` (lower-case + unify `_-./` separators + collapse whitespace) applied to both alias-map keys and incoming headers, so real-world export drift matches. New header-drift test + existing Keka round-trip both green. 270 tests, build 2.76 MB.
 - **FIX-1 s2** — widened EMPLOYEE_ALIASES with SAP/Workday/ADP synonyms (Staff ID / Personnel Number, Hire Date, Title, Work Location, Company, Sex, Dept, …). New alias test green; FIX-1 complete. 271 tests, build 2.76 MB. Next: BUILD-1 (column-mapping importer).
+- **BUILD-1 s1** — `src/core/ingest/mapping.ts`: `suggestColumnMapping` (auto-suggest header→field + unmapped/missing-required gaps) and `validateColumnMapping` (ambiguous/invalid mapping detection). Pure + deterministic, 5 tests. 276 tests, build 2.76 MB. Next: s2 mapping UI + preview (needs browser-verify).
