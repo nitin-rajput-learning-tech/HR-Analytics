@@ -292,7 +292,9 @@ select, input[type="file"] { font: inherit; }
 .view-save button:disabled { opacity: 0.5; cursor: not-allowed; background: var(--surface); color: var(--muted); border-color: var(--border-strong); }
 
 /* branding */
-.brand-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+/* minmax(0, 1fr) lets the form column shrink below its content width so the fixed
+   320px preview never pushes the grid past the viewport on a narrow tab. */
+.brand-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
 .brand-controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow-sm); }
 .brand-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .brand-row > label { width: 120px; flex: none; color: var(--muted); font-weight: 600; font-size: 0.84rem; }

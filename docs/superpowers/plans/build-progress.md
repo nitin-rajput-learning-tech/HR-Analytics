@@ -37,6 +37,7 @@
 - [ ] FIX-8 Performance & scale
 
 ## Quick wins (slot in opportunistically)
+- [x] FIX-2b Branding-page overflow (minmax(0,1fr) so the form column shrinks; was +34px at 1024)
 - [ ] FIX-2 Overflow regression guard
 - [ ] FIX-3 Period-diff edge cases
 - [ ] FIX-4 Bad-data resilience
