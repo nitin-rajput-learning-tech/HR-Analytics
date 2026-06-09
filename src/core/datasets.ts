@@ -102,6 +102,14 @@ const EMPLOYEE_ALIASES: Record<string, string> = {
   "employee status": "employment_status", "employment status": "employment_status", "status": "employment_status",
   "date of exit": "last_working_day", "exit date": "last_working_day", "last working date": "last_working_day", "relieving date": "last_working_day",
   "resignation date": "exit_requested_on", "resigned on": "exit_requested_on",
+  // SAP / Workday / ADP-style variants (forward-compatibility for other HRMS)
+  "staff id": "employee_number", "personnel number": "employee_number", "pers no": "employee_number",
+  "hire date": "date_joined", "date of hire": "date_joined",
+  "title": "job_title",
+  "work location": "current_city", "office location": "current_city",
+  "company": "legal_entity", "company name": "legal_entity", "legal entity name": "legal_entity",
+  "sex": "gender",
+  "department name": "department", "dept": "department",
 };
 
 export const EMPLOYEE_MASTER = new DatasetSchema(

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import * as XLSX from "xlsx";
 import { parseWorkbook } from "./parseWorkbook";
 import { TA_REQUISITION, PMS_REVIEW, EMPLOYEE_MASTER } from "../datasets";
+// (EMPLOYEE_MASTER alias coverage extended in FIX-1 s2)
 
 function buildSheet(aoa: unknown[][], sheetName = "Data"): ArrayBuffer {
   const wb = XLSX.utils.book_new();
@@ -54,6 +55,22 @@ describe("parseWorkbook (TA)", () => {
     expect(cand.rows[0].job_title).toBe("SDE"); // "Job  Title" → job_title
     expect(cand.rows[0].open_date).toBe("2026-04-01"); // "Open-Date" → open_date
     expect(cand.rows[0].applications).toBe(12); // coerced
+  });
+
+  it("maps SAP/Workday-style employee aliases (Staff ID, Hire Date, Sex, Dept, Title, Company)", async () => {
+    const headers = ["Staff ID", "Display Name", "Hire Date", "Sex", "Dept", "Title", "Company", "Work Location"];
+    const rows = [["E100", "Asha R", "2021-07-01", "Female", "Finance", "Analyst", "Acme Pvt Ltd", "Pune"]];
+    const cand = await parseWorkbook(buildXlsx(headers, rows), "employees.xlsx", EMPLOYEE_MASTER, "2026-05-31");
+    expect(cand.status).toBe("imported");
+    const r = cand.rows[0];
+    expect(r.employee_number).toBe("E100"); // Staff ID
+    expect(r.full_name).toBe("Asha R"); // Display Name
+    expect(r.date_joined).toBe("2021-07-01"); // Hire Date
+    expect(r.gender).toBe("Female"); // Sex
+    expect(r.department).toBe("Finance"); // Dept
+    expect(r.job_title).toBe("Analyst"); // Title
+    expect(r.legal_entity).toBe("Acme Pvt Ltd"); // Company
+    expect(r.current_city).toBe("Pune"); // Work Location
   });
 
   it("rejects an unrelated sheet", async () => {
