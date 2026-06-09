@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { parseWorkbook } from "../../core/ingest/parseWorkbook";
+import { suggestColumnMapping } from "../../core/ingest/mapping";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
 import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "../../core/intake/demoData";
@@ -42,8 +43,39 @@ export function DataIntake() {
   const [ok, setOk] = useState<boolean | null>(null);
   const [asOfOverride, setAsOfOverride] = useState<string>("");
   const [preview, setPreview] = useState<SnapshotCandidate | null>(null);
+  // Guided column mapping: keep the uploaded bytes so we can re-parse with a
+  // user-edited header→field override (BUILD-1).
+  const [fileBuf, setFileBuf] = useState<ArrayBuffer | null>(null);
+  const [fileName, setFileName] = useState<string>("");
+  const [override, setOverride] = useState<Record<string, string | null> | null>(null);
+  const [showMapping, setShowMapping] = useState<boolean>(false);
 
   const schema = getSchema(kind);
+
+  function resetUpload() {
+    setPreview(null);
+    setOverride(null);
+    setFileBuf(null);
+    setFileName("");
+    setShowMapping(false);
+  }
+
+  // Re-parse the held file bytes with a (possibly null) column-mapping override.
+  async function reparseWith(ov: Record<string, string | null> | null) {
+    if (!fileBuf) return;
+    const empRows = combinedEmployeeSnapshot(store)?.rows ?? [];
+    const knownIds = new Set(empRows.map((r) => String(r.employee_number ?? "").trim()).filter(Boolean));
+    const today = new Date().toISOString().slice(0, 10);
+    setPreview(await parseWorkbook(fileBuf, fileName, schema, asOfOverride || undefined, knownIds, today, ov ?? undefined));
+  }
+
+  // Change one column's mapping (field name, or null to ignore) and re-parse.
+  function setMapping(header: string, field: string | null) {
+    const base = override ?? (preview ? suggestColumnMapping(preview.detectedHeaders, schema).mapping : {});
+    const next = { ...base, [header]: field };
+    setOverride(next);
+    void reparseWith(next);
+  }
 
   const loaded = useMemo(() => {
     const byKind = new Map<string, { asOf: string; rows: number }>();
@@ -68,7 +100,12 @@ export function DataIntake() {
       // "today" lets the parser resolve a year-less filename date (e.g. "as on 5th
       // May") to the most recent matching date — keeps the core period parser pure.
       const today = new Date().toISOString().slice(0, 10);
-      const cand = await parseWorkbook(await file.arrayBuffer(), file.name, schema, asOfOverride || undefined, knownIds, today);
+      const buf = await file.arrayBuffer();
+      setFileBuf(buf);
+      setFileName(file.name);
+      setOverride(null);
+      setShowMapping(false);
+      const cand = await parseWorkbook(buf, file.name, schema, asOfOverride || undefined, knownIds, today);
       setPreview(cand);
     } catch (err) {
       setPreview(null);
@@ -96,7 +133,7 @@ export function DataIntake() {
     logAudit(`Published ${label}`, `${preview.rowCount} rows · as of ${preview.asOf}${preview.rowsWithIssues ? ` · ${preview.rowsWithIssues} flagged` : ""}`);
     setOk(true);
     setMsg(`Imported ${preview.rowCount.toLocaleString("en-IN")} rows into ${label} (as of ${preview.asOf}).`);
-    setPreview(null);
+    resetUpload();
   }
 
   function downloadIssues() {
@@ -123,6 +160,11 @@ export function DataIntake() {
     setMsg(`Generated demo data for ${fns.length} functional domains, plus a prior month so the dashboards show month-over-month deltas. Every dashboard, Movement & Forecast, and the newsletter are now populated.`);
   }
 
+  // Effective header→field mapping for the editor (user override if set, else the
+  // auto-suggestion), plus any required fields still unmapped.
+  const effMapping: Record<string, string | null> = preview ? (override ?? suggestColumnMapping(preview.detectedHeaders, schema).mapping) : {};
+  const unmappedRequired = preview ? schema.fields.filter((f) => f.required && !Object.values(effMapping).includes(f.name)) : [];
+
   return (
     <div>
       <h2>Data Intake</h2>
@@ -141,7 +183,7 @@ export function DataIntake() {
         <label>
           Domain
           <br />
-          <select value={kind} onChange={(e) => setKind(e.target.value)} className="intake-select">
+          <select value={kind} onChange={(e) => { setKind(e.target.value); resetUpload(); }} className="intake-select">
             {TEAM_ORDER.map((team) => (
               <optgroup key={team} label={team}>
                 {ALL_SCHEMAS.filter((s) => s.team === team).map((s) => (
@@ -186,6 +228,34 @@ export function DataIntake() {
               {preview.status === "imported" ? "Ready to import" : "Rejected"}
             </span>
           </div>
+
+          {preview.detectedHeaders.length > 0 ? (
+            <div className="ip-mapping no-print">
+              <button type="button" className="link-btn" onClick={() => setShowMapping((v) => !v)}>
+                {showMapping ? "Hide column mapping" : `Adjust column mapping (${preview.detectedHeaders.length} columns)`}
+              </button>
+              {showMapping ? (
+                <div className="mapping-panel">
+                  <p className="muted mapping-hint">Map each column in your file to a template field, or ignore it — the preview re-parses instantly. <strong>*</strong> marks required fields.</p>
+                  {unmappedRequired.length ? (
+                    <p className="intake-err mapping-req">Required not yet mapped: {unmappedRequired.map((f) => f.label).join(", ")}.</p>
+                  ) : null}
+                  <div className="mapping-grid">
+                    {preview.detectedHeaders.map((h, i) => (
+                      <div className="mapping-row" key={`${h}-${i}`}>
+                        <span className="mapping-h" title={h}>{h || "(blank column)"}</span>
+                        <span className="mapping-arrow" aria-hidden="true">→</span>
+                        <select value={effMapping[h] ?? ""} onChange={(e) => setMapping(h, e.target.value || null)} aria-label={`Map column ${h || `#${i + 1}`} to a field`}>
+                          <option value="">— ignore —</option>
+                          {schema.fields.map((fld) => <option key={fld.name} value={fld.name}>{fld.label}{fld.required ? " *" : ""}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {preview.status === "imported" ? (
             <>

@@ -503,6 +503,17 @@ select, input[type="file"] { font: inherit; }
 .ip-note { font-size: 0.8rem; margin: 8px 0 0; }
 .ip-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
+/* guided column mapping (BUILD-1) */
+.ip-mapping { margin: 4px 0 12px; }
+.mapping-panel { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.mapping-hint { margin: 0 0 8px; font-size: 0.82rem; }
+.mapping-req { margin: 0 0 10px; font-size: 0.84rem; font-weight: 600; }
+.mapping-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 7px 16px; }
+.mapping-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mapping-h { flex: 1 1 auto; min-width: 0; font-size: 0.82rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mapping-arrow { color: var(--faint); flex: none; }
+.mapping-row select { flex: 1 1 46%; min-width: 0; padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 0.82rem; }
+
 /* activity / audit log (Data Intake) */
 .audit-log { list-style: none; margin: 8px 0 0; padding: 0; max-width: 720px; }
 .audit-log li { display: flex; align-items: baseline; gap: 12px; padding: 7px 2px; border-bottom: 1px solid var(--border); font-size: 0.86rem; }

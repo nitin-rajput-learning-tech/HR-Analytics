@@ -12,7 +12,7 @@
 
 ## First Wave
 - [x] **FIX-1 Ingestion robustness** — ✅ s1 header normalisation · ✅ s2 widened alias coverage (SAP/Workday/ADP) · ↪ s3 mapping report folded into BUILD-1
-- [ ] **BUILD-1 Column-mapping importer** — ✅ s1 mapping engine · ✅ s2a parser override + detectedHeaders · ⬜ s2b mapping UI + preview · ⬜ s3 saved profiles
+- [ ] **BUILD-1 Column-mapping importer** — ✅ s1 mapping engine · ✅ s2a parser override + detectedHeaders · ✅ s2b mapping UI + live preview · ⬜ s3 saved profiles
 - [ ] **BUILD-2 Action-tracking loop** — s1 model + persistence · s2 UI panel on HR Brain · s3 newsletter integration
 - [ ] **UP-1 Longitudinal trends** — s1 timeseries builder · s2 sparkline component + KPI cards · s3 health-history chart
 - [ ] **UP-7 Flight-risk scoring** — s1 feature extraction · s2 weighted explainable score · s3 Brain cohort finding
@@ -49,3 +49,4 @@
 - **FIX-1 s2** — widened EMPLOYEE_ALIASES with SAP/Workday/ADP synonyms (Staff ID / Personnel Number, Hire Date, Title, Work Location, Company, Sex, Dept, …). New alias test green; FIX-1 complete. 271 tests, build 2.76 MB. Next: BUILD-1 (column-mapping importer).
 - **BUILD-1 s1** — `src/core/ingest/mapping.ts`: `suggestColumnMapping` (auto-suggest header→field + unmapped/missing-required gaps) and `validateColumnMapping` (ambiguous/invalid mapping detection). Pure + deterministic, 5 tests. 276 tests, build 2.76 MB. Next: s2 mapping UI + preview (needs browser-verify).
 - **BUILD-1 s2a** — `parseWorkbook` now returns `detectedHeaders` (surfaced even on a near-miss) and accepts a `mappingOverride` (header→field|null) that wins over alias detection and bypasses the score threshold. 1 test (rejected→headers surfaced; override→imports). 277 tests, build 2.76 MB. Next: s2b mapping UI (browser-verify).
+- **BUILD-1 s2b** — Data Intake gains an "Adjust column mapping" editor: holds the uploaded bytes, shows each detected header → a field dropdown (pre-filled from `suggestColumnMapping`), re-parses live on change, flags unmapped required fields. **Browser-verified**: uploaded a messy-header file (EmpCode/PersonName/JoinDt/Town) → auto-rejected → editor appeared → mapped EmpCode→Employee Number + set as-of → flipped to "Ready to import" (E1, 2 rows). No app console errors. 277 tests, build 2.77 MB. Next: s3 saved mapping profiles.
