@@ -601,6 +601,31 @@ select, input[type="file"] { font: inherit; }
 .nl-cmp-atrisk { font-size: 0.82rem; color: #b45309; margin-top: 8px; font-weight: 600; }
 [data-theme="dark"] .nl-cmp-atrisk { color: #fbbf24; }
 @media (max-width: 800px) { .nl-cmp-grid { grid-template-columns: 1fr 1fr; } }
+.board-deck { max-width: 920px; }
+.board-slide { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+.board-slide h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.board-cover { text-align: left; }
+.board-cover h1 { margin: 6px 0 2px; }
+.board-period { color: var(--muted); font-size: 0.86rem; margin: 0 0 16px; }
+.board-health { display: flex; align-items: center; gap: 18px; padding: 14px 18px; border: 1px solid var(--border); border-left: 6px solid var(--brand-accent); border-radius: var(--radius); background: var(--surface-2); }
+.board-health.band-excellent, .board-health.band-good { border-left-color: #15803d; }
+.board-health.band-fair { border-left-color: #b45309; }
+.board-health.band-at-risk, .board-health.band-critical { border-left-color: #b91c1c; }
+.bh-score { font-size: 2.6rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; flex: none; }
+.bh-score span { font-size: 1rem; font-weight: 600; color: var(--muted); }
+.bh-band { font-weight: 800; }
+.bh-caption { color: var(--muted); font-size: 0.88rem; margin-top: 3px; max-width: 80ch; }
+.bh-maturity { font-size: 0.82rem; color: var(--muted); margin-top: 5px; }
+.board-kpis { margin-top: 16px; }
+.board-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.board-cols h3 { margin: 0 0 7px; font-size: 0.95rem; }
+.board-cols ul { margin: 0; padding-left: 18px; } .board-cols li { font-size: 0.9rem; margin-bottom: 6px; }
+.board-cols li em { color: var(--muted); font-style: normal; font-size: 0.84rem; }
+.board-cmp-health { font-size: 0.95rem; margin: 0 0 12px; }
+.board-red { margin-top: 12px; }
+.board-red ul { list-style: none; margin: 6px 0 0; padding: 0; } .board-red li { font-size: 0.9rem; margin-bottom: 5px; }
+@media (max-width: 700px) { .board-cols { grid-template-columns: 1fr; } }
+@media print { .board-slide { break-inside: avoid; page-break-after: always; box-shadow: none; } .board-slide:last-of-type { page-break-after: auto; } }
 .brief-movers ul { margin: 0; padding-left: 18px; }
 .brief-movers .mover { margin-bottom: 5px; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .brief-movers .mover.good { color: #15803d; }

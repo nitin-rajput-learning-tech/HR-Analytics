@@ -13,6 +13,7 @@ import { Compliance } from "./pages/Compliance";
 import { HeadcountPlan } from "./pages/HeadcountPlan";
 import { EntityRollup } from "./pages/EntityRollup";
 import { Reports } from "./pages/Reports";
+import { BoardPack } from "./pages/BoardPack";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
 import { CommandPalette } from "./components/CommandPalette";
@@ -27,7 +28,7 @@ import { loadPersisted } from "../workspace/autosave";
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
-const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Board Pack", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -255,6 +256,7 @@ export function AppShell() {
         {page === "Entity Rollup" && <EntityRollup />}
         {page === "Scenario" && <Scenario />}
         {page === "Newsletter" && <Reports />}
+        {page === "Board Pack" && <BoardPack />}
         {page === "Data Intake" && <DataIntake />}
         {page === "Branding" && <BrandingPage />}
         <footer className="no-print" style={{ marginTop: 32, color: "var(--faint)", fontSize: ".82rem" }}>
