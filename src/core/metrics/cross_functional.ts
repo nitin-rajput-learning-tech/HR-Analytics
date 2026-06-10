@@ -18,7 +18,7 @@
 
 import * as N from "../narrative";
 import type { Row } from "../ingest/types";
-import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain } from "./base";
+import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain, isTruthy } from "./base";
 
 const KIND = "cross_functional";
 const LABEL = "Cross-Functional Risk";
@@ -145,7 +145,7 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
       joined = true;
       const a = agg.get(d) ?? { done: 0, total: 0 };
       a.total += 1;
-      if (r["manager_review_done"] === true) a.done += 1;
+      if (isTruthy(r["manager_review_done"])) a.done += 1;
       agg.set(d, a);
     }
     if (joined) {

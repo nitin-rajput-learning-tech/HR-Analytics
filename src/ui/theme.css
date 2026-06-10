@@ -778,6 +778,7 @@ select, input[type="file"] { font: inherit; }
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .no-print { display: none !important; }
+  .skip-link { display: none !important; }
   .app { display: block; }
   .content { padding: 0; max-width: none; }
   .newsletter { border: 0; border-radius: 0; max-width: none; padding: 0; box-shadow: none; }

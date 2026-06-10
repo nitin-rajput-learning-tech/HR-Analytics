@@ -66,6 +66,12 @@ export function rankWatchouts(items: MetricWatchout[], limit = Infinity): Metric
   return [...items].sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]).slice(0, limit);
 }
 
+// Handles both coerced booleans (true/false — what parseWorkbook produces after
+// coerce("boolean", "Y")) and raw "Y"/"N" strings that demo-generated data carries
+// because it bypasses the ingest coerce step. Both representations are in the wild.
+export const isTruthy = (v: unknown): boolean =>
+  v === true || (typeof v === "string" && ["y", "yes", "true", "1"].includes(v.toLowerCase()));
+
 export function emptyDomain(kind: string, label: string, team: string): DomainMetrics {
   return {
     kind,

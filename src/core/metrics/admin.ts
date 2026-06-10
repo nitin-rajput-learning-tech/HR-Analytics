@@ -2,7 +2,7 @@
 
 import * as N from "../narrative";
 import type { Row } from "../ingest/types";
-import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain } from "./base";
+import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain, isTruthy } from "./base";
 
 const LABEL = "HR Operations";
 const TEAM = "HR Admin";
@@ -95,7 +95,7 @@ export function compute(input: AdminInput): DomainMetrics {
 
   if (hasLife && lifecycleRows!.some((r) => "checklist_complete" in r)) {
     const total = lifecycleRows!.length;
-    const complete = lifecycleRows!.filter((r) => r["checklist_complete"] === true).length;
+    const complete = lifecycleRows!.filter((r) => isTruthy(r["checklist_complete"])).length;
     kpis.push({ label: "Lifecycle Checklist", value: N.formatPct(N.pct(complete, total)), hint: `${complete}/${total} on/off-boarding` });
     const off = lifecycleRows!.filter((r) => String(r["type"] ?? "").toLowerCase() === "offboarding");
     if (off.length) {

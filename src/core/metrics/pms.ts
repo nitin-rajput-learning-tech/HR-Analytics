@@ -3,13 +3,13 @@
 
 import * as N from "../narrative";
 import type { Row } from "../ingest/types";
-import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain } from "./base";
+import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, emptyDomain, isTruthy } from "./base";
 
 const LABEL = "Performance (PMS)";
 const TEAM = "Performance";
 
 function countTrue(rows: Row[], col: string): number {
-  return rows.filter((r) => r[col] === true).length;
+  return rows.filter((r) => isTruthy(r[col])).length;
 }
 
 function perfBand(rating: number | null, scaleMax: number): string {

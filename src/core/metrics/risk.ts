@@ -8,7 +8,7 @@
 
 import * as N from "../narrative";
 import type { Row } from "../ingest/types";
-import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "./base";
+import { ChartSpec, DomainMetrics, MetricKPI, MetricTable, MetricWatchout, isTruthy } from "./base";
 
 const KIND = "people_risk";
 const LABEL = "Attrition Risk";
@@ -177,7 +177,7 @@ export function computeEmployeeRisks(input: RiskInput): EmployeeRisk[] {
   const performance = (r: Row, days: number | null): number => {
     const p = pmsByEmp.get(str(r["employee_number"]));
     if (!p) return 0;
-    if (p["on_pip"] === true) return 1;
+    if (isTruthy(p["on_pip"])) return 1;
     const rating = toNum(p["final_rating"]);
     if (rating !== null && rating < 0.6 * scaleMax) return 0.7;
     const hiPot = str(p["potential_rating"]).toLowerCase() === "high";
