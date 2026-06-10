@@ -15,6 +15,7 @@
     "verify": "npm run typecheck && npm test && npm run build && npm run check:size && npm run check:a11y && npm run check:overflow",
     "sample-data": "node scripts/generate-sample-data.mjs",
     "sample-workspace": "node scripts/build-sample-workspace.mjs",
+    "intake-pack": "node scripts/gen-intake-pack.mjs",
     "embed-demo": "node scripts/embed-demo.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "dev": "vite",
