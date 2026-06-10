@@ -24,7 +24,7 @@ const entry = `
 import * as fs from "node:fs";
 import { loadWorkspace, saveWorkspace } from ${p("src/workspace/workspace.ts")};
 import { MemoryStore } from ${p("src/core/store/memoryStore.ts")};
-import { generateFunctionalDemo, generatePriorFunctionalMonth } from ${p("src/core/intake/demoData.ts")};
+import { generateFunctionalDemo, generatePriorFunctionalMonth, generatePriorEmployeeMonth } from ${p("src/core/intake/demoData.ts")};
 
 const SRC = ${p("sample-data/Airpay-HR-sample-workspace.json.gz")};
 const ws = loadWorkspace(new Uint8Array(fs.readFileSync(SRC)));
@@ -162,6 +162,24 @@ const current = generateFunctionalDemo(emp.rows, emp.asOf).filter((s) => MONTHLY
 const prior = generatePriorFunctionalMonth(emp.rows, emp.asOf);
 for (const s of [...prior, ...current]) {
   store.add({ id: s.kind + ":" + s.asOf, kind: s.kind, asOf: s.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: neutralize(s.rows) });
+}
+
+// DEMO-HIST: deepen to ~6 months so the longitudinal trends (KPI sparklines + the
+// HR Health line) are meaningful in the showroom. Append-only — chain prior employee
+// months back from the EARLIEST existing month and synthesize each one's functional
+// domains. Reuses the in-app generators (rosters drift ~4%/month, so trends move);
+// doesn't touch the tuned latest-two-month logic (managers/moves/early-exits).
+const EXTRA_MONTHS = 4;
+let chainSnap = store.listByKind("employee_master")[0]; // earliest so far
+for (let k = 0; k < EXTRA_MONTHS; k++) {
+  const pm = generatePriorEmployeeMonth(chainSnap.rows, chainSnap.asOf);
+  if (!pm) break;
+  const rows = neutralize(pm.rows);
+  store.add({ id: "employee_master:" + pm.asOf, kind: "employee_master", asOf: pm.asOf, periodLabel: pm.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows });
+  for (const s of generateFunctionalDemo(rows, pm.asOf).filter((x) => MONTHLY.has(x.kind))) {
+    store.add({ id: s.kind + ":" + pm.asOf, kind: s.kind, asOf: pm.asOf, periodLabel: s.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: neutralize(s.rows) });
+  }
+  chainSnap = { ...chainSnap, rows: pm.rows, asOf: pm.asOf };
 }
 
 // Give a realistic share of recent leavers a prior performance review (several
