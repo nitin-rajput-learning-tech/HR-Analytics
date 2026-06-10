@@ -4,6 +4,7 @@ import { parseWorkbook } from "../../core/ingest/parseWorkbook";
 import { suggestColumnMapping } from "../../core/ingest/mapping";
 import { findMappingProfile, saveMappingProfile, resolveProfileForFile } from "../../core/ingest/mappingProfiles";
 import { ALL_SCHEMAS, getSchema, type DatasetSchema } from "../../core/datasets";
+import { buildLineage } from "../../core/lineage";
 import { templateAoA } from "../../core/intake/template";
 import { generateFunctionalDemo, generatePriorEmployeeMonth, generatePriorFunctionalMonth } from "../../core/intake/demoData";
 import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
@@ -89,6 +90,15 @@ export function DataIntake() {
     return [...byKind.entries()];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, version]);
+
+  // Full provenance trail — every snapshot, its source file, period, rows and
+  // compatibility (UP-10). The "Loaded data" table above is latest-per-domain;
+  // this is the complete lineage an auditor would trace.
+  const lineage = useMemo(
+    () => buildLineage(store.allSnapshots(), (k) => { try { return getSchema(k).label; } catch { return k; } }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store, version],
+  );
 
   // Parse the file and stage it for review — nothing is committed to the store
   // until the user confirms in the preview panel.
@@ -391,6 +401,38 @@ export function DataIntake() {
           </div>
         </div>
       )}
+
+      {lineage.rows.length > 0 ? (
+        <>
+          <h3 style={{ marginTop: 28 }}>Data lineage</h3>
+          <p className="muted" style={{ marginTop: 0, fontSize: ".84rem", maxWidth: "70ch" }}>
+            Every loaded snapshot and where it came from — {lineage.summary.snapshots} snapshot{lineage.summary.snapshots === 1 ? "" : "s"} across {lineage.summary.kinds} domain{lineage.summary.kinds === 1 ? "" : "s"},{" "}
+            {lineage.summary.totalRows.toLocaleString("en-IN")} rows{lineage.summary.periodFrom ? `, ${lineage.summary.periodFrom} → ${lineage.summary.periodTo}` : ""}
+            {lineage.summary.partial ? ` · ${lineage.summary.partial} partial-compatibility` : ""}. Trace any number back to its source.
+          </p>
+          <div className="metric-table">
+            <div className="table-scroll" tabIndex={0} aria-label="Data lineage">
+              <table>
+                <thead>
+                  <tr><th>Domain</th><th>Period</th><th>As-of</th><th>Source file</th><th>Rows</th><th>Compatibility</th></tr>
+                </thead>
+                <tbody>
+                  {lineage.rows.map((r) => (
+                    <tr key={`${r.kind}:${r.asOf}`}>
+                      <td>{r.label}</td>
+                      <td>{r.periodLabel}</td>
+                      <td>{r.asOf}</td>
+                      <td className="muted">{r.sourceFile}</td>
+                      <td>{r.rows.toLocaleString("en-IN")}</td>
+                      <td>{r.compatibility === "full" ? "Full" : <span className="lin-partial">Partial</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <h3 style={{ marginTop: 28 }}>Activity log</h3>
       <p className="muted" style={{ marginTop: 0, fontSize: ".84rem", maxWidth: "62ch" }}>
