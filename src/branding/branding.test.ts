@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_BRANDING, applyBranding, serializeTheme, parseTheme, safeColor, safeLogo, sanitizeBranding, type Branding } from "./branding";
+import { DEFAULT_BRANDING, applyBranding, serializeTheme, parseTheme, safeColor, safeLogo, sanitizeBranding, safeFont, FONT_STACKS, type Branding } from "./branding";
 
 describe("branding", () => {
   it("ships a neutral default brand", () => {
@@ -88,6 +88,32 @@ describe("sanitizeBranding", () => {
     const b = parseTheme(JSON.stringify({ branding: { primary: "url(https://evil/x)", accent: "#059669" } }));
     expect(b.primary).toBe(DEFAULT_BRANDING.primary);
     expect(b.accent).toBe("#059669");
+  });
+});
+
+describe("font theming (UP-9)", () => {
+  it("clamps an untrusted font to a known key", () => {
+    expect(safeFont("serif")).toBe("serif");
+    expect(safeFont("mono")).toBe("mono");
+    expect(safeFont("Comic Sans; url(evil)")).toBe("system"); // unknown / injection → default
+    expect(safeFont(undefined)).toBe("system");
+    expect(safeFont(42)).toBe("system");
+  });
+
+  it("applyBranding sets --brand-font to the mapped stack (never arbitrary)", () => {
+    const props: Record<string, string> = {};
+    const target = { style: { setProperty: (k: string, v: string) => { props[k] = v; } }, setAttribute: () => {} };
+    applyBranding({ ...DEFAULT_BRANDING, font: "serif" }, target);
+    expect(props["--brand-font"]).toBe(FONT_STACKS.serif);
+    // a bad font falls back to the system stack — and never injects
+    applyBranding({ ...DEFAULT_BRANDING, font: "url(x)" as unknown as Branding["font"] }, target);
+    expect(props["--brand-font"]).toBe(FONT_STACKS.system);
+    expect(props["--brand-font"].includes("url(")).toBe(false);
+  });
+
+  it("round-trips a non-default font through export/import", () => {
+    const brand: Branding = { ...DEFAULT_BRANDING, font: "humanist" };
+    expect(parseTheme(serializeTheme(brand)).font).toBe("humanist");
   });
 });
 

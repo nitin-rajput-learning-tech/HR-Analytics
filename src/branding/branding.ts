@@ -1,4 +1,16 @@
 export type ThemeMode = "light" | "dark";
+export type FontKey = "system" | "serif" | "humanist" | "mono";
+
+// Offline-safe font stacks — system families only (no @font-face / web-font fetch),
+// so theming a font never breaks the offline promise. The value is ALWAYS one of
+// these constants (keyed by a clamped enum), so it can't inject into the stylesheet.
+export const FONT_STACKS: Record<FontKey, string> = {
+  system: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif',
+  serif: 'Georgia, Cambria, "Times New Roman", "Noto Serif", serif',
+  humanist: '"Trebuchet MS", "Segoe UI", Verdana, Geneva, sans-serif',
+  mono: 'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+};
+export const FONT_LABELS: Record<FontKey, string> = { system: "System sans", serif: "Serif", humanist: "Humanist", mono: "Monospace" };
 
 export interface Branding {
   appName: string;
@@ -7,6 +19,7 @@ export interface Branding {
   accent: string;
   footer: string;
   theme?: ThemeMode;
+  font?: FontKey;
 }
 
 export const DEFAULT_BRANDING: Branding = {
@@ -16,7 +29,13 @@ export const DEFAULT_BRANDING: Branding = {
   accent: "#2563eb",
   footer: "Generated locally — your data never leaves this browser.",
   theme: "light",
+  font: "system",
 };
+
+// Clamp an untrusted font value to a known key (never an arbitrary stack).
+export function safeFont(v: unknown): FontKey {
+  return typeof v === "string" && v in FONT_STACKS ? (v as FontKey) : "system";
+}
 
 // --- Sanitisation of UNTRUSTED branding (loaded workspace / imported theme) ---
 // Colours flow into CSS custom properties used in `background`/`color`, some of
@@ -42,6 +61,7 @@ export function sanitizeBranding(b: Branding): Branding {
     accent: safeColor(b.accent, DEFAULT_BRANDING.accent),
     logoDataUri: safeLogo(b.logoDataUri),
     theme: b.theme === "dark" ? "dark" : "light",
+    font: safeFont(b.font),
   };
 }
 
@@ -55,6 +75,7 @@ export function applyBranding(b: Branding, target: CssTarget = document.document
   // in-session bad value can never inject a url() into the stylesheet.
   target.style.setProperty("--brand-primary", safeColor(b.primary, DEFAULT_BRANDING.primary));
   target.style.setProperty("--brand-accent", safeColor(b.accent, DEFAULT_BRANDING.accent));
+  target.style.setProperty("--brand-font", FONT_STACKS[safeFont(b.font)]);
   target.setAttribute("data-theme", b.theme === "dark" ? "dark" : "light");
 }
 

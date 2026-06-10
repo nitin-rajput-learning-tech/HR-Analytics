@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { useApp } from "../state";
-import { DEFAULT_BRANDING, serializeTheme, parseTheme, type Branding } from "../../branding/branding";
+import { DEFAULT_BRANDING, serializeTheme, parseTheme, FONT_LABELS, type Branding, type FontKey } from "../../branding/branding";
 import { downloadBlob } from "../download";
 
 const PRESETS: { name: string; primary: string; accent: string }[] = [
@@ -90,6 +90,17 @@ export function BrandingPage() {
               <button className={branding.theme === "dark" ? "active" : ""} onClick={() => set({ theme: "dark" })}>
                 ☾ Dark
               </button>
+            </div>
+          </div>
+
+          <div className="brand-row">
+            <label>Font</label>
+            <div className="theme-toggle font-toggle">
+              {(Object.keys(FONT_LABELS) as FontKey[]).map((k) => (
+                <button key={k} className={(branding.font ?? "system") === k ? "active" : ""} onClick={() => set({ font: k })} style={{ fontFamily: k === "serif" ? "Georgia, serif" : k === "mono" ? "ui-monospace, monospace" : k === "humanist" ? "Trebuchet MS, sans-serif" : "inherit" }}>
+                  {FONT_LABELS[k]}
+                </button>
+              ))}
             </div>
           </div>
 
