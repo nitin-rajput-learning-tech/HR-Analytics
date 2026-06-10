@@ -66,7 +66,7 @@ export function Chart({
       {spec.caption ? (
         <figcaption>
           {spec.caption}
-          {spec.drill && onDrill ? " · click to filter" : ""}
+          {spec.drill && onDrill ? <span className="no-print"> · click to filter</span> : null}
         </figcaption>
       ) : null}
     </figure>

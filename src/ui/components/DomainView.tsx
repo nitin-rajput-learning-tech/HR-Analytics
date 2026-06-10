@@ -59,7 +59,7 @@ export function DataTable({ table, onDrill }: { table: MetricTable; onDrill?: (f
           </button>
         </div>
       </div>
-      {table.caption || drillable ? <p className="caption">{table.caption}{drillable ? `${table.caption ? " · " : ""}Click a row to filter People Analytics.` : ""}</p> : null}
+      {table.caption || drillable ? <p className="caption">{table.caption}{drillable ? <span className="no-print">{table.caption ? " · " : ""}Click a row to filter People Analytics.</span> : null}</p> : null}
       <div className="table-scroll" tabIndex={0} aria-label={table.title || "Data table"}>
         <table>
           <thead>
