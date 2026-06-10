@@ -54,6 +54,26 @@ describe("computeEmployeeRisks", () => {
     expect(v1.contributors.some((c) => c.key === "pay_gap")).toBe(true);
   });
 
+  it("flags a high performer at Elevated+ risk as regrettable (and a peer at the same risk as not)", () => {
+    const rows = [
+      emp("STAR", { date_joined: "2026-03-01" }), // new joiner → high tenure risk
+      ...tech(4), // V1..V4 veterans, same churning dept
+      ...Array.from({ length: 5 }, (_, i) => emp("R" + i, { employment_status: "Relieved" })),
+    ];
+    const pms: Row[] = [{ employee_number: "STAR", final_rating: 5, rating_scale: "1-5", potential_rating: "High", on_pip: false }];
+    const risks = computeEmployeeRisks({ employeeRows: rows, asOf: ASOF, pmsRows: pms });
+    const star = risks.find((r) => r.employee_number === "STAR")!;
+    const v1 = risks.find((r) => r.employee_number === "V1")!;
+    expect(["Elevated", "High"]).toContain(star.band);
+    expect(star.regrettable).toBe(true);
+    expect(v1.regrettable).toBe(false); // not a high performer
+  });
+
+  it("never marks anyone regrettable without PMS to identify top talent", () => {
+    const risks = computeEmployeeRisks({ employeeRows: [emp("NEW", { date_joined: "2026-04-01" }), ...tech(9)], asOf: ASOF });
+    expect(risks.every((r) => r.regrettable === false)).toBe(true);
+  });
+
   it("score equals the sum of its contributor points (explainable-by-construction)", () => {
     const risks = computeEmployeeRisks({ employeeRows: [emp("NEW", { date_joined: "2026-03-01" }), ...tech(20)], asOf: ASOF });
     for (const r of risks) {
@@ -74,5 +94,14 @@ describe("buildRisk", () => {
     expect(labels).toContain("High Risk");
     expect(labels).toContain("Avg Risk Score");
     expect(labels).toContain("Top Driver");
+  });
+
+  it("surfaces a Regrettable Risk KPI and a regrettable flight-risk table when top talent is at risk", () => {
+    const rows = [emp("STAR", { date_joined: "2026-03-01" }), ...tech(4), ...Array.from({ length: 5 }, (_, i) => emp("R" + i, { employment_status: "Relieved" }))];
+    const dm = buildRisk({ employeeRows: rows, asOf: ASOF, pmsRows: [{ employee_number: "STAR", final_rating: 5, rating_scale: "1-5", potential_rating: "High" }] });
+    const kpi = dm.kpis.find((k) => k.label === "Regrettable Risk")!;
+    expect(kpi).toBeDefined();
+    expect(Number(kpi.value)).toBeGreaterThanOrEqual(1);
+    expect(dm.tables.some((t) => /regrettable flight risk/i.test(t.title))).toBe(true);
   });
 });

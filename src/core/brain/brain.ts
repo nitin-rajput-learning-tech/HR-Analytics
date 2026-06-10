@@ -71,7 +71,7 @@ const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High"
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low", compliance_training: "Low",
   below_benchmark: "Medium",
-  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium", ta_throughput: "Medium",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium", ta_throughput: "Medium", flight_risk_cohort: "Medium",
   pay_gap: "High", org_design: "High", compound_retention: "High",
 };
 const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
@@ -101,6 +101,7 @@ export function buildRoadmap(findings: BrainFinding[]): RoadmapItem[] {
 // the relevant analytic (People sub-tab, or another page).
 const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   compound_retention: { page: "People Analytics", tab: "risk" },
+  flight_risk_cohort: { page: "People Analytics", tab: "risk" },
   department_hotspots: { page: "Function Analytics" },
   statutory: { page: "Function Analytics" },
   regrettable_attrition: { page: "People Analytics", tab: "retention" },
@@ -263,6 +264,39 @@ const RULES: Rule[] = [
         "Benchmark and adjust compensation for top performers and business-critical roles.",
         "Audit promotion velocity and internal-mobility access for high-potentials.",
         "Coach managers in the teams with the most regretted exits.",
+      ],
+    };
+  },
+
+  // Flight-risk cohort — WHO is at risk right now (preventive), from the explainable
+  // per-employee attrition index. Distinct from regrettable_attrition (who already
+  // left) and compound_retention (cross-domain stacking): this fires on the size of
+  // the current at-risk population, and escalates when top performers sit inside it.
+  (ctx) => {
+    const elevatedPlus = ctx.num("Elevated+") ?? 0;
+    const highRisk = ctx.num("High Risk") ?? 0;
+    const regrettable = ctx.num("Regrettable Risk") ?? 0;
+    const material = elevatedPlus >= Math.max(5, Math.ceil(ctx.active * 0.08)) || regrettable >= 3;
+    if (!material) return null;
+    const ev: string[] = [`${ctx.display("Elevated+")} active employees at Elevated+ attrition risk${highRisk > 0 ? ` (${ctx.display("High Risk")} High)` : ""}`];
+    if (regrettable > 0) ev.push(`${ctx.display("Regrettable Risk")} are high performers / high-potentials (regrettable)`);
+    const topDriver = ctx.display("Top Driver");
+    if (topDriver && topDriver.toLowerCase() !== "n/a") ev.push(`largest driver: ${topDriver.toLowerCase()}`);
+    return {
+      id: "flight_risk_cohort",
+      title: regrettable >= 3 ? "Flight-risk cohort includes top performers" : "Sizable flight-risk cohort",
+      category: "Retention",
+      owner: "HR Business Partners",
+      severity: highRisk >= 5 || regrettable >= 5 ? "high" : "medium",
+      confidence: "likely",
+      evidence: ev,
+      reason:
+        "A material share of the active workforce scores Elevated or High on the explainable attrition-risk index (tenure, team churn, manager load, pay-vs-peers and performance). Acting on a named, scored list now — before exits cluster — is far cheaper than backfilling; and when high performers sit inside the cohort, the cost of losing them is disproportionate to their headcount.",
+      remedy: [
+        "Open the Attrition Risk view and start with the Regrettable flight-risk table (top performers first).",
+        "Run stay-interviews with the highest-scoring individuals and everyone flagged regrettable.",
+        "Tackle the largest driver head-on — e.g. pay-vs-peers gaps, manager overload, or early-tenure onboarding.",
+        "Re-score next period to confirm the Elevated+ and regrettable counts are falling.",
       ],
     };
   },

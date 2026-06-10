@@ -67,6 +67,10 @@ export interface EmployeeRisk {
   score: number; // 0–100
   band: "High" | "Elevated" | "Moderate" | "Low";
   contributors: RiskContributor[]; // descending, points > 0
+  // A high performer / high-potential currently at Elevated+ risk — the people you
+  // can least afford to lose. The preventive complement to "regrettable attrition"
+  // (which counts top talent that has ALREADY left). Needs PMS to identify.
+  regrettable: boolean;
 }
 
 export interface RiskInput {
@@ -180,6 +184,13 @@ export function computeEmployeeRisks(input: RiskInput): EmployeeRisk[] {
     const stagnant = hiPot && p["promotion_recommended"] !== true && days !== null && days >= 1095;
     return stagnant ? 0.5 : 0;
   };
+  // High performer / high-potential — top of the rating scale or explicitly flagged.
+  const isHighPerf = (id: string): boolean => {
+    const p = pmsByEmp.get(id);
+    if (!p) return false;
+    const rating = toNum(p["final_rating"]);
+    return (rating !== null && rating >= 0.8 * scaleMax) || str(p["potential_rating"]).toLowerCase() === "high";
+  };
 
   return active.map((r): EmployeeRisk => {
     const days = dayMs(r["date_joined"]) !== null && refMs !== null ? Math.floor((refMs - (dayMs(r["date_joined"]) as number)) / 86_400_000) : null;
@@ -195,6 +206,7 @@ export function computeEmployeeRisks(input: RiskInput): EmployeeRisk[] {
       .filter((c) => c.points > 0)
       .sort((a, b) => b.points - a.points);
     const score = present.reduce((s, k) => s + (WEIGHTS[k] / weightTotal) * raw[k] * 100, 0);
+    const band = bandOf(score);
     return {
       employee_number: str(r["employee_number"]),
       name: str(r["full_name"]) || str(r["employee_number"]),
@@ -202,8 +214,9 @@ export function computeEmployeeRisks(input: RiskInput): EmployeeRisk[] {
       manager: dim(r, "reporting_manager"),
       tenureYears: days === null ? null : Math.round((days / 365) * 10) / 10,
       score: round(score),
-      band: bandOf(score),
+      band,
       contributors,
+      regrettable: (band === "High" || band === "Elevated") && isHighPerf(str(r["employee_number"])),
     };
   });
 }
@@ -218,6 +231,7 @@ export function buildRisk(input: RiskInput): DomainMetrics {
   const sorted = [...risks].sort((a, b) => b.score - a.score);
   const high = risks.filter((r) => r.band === "High");
   const elevated = risks.filter((r) => r.band === "Elevated");
+  const regrettable = risks.filter((r) => r.regrettable);
   const avg = risks.reduce((s, r) => s + r.score, 0) / risks.length;
 
   // Which signal contributes the most points on average → headline driver.
@@ -228,6 +242,7 @@ export function buildRisk(input: RiskInput): DomainMetrics {
   const kpis: MetricKPI[] = [
     { label: "High Risk", value: N.humanizeInt(high.length), hint: `score ≥ 65 of ${risks.length}` },
     { label: "Elevated+", value: N.humanizeInt(high.length + elevated.length), hint: "score ≥ 45" },
+    { label: "Regrettable Risk", value: N.humanizeInt(regrettable.length), hint: "top performers at Elevated+ risk" },
     { label: "Avg Risk Score", value: avg.toFixed(0), hint: "0–100, weighted signals" },
     { label: "Top Driver", value: topDriver },
   ];
@@ -262,7 +277,31 @@ export function buildRisk(input: RiskInput): DomainMetrics {
     },
   ];
 
+  // Regrettable flight risk — top talent currently at Elevated+ risk. The preventive
+  // mirror of cross-functional "regrettable attrition" (top talent that already left).
+  if (regrettable.length) {
+    tables.push({
+      title: "Regrettable flight risk",
+      caption: "High performers / high-potentials at Elevated or High risk — prioritise stay-interviews, comp and growth here before they become regretted exits.",
+      columns: ["Employee", "Department", "Manager", "Tenure (yrs)", "Risk score", "Drivers"],
+      rows: [...regrettable]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 15)
+        .map((r) => [r.employee_number, r.department, r.manager, r.tenureYears === null ? "—" : `${r.tenureYears}`, r.score, r.contributors.slice(0, 3).map((c) => c.label).join(", ") || "—"] as (string | number)[]),
+    });
+  }
+
   const watchouts: MetricWatchout[] = [];
+  // Regrettable flight risk — losing top talent is costlier than headcount churn.
+  if (regrettable.length >= 3) {
+    watchouts.push({
+      severity: regrettable.length >= 6 ? "high" : "medium",
+      title: `${regrettable.length} high performers at flight risk`,
+      detail: `${regrettable.length} top-rated / high-potential employees are at Elevated or High attrition risk — regretted exits in the making.`,
+      actionHint: "Run stay-interviews and review comp/progression for these individuals now, before they exit.",
+      owner: "HR Leadership",
+    });
+  }
   // departments with concentrated high-risk
   for (const [d, arr] of deptScores) {
     if (arr.length < 8) continue;
@@ -283,7 +322,7 @@ export function buildRisk(input: RiskInput): DomainMetrics {
     kind: KIND,
     label: LABEL,
     hasData: true,
-    blurb: `${high.length} employees at High risk and ${elevated.length} Elevated (avg score ${avg.toFixed(0)}/100). Largest driver: ${topDriver.toLowerCase()}.`,
+    blurb: `${high.length} employees at High risk and ${elevated.length} Elevated (avg score ${avg.toFixed(0)}/100). Largest driver: ${topDriver.toLowerCase()}.${regrettable.length ? ` ${regrettable.length} are high performers (regrettable).` : ""}`,
     kpis,
     charts,
     tables,

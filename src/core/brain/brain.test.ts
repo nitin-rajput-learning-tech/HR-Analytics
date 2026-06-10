@@ -70,6 +70,27 @@ describe("buildHealthHistory", () => {
   });
 });
 
+describe("flight-risk cohort finding", () => {
+  it("fires when many active employees score Elevated+ on the attrition index", () => {
+    const store = new MemoryStore();
+    const newJoiners = Array.from({ length: 12 }, (_, i) => ({ employee_number: "N" + i, full_name: "N" + i, employment_status: "Working", department: "Tech", reporting_manager: "M1", date_joined: "2026-03-01" }));
+    const relieved = Array.from({ length: 8 }, (_, i) => ({ employee_number: "R" + i, full_name: "R" + i, employment_status: "Relieved", department: "Tech", reporting_manager: "M1", date_joined: "2025-01-01", last_working_day: "2026-04-01" }));
+    store.add(snap("2026-05-31", [...newJoiners, ...relieved]));
+    const r = buildBrain(store);
+    const f = r.findings.find((x) => x.id === "flight_risk_cohort");
+    expect(f).toBeTruthy();
+    expect(f!.category).toBe("Retention");
+    expect(f!.link?.tab).toBe("risk");
+    expect(f!.remedy.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("stays quiet on a small, stable, long-tenured workforce", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-05-31", Array.from({ length: 10 }, (_, i) => ({ employee_number: "E" + i, full_name: "E" + i, employment_status: "Working", department: "Tech", reporting_manager: "M1", date_joined: "2017-01-01" }))));
+    expect(buildBrain(store).findings.some((f) => f.id === "flight_risk_cohort")).toBe(false);
+  });
+});
+
 describe("buildBrain", () => {
   it("detects early attrition with a reason and a remedy plan", () => {
     const { findings, summary } = buildBrain(storeWithEarlyExits());
