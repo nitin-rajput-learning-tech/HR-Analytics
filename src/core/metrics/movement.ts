@@ -193,7 +193,10 @@ export function buildMovement(snapshots: Snapshot[], opts: { activeHeadcount?: n
   // understates attrition in a shrinking org and overstates it in a growing one).
   const headcounts = snaps.map((s) => s.rows.filter(isWorking).length);
   const avgActive = headcounts.length ? headcounts.reduce((a, b) => a + b, 0) / headcounts.length : 0;
-  const annualisedAttrition = avgActive ? (totalLeavers / avgActive) * (12 / months) : 0;
+  // Guard months > 0 too: two snapshots with an identical active roster produce
+  // zero movement (months === 0), and (0 / avgActive) * (12 / 0) is 0 * Infinity =
+  // NaN — which would render "NaN%". A stable roster is 0% attrition, not NaN.
+  const annualisedAttrition = avgActive > 0 && months > 0 ? (totalLeavers / avgActive) * (12 / months) : 0;
   const forecast = forecastWorkforce(currentActive, movement);
   const rangeHint = forecast.sigma > 0 ? ` · range ${N.humanizeInt(forecast.lower)}–${N.humanizeInt(forecast.upper)}` : " · range needs ≥2 months";
 

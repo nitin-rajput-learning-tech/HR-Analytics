@@ -37,6 +37,15 @@ describe("movement", () => {
     expect(mv[0].leavers).toBe(2);
     expect(mv[0].net).toBe(0);
   });
+  it("reports 0% attrition (not NaN) when the roster is unchanged between snapshots (FIX-3)", () => {
+    const mayIdentical = snap("2026-05-31", Array.from({ length: 10 }, (_, i) => emp("E" + (i + 1), "Working")));
+    expect(deriveEmployeeEvents([m1, mayIdentical])).toHaveLength(0); // zero movement → months === 0
+    const dm = buildMovement([m1, mayIdentical]);
+    expect(dm.hasData).toBe(true);
+    const attr = dm.kpis.find((k) => k.label === "Annualised Attrition")!;
+    expect(attr.value).not.toContain("NaN");
+    expect(parseFloat(attr.value)).toBe(0);
+  });
   it("maps leaver events for cross-functional", () => {
     const le = leaverEvents([m1, m2]);
     expect(le).toHaveLength(2);
