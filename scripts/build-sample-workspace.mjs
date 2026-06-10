@@ -16,9 +16,21 @@ import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import os from "node:os";
+import { generateAcmeRoster } from "./lib/synthetic-org.mjs";
 
 const root = process.cwd();
 const p = (rel) => JSON.stringify(path.resolve(root, rel));
+
+// Generate the synthetic "Acme" roster (latest month) and stage it on disk for the
+// esbuild TS entry below to read. Modelled on a real Indian payments org's SHAPE
+// (entity mix, field-sales-heavy workforce, deep hierarchy, gender skew, tenure
+// curve, attrition concentrated in frontline sales) but every identity is synthetic
+// — see scripts/lib/synthetic-org.mjs. This replaces the previous hand-seeded base
+// roster, making the showroom fully reproducible from code and ~2.6× richer.
+const DEMO_ASOF = "2026-05-05";
+const syntheticRoster = generateAcmeRoster({ activeTarget: 350, leaverCount: 120, asOf: DEMO_ASOF, seed: 7 });
+const tmpRoster = path.join(os.tmpdir(), `hr-roster-${process.pid}.json`);
+await writeFile(tmpRoster, JSON.stringify(syntheticRoster), "utf8");
 
 const entry = `
 import * as fs from "node:fs";
@@ -88,16 +100,23 @@ const assignManagers = (rows) => {
   return rows;
 };
 
-// Preserve the employee roster (both months) + non-monthly functional cadences.
+// Base roster: the freshly-generated synthetic Acme latest month, read from the temp
+// file staged before this build. neutralize() is now a no-op (the roster is already
+// Acme) but kept as a safety net; seedEarlyExits sharpens the first-year-attrition
+// signal on a few exits.
 const store = new MemoryStore();
-for (const kind of ["pms_review", "engagement_survey"]) {
-  for (const s of ws.store.listByKind(kind)) store.add({ ...s, rows: neutralize(s.rows) });
-}
-// Employee months: neutralize + seed early exits, then assign managers on the
-// LATEST month and propagate the same manager per employee back to earlier months,
-// so reporting lines stay consistent across snapshots. (Re-running assignManagers
-// independently per month produced spurious "manager change" moves in Mobility.)
-const empSnapsRaw = ws.store.listByKind("employee_master").map((s) => ({ ...s, rows: seedEarlyExits(neutralize(s.rows)) }));
+const mayRows = seedEarlyExits(neutralize(JSON.parse(fs.readFileSync(${JSON.stringify(tmpRoster)}, "utf8"))));
+// Synthesize the PRIOR employee month from the seeded latest (so date_joined stays
+// consistent across months) — gives Movement & Forecast something to diff. The
+// DEMO-HIST loop below chains four more months back from here.
+const aprilGen = generatePriorEmployeeMonth(mayRows, ${JSON.stringify(DEMO_ASOF)});
+const empSnapsRaw = [
+  { id: "employee_master:" + aprilGen.asOf, kind: "employee_master", asOf: aprilGen.asOf, periodLabel: aprilGen.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: aprilGen.rows },
+  { id: "employee_master:" + ${JSON.stringify(DEMO_ASOF)}, kind: "employee_master", asOf: ${JSON.stringify(DEMO_ASOF)}, periodLabel: ${JSON.stringify(DEMO_ASOF)}, sourceFile: "(generated demo)", compatibility: "full", rows: mayRows },
+];
+// Assign managers on the LATEST month, then propagate the same manager per employee
+// back to earlier months so reporting lines stay consistent (re-running per month
+// produced spurious "manager change" moves in Mobility).
 const latestRaw = empSnapsRaw[empSnapsRaw.length - 1];
 assignManagers(latestRaw.rows);
 const mgrMap = new Map(latestRaw.rows.map((r) => [String(r["employee_number"]), r["reporting_manager"]]));
@@ -105,8 +124,13 @@ for (const s of empSnapsRaw) {
   const rows = s === latestRaw ? s.rows : s.rows.map((r) => { const id = String(r["employee_number"]); return mgrMap.has(id) ? { ...r, reporting_manager: mgrMap.get(id) } : r; });
   store.add({ ...s, rows });
 }
+// PMS review cycle (active employees), keyed off the latest roster — generated fresh
+// (the half-yearly cadence isn't part of the monthly regeneration below). Leaver
+// reviews are appended later so regrettable-attrition lights up.
+const pmsGen = generateFunctionalDemo(latestRaw.rows, ${JSON.stringify(DEMO_ASOF)}).find((s) => s.kind === "pms_review");
+if (pmsGen) store.add({ id: "pms_review:" + pmsGen.asOf, kind: "pms_review", asOf: pmsGen.asOf, periodLabel: pmsGen.periodLabel, sourceFile: "(generated demo)", compatibility: "full", rows: pmsGen.rows });
 const emp = store.getLatest("employee_master");
-if (!emp) throw new Error("sample workspace has no employee_master");
+if (!emp) throw new Error("synthetic roster produced no employee_master");
 
 // Seed a realistic set of internal moves into the PRIOR employee month so the
 // Mobility tab demonstrates real movement (the two source months were near-
@@ -231,7 +255,9 @@ for (const k of ["appName", "footer"]) {
 }
 
 // Fixed timestamp keeps the output deterministic (core stays free of Date.now).
-const out = saveWorkspace(store, branding, "2026-05-05T00:00:00.000Z", ws.savedViews, ws.auditLog);
+// Saved views / audit log start empty — the previous workspace's presets referenced
+// a different roster's departments, so they'd be stale against this regenerated org.
+const out = saveWorkspace(store, branding, "2026-05-05T00:00:00.000Z", [], []);
 fs.writeFileSync(SRC, Buffer.from(out));
 globalThis.__WROTE = {
   bytes: out.length,
