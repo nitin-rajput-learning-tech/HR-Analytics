@@ -23,6 +23,10 @@ export interface MetricTable {
   caption?: string;
   columns: string[];
   rows: (string | number)[][];
+  // Optional drill-down: the People filter field this table's FIRST column maps to
+  // (e.g. "department", "reporting_manager"). When set, the UI makes each row
+  // clickable to open People Analytics filtered to that value.
+  drill?: string;
 }
 
 export interface ChartSpec {

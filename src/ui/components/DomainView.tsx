@@ -19,9 +19,14 @@ export function KpiCard({ kpi }: { kpi: MetricKPI }) {
 
 const cellNum = (v: string | number) => (typeof v === "number" ? v : Number(String(v).replace(/[^0-9.\-]/g, "")));
 
-export function DataTable({ table }: { table: MetricTable }) {
+export function DataTable({ table, onDrill }: { table: MetricTable; onDrill?: (field: string, label: string) => void }) {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ col: number; dir: 1 | -1 } | null>(null);
+  const drillField = table.drill;
+  const drillable = !!(drillField && onDrill);
+  const drill = (row: (string | number)[]) => {
+    if (drillField && onDrill) onDrill(drillField, String(row[0]));
+  };
   const query = q.trim().toLowerCase();
   let rows = query ? table.rows.filter((r) => r.some((c) => String(c).toLowerCase().includes(query))) : table.rows;
   if (sort) {
@@ -54,7 +59,7 @@ export function DataTable({ table }: { table: MetricTable }) {
           </button>
         </div>
       </div>
-      {table.caption ? <p className="caption">{table.caption}</p> : null}
+      {table.caption || drillable ? <p className="caption">{table.caption}{drillable ? `${table.caption ? " · " : ""}Click a row to filter People Analytics.` : ""}</p> : null}
       <div className="table-scroll" tabIndex={0} aria-label={table.title || "Data table"}>
         <table>
           <thead>
@@ -69,7 +74,15 @@ export function DataTable({ table }: { table: MetricTable }) {
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri}>
+              <tr
+                key={ri}
+                className={drillable ? "drill-row" : undefined}
+                onClick={drillable ? () => drill(row) : undefined}
+                tabIndex={drillable ? 0 : undefined}
+                role={drillable ? "button" : undefined}
+                aria-label={drillable ? `Filter People Analytics by ${String(row[0])}` : undefined}
+                onKeyDown={drillable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); drill(row); } } : undefined}
+              >
                 {row.map((cell, ci) => (
                   <td key={ci}>{typeof cell === "number" ? cell.toLocaleString("en-IN") : cell}</td>
                 ))}
@@ -138,7 +151,7 @@ export function DomainView({
         </div>
       ) : null}
       {domain.tables.map((t, i) => (
-        <DataTable key={t.title + i} table={t} />
+        <DataTable key={t.title + i} table={t} onDrill={onDrill} />
       ))}
       {domain.watchouts.length > 0 ? <Watchouts items={domain.watchouts} /> : null}
     </div>

@@ -151,6 +151,7 @@ export function buildPayEquity(input: PayEquityInput): DomainMetrics {
       caption: "Median monthly gross by gender (departments with ≥3 of each). Gaps over 5% warrant a documented justification under the EU directive.",
       columns: ["Department", "Women", "Women's median", "Men", "Men's median", "Gap %"],
       rows: deptGaps.map((d) => [d.dept, d.female.length, N.humanizeMoneyInr(d.femaleMed), d.male.length, N.humanizeMoneyInr(d.maleMed), N.formatPct(d.gap * 100)] as (string | number)[]),
+      drill: "department",
     },
   ];
   if (roleGaps.length) {

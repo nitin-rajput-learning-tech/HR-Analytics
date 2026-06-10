@@ -226,6 +226,7 @@ export function compute(input: CrossFunctionalInput): DomainMetrics {
         "Each department scored 0–100 on ABSOLUTE thresholds across attrition, training coverage and review completion (independent of other departments). Higher = more compounded people-risk.",
       columns,
       rows: tableRows,
+      drill: "department",
     });
     charts.push({
       title: "Compound risk score",

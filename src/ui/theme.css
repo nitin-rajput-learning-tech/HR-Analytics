@@ -192,6 +192,10 @@ a { color: var(--brand-accent); }
 .metric-table tbody td { border-bottom: 1px solid var(--border); }
 .metric-table tbody td:first-child { font-weight: 600; }
 .metric-table tbody td:not(:first-child) { font-variant-numeric: tabular-nums; }
+.metric-table tbody tr.drill-row { cursor: pointer; }
+.metric-table tbody tr.drill-row:hover { background: var(--brand-accent-weak, var(--surface-2)); }
+.metric-table tbody tr.drill-row:hover td:first-child { color: var(--brand-accent); }
+.metric-table tbody tr.drill-row:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: -2px; }
 
 /* watch-outs */
 .watchouts { margin: 16px 0; }

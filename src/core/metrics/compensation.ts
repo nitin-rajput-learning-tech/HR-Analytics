@@ -138,7 +138,7 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
   }
 
   const tables: MetricTable[] = deptMed.length
-    ? [{ title: "Pay by department", caption: "Median + P10–P90 monthly gross (departments with ≥3 staff).", columns: ["Department", "Staff", "Median", "P10", "P90"], rows: deptMed.map((d) => [d.dept, d.n, money(d.med), money(d.p10), money(d.p90)] as (string | number)[]) }]
+    ? [{ title: "Pay by department", caption: "Median + P10–P90 monthly gross (departments with ≥3 staff).", columns: ["Department", "Staff", "Median", "P10", "P90"], rows: deptMed.map((d) => [d.dept, d.n, money(d.med), money(d.p10), money(d.p90)] as (string | number)[]), drill: "department" }]
     : [];
 
   const watchouts: MetricWatchout[] = [];

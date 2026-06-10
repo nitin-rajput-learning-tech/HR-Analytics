@@ -145,7 +145,7 @@ function headcountSection(rows: Row[]): DomainMetrics {
     kind: "people_headcount", label: "Headcount & Org", hasData: active.length > 0,
     blurb: `${N.humanizeInt(active.length)} active staff across ${byDept.size} departments and ${byEntity.size} legal entit${byEntity.size === 1 ? "y" : "ies"}.`,
     kpis, charts,
-    tables: [{ title: "Department breakdown", caption: "Active, relieved and total by department.", columns: ["Department", "Active", "Relieved", "Total", "Active %"], rows: tableRows }],
+    tables: [{ title: "Department breakdown", caption: "Active, relieved and total by department.", columns: ["Department", "Active", "Relieved", "Total", "Active %"], rows: tableRows, drill: "department" }],
     watchouts: [],
   };
 }
@@ -208,7 +208,7 @@ function tenureSection(rows: Row[], refMs: number | null): DomainMetrics {
     kind: "people_tenure", label: "Tenure", hasData: valid.length > 0,
     blurb: avgYrs === null ? "Tenure needs date-joined data." : `Average active tenure ${avgYrs.toFixed(1)} years${medDays === null ? "" : ` (median ${(medDays / 365).toFixed(1)})`}; ${N.formatPct(earlyShare * 100)} under a year.`,
     kpis, charts,
-    tables: [{ title: "Tenure by department", caption: "Average tenure (years) and early-tenure share.", columns: ["Department", "Active", "Avg Tenure (yrs)", "% < 1yr"], rows: deptRows }],
+    tables: [{ title: "Tenure by department", caption: "Average tenure (years) and early-tenure share.", columns: ["Department", "Active", "Avg Tenure (yrs)", "% < 1yr"], rows: deptRows, drill: "department" }],
     watchouts: watchouts.slice(0, 4),
   };
 }
@@ -252,7 +252,7 @@ function diversitySection(rows: Row[]): DomainMetrics {
     kind: "people_diversity", label: "Diversity", hasData: true,
     blurb: `Female representation ${N.formatPct(femaleShare)} of active staff.`,
     kpis, charts,
-    tables: [{ title: "Gender by department", caption: "Active staff and female share by department.", columns: ["Department", "Active", "Female", "Female %"], rows: deptRows }],
+    tables: [{ title: "Gender by department", caption: "Active staff and female share by department.", columns: ["Department", "Active", "Female", "Female %"], rows: deptRows, drill: "department" }],
     watchouts: watchouts.slice(0, 4),
   };
 }
@@ -331,7 +331,7 @@ function managersSection(rows: Row[], refMs: number | null): DomainMetrics {
     kind: "people_managers", label: "Managers", hasData: managers.length > 0,
     blurb: `${managers.length} people managers; average span ${avgSpan.toFixed(1)}.`,
     kpis, charts,
-    tables: [{ title: "Span of control", caption: "Team size, pending exits and early-tenure share (top 15).", columns: ["Reporting Manager", "Team", "Pending Exits", "% Early-tenure"], rows: tableRows }],
+    tables: [{ title: "Span of control", caption: "Team size, pending exits and early-tenure share (top 15).", columns: ["Reporting Manager", "Team", "Pending Exits", "% Early-tenure"], rows: tableRows, drill: "reporting_manager" }],
     watchouts: watchouts.slice(0, 5),
   };
 }

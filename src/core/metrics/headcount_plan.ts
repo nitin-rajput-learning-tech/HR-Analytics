@@ -103,6 +103,7 @@ export function buildHeadcountPlan(input: HeadcountPlanInput): DomainMetrics {
       caption: "Active headcount against approved plan and budget, by department.",
       columns: ["Department", "Actual", "Planned", "Budget", "vs Plan", "Fill %", "Budget headroom"],
       rows: rows.map((r) => [r.dept, r.actual, r.planned, r.budget, r.vsPlan === 0 ? "—" : (r.vsPlan > 0 ? "+" : "−") + Math.abs(r.vsPlan), r.fillPct === null ? "—" : N.formatPct(r.fillPct), r.headroom] as (string | number)[]),
+      drill: "department",
     },
   ];
 
