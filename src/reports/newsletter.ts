@@ -17,6 +17,7 @@ import { buildPeople } from "../core/metrics/people";
 import { combinedEmployeeSnapshot, employeePeriods } from "../core/metrics/combineEmployees";
 import { buildBrain, periodDigest, type BrainFinding, type BrainHealth, type RoadmapItem } from "../core/brain/brain";
 import { type MaturityResult } from "../core/brain/maturity";
+import { actionSummary, type Action, type ActionSummary } from "../core/actions";
 import { decoratePeopleDeltas, prettyPeriod } from "../core/metrics/compare";
 import { joinClauses } from "../core/narrative";
 import { buildRisk } from "../core/metrics/risk";
@@ -71,6 +72,9 @@ export interface Newsletter {
   scorecard: ScorecardRow[];
   sections: NewsletterSection[];
   actionPlan: ActionItem[];
+  // Tracked commitments (from the action loop) — distinct from the watch-out
+  // action plan; shows follow-through (committed vs done) in the board pack.
+  trackedActions: { summary: ActionSummary; items: Action[] };
   domainsWithData: number;
   domainsTotal: number;
 }
@@ -83,6 +87,7 @@ export interface NewsletterOptions {
   leaverEvents?: LeaverEvent[] | null;
   targets?: Record<string, number>;
   benchmarks?: Record<string, { low: number; high: number }>;
+  actions?: Action[]; // tracked commitments, surfaced in the board pack
 }
 
 const SEVERITY_RANK: Record<MetricWatchout["severity"], number> = { high: 3, medium: 2, low: 1 };
@@ -382,6 +387,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     scorecard,
     sections,
     actionPlan,
+    trackedActions: { summary: actionSummary(opts.actions ?? [], snap?.asOf ?? ""), items: opts.actions ?? [] },
     domainsWithData,
     domainsTotal: sections.length,
   };

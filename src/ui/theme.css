@@ -612,6 +612,13 @@ select, input[type="file"] { font: inherit; }
 .nl-section h2 { color: var(--ink); }
 .action-plan ol { padding-left: 20px; } .action-plan li { margin-bottom: 11px; }
 .action-plan .ap-meta { color: var(--muted); font-size: 0.8rem; } .action-plan .ap-action { color: var(--text); font-size: 0.86rem; margin-top: 2px; }
+/* tracked actions in the board pack (BUILD-2 s3) */
+.tracked-actions .ta-summary { font-size: 0.86rem; margin: 2px 0 10px; }
+.ta-list { list-style: none; padding: 0; margin: 0; }
+.ta-list li { margin-bottom: 7px; break-inside: avoid; }
+.ta-list .ta-mark { display: inline-block; width: 1.2em; font-weight: 800; color: var(--muted); }
+.ta-list li.ta-done { color: var(--muted); }
+.ta-list li.ta-done .ta-mark { color: #15803d; }
 .nl-footer { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--faint); font-size: 0.8rem; }
 .nl-toc { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 22px; }
 .nl-toc h2 { margin: 0 0 9px; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); }

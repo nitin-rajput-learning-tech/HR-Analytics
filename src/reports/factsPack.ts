@@ -132,5 +132,18 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     push();
   }
 
+  if (nl.trackedActions.items.length) {
+    const s = nl.trackedActions.summary;
+    push("## Tracked Actions");
+    push();
+    push(`_${s.open} open · ${s.in_progress} in progress · ${s.done} done${s.overdue ? ` · ${s.overdue} overdue` : ""}_`);
+    push();
+    for (const a of nl.trackedActions.items) {
+      const mark = a.status === "done" ? "[x]" : "[ ]";
+      push(`- ${mark} **${a.title}** (${a.owner}${a.due ? ` · due ${a.due}` : ""})${a.status === "in_progress" ? " — in progress" : ""}`);
+    }
+    push();
+  }
+
   return out.join("\n");
 }

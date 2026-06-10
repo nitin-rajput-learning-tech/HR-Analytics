@@ -10,7 +10,7 @@ import { findingScope } from "../../core/brain/brain";
 import { downloadBlob } from "../download";
 
 export function Reports() {
-  const { store, branding, version, targets, benchmarks } = useApp();
+  const { store, branding, version, targets, benchmarks, actions } = useApp();
   // Stamp the generation date once per mount (lazy state init — stable across renders).
   const [generatedAtLabel] = useState(() =>
     new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
@@ -31,9 +31,10 @@ export function Reports() {
         leaverEvents: leaverEvents(employeePeriods(store)),
         targets,
         benchmarks,
+        actions,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [store, version, branding.appName, activeHeadcount, generatedAtLabel, targets, benchmarks],
+    [store, version, branding.appName, activeHeadcount, generatedAtLabel, targets, benchmarks, actions],
   );
 
   function downloadFacts() {
@@ -276,6 +277,24 @@ export function Reports() {
                 </li>
               ))}
             </ol>
+          </section>
+        ) : null}
+
+        {nl.trackedActions.items.length > 0 ? (
+          <section className="tracked-actions" id="sec-tracked">
+            <h2>Tracked Actions</h2>
+            <p className="muted ta-summary">
+              {nl.trackedActions.summary.open} open · {nl.trackedActions.summary.in_progress} in progress · {nl.trackedActions.summary.done} done
+              {nl.trackedActions.summary.overdue ? ` · ${nl.trackedActions.summary.overdue} overdue` : ""} — commitments vs follow-through.
+            </p>
+            <ul className="ta-list">
+              {nl.trackedActions.items.map((a) => (
+                <li key={a.id} className={`ta-${a.status}`}>
+                  <span className="ta-mark" aria-hidden="true">{a.status === "done" ? "✓" : a.status === "in_progress" ? "◐" : "○"}</span>
+                  <strong>{a.title}</strong> <span className="ap-meta">({a.owner}{a.due ? ` · due ${a.due}` : ""})</span>
+                </li>
+              ))}
+            </ul>
           </section>
         ) : null}
 

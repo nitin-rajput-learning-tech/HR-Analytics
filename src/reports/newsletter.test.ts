@@ -146,6 +146,21 @@ describe("buildNewsletter", () => {
     expect(["green", "amber", "red", "none"]).toContain(offer?.rag);
   });
 
+  it("carries tracked actions (with a status summary) in the board pack", () => {
+    const actions = [
+      { id: "a1", title: "Fix statutory", owner: "Payroll", status: "open" as const, due: null, note: "", source: "brain" as const, findingId: "statutory", createdAt: "x", doneAt: null },
+      { id: "a2", title: "Stay interviews", owner: "HRBP", status: "done" as const, due: null, note: "", source: "brain" as const, findingId: "regrettable_attrition", createdAt: "x", doneAt: "y" },
+    ];
+    const nl = buildNewsletter(populated(), { actions });
+    expect(nl.trackedActions.items).toHaveLength(2);
+    expect(nl.trackedActions.summary.open).toBe(1);
+    expect(nl.trackedActions.summary.done).toBe(1);
+  });
+
+  it("defaults tracked actions to empty when none are supplied", () => {
+    expect(buildNewsletter(populated(), {}).trackedActions.items).toEqual([]);
+  });
+
   it("degrades to all-placeholder with an empty store", () => {
     const nl = buildNewsletter(new MemoryStore(), { appName: "X" });
     expect(nl.domainsWithData).toBe(0);
