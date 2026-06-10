@@ -131,6 +131,21 @@ describe("UP-2 expanded rules", () => {
   });
 });
 
+describe("buildBrain skipTrend fast-path (FIX-8)", () => {
+  it("yields the same health score but skips the prior-period trend recompute", () => {
+    const store = new MemoryStore();
+    const emp = (n: number) => Array.from({ length: n }, (_, i) => ({ employee_number: "E" + i, full_name: "W" + i, employment_status: "Working", department: "Tech", date_joined: "2020-01-01" }));
+    store.add(snap("2026-04-30", emp(40)));
+    store.add(snap("2026-05-31", emp(40)));
+    const full = buildBrain(store);
+    const fast = buildBrain(store, { skipTrend: true });
+    expect(fast.health.score).toBe(full.health.score); // score unaffected
+    expect(fast.health.trend).toBeNull(); // trend/prior skipped
+    expect(fast.health.priorLabel).toBeNull();
+    expect(fast.resolved).toEqual([]);
+  });
+});
+
 describe("buildBrain", () => {
   it("detects early attrition with a reason and a remedy plan", () => {
     const { findings, summary } = buildBrain(storeWithEarlyExits());

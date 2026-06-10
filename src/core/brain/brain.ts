@@ -774,7 +774,7 @@ function evaluate(ctx: BrainContext): { findings: BrainFinding[]; summary: Brain
   return { findings, summary };
 }
 
-export function buildBrain(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {}): BrainResult {
+export function buildBrain(store: DataSource, opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }>; skipTrend?: boolean } = {}): BrainResult {
   const ctx = gatherContext(store, opts);
   const { findings, summary } = evaluate(ctx);
   const health = computeHealth(findings, summary);
@@ -783,8 +783,12 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
   // so the headline shows DIRECTION, not just level. Deterministic and persistence-free
   // — it reuses the snapshots already in the store, mirroring the scorecard's prior
   // deltas. Higher health is better, so an increase is a "good" move.
+  // skipTrend: the prior-period recompute below only produces trend / new / resolved
+  // metadata. buildHealthHistory recomputes the brain at EVERY period purely for the
+  // health SCORE, so it sets skipTrend to avoid a second gatherContext per period —
+  // roughly halving that path's cost on large, multi-period workspaces.
   let resolved: { id: string; title: string }[] = [];
-  const priorStore = priorStoreOf(store);
+  const priorStore = opts.skipTrend ? null : priorStoreOf(store);
   if (priorStore) {
     const pctx = gatherContext(priorStore, opts);
     const pe = evaluate(pctx);
@@ -841,7 +845,8 @@ export function buildHealthHistory(
   const values: number[] = [];
   for (const asOf of periods) {
     labels.push(prettyPeriod(asOf));
-    values.push(buildBrain(storeAsOf(store, asOf), opts).health.score);
+    // Only the score is needed here — skip each period's prior-trend recompute.
+    values.push(buildBrain(storeAsOf(store, asOf), { ...opts, skipTrend: true }).health.score);
   }
   return {
     title: "HR Health over time",
