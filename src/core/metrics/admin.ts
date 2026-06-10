@@ -99,7 +99,7 @@ export function compute(input: AdminInput): DomainMetrics {
     kpis.push({ label: "Lifecycle Checklist", value: N.formatPct(N.pct(complete, total)), hint: `${complete}/${total} on/off-boarding` });
     const off = lifecycleRows!.filter((r) => String(r["type"] ?? "").toLowerCase() === "offboarding");
     if (off.length) {
-      const notRecovered = off.filter((r) => r["asset_recovered"] !== true).length;
+      const notRecovered = off.filter((r) => !isTruthy(r["asset_recovered"])).length;
       if (notRecovered) {
         watchouts.push({
           severity: "medium",
