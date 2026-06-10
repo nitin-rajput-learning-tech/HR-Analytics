@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useApp } from "../state";
 import { Chart } from "../components/Chart";
 import { buildBrain, buildHealthHistory, findingScope, type BrainFinding, type RoadmapItem } from "../../core/brain/brain";
+import { scopeStoreToDepartment, departmentsOf } from "../../core/brain/departmentScope";
 import { actionFromRoadmap, withStatus, hasOpenActionForFinding, actionSummary, ACTION_STATUSES, ACTION_STATUS_LABEL, type ActionStatus } from "../../core/actions";
 
 const SEV_LABEL: Record<BrainFinding["severity"], string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
@@ -10,11 +11,17 @@ const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 da
 
 export function HRBrain() {
   const { store, version, targets, effectiveBenchmarks, branding, goTo, actions, setActions } = useApp();
+  // Scope the entire diagnosis to one department (UP-2), or the whole org ("").
+  const [dept, setDept] = useState("");
+  const departments = useMemo(() => departmentsOf(store), [store, version]);
+  // Guard against a stale selection (e.g. after a data reload that drops the dept).
+  const activeDept = dept && departments.some((d) => d.name === dept) ? dept : "";
+  const scoped = useMemo(() => (activeDept ? scopeStoreToDepartment(store, activeDept) : store), [store, version, activeDept]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks: effectiveBenchmarks }), [store, version, targets, effectiveBenchmarks]);
+  const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(scoped, { targets, benchmarks: effectiveBenchmarks }), [scoped, targets, effectiveBenchmarks]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const healthHistory = useMemo(() => buildHealthHistory(store, { targets, benchmarks: effectiveBenchmarks }), [store, version, targets, effectiveBenchmarks]);
-  const hasData = !!store.getLatest("employee_master");
+  const healthHistory = useMemo(() => buildHealthHistory(scoped, { targets, benchmarks: effectiveBenchmarks }), [scoped, targets, effectiveBenchmarks]);
+  const hasData = !!scoped.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
   const newCount = findings.filter((f) => f.isNew).length;
 
@@ -38,6 +45,22 @@ export function HRBrain() {
           Automatic, on-device diagnosis across every domain — known and emerging issues, each with a likely cause and a
           remedy plan. No data leaves your machine, and no AI service is used.
         </p>
+        {departments.length > 1 ? (
+          <div className="brain-scope no-print">
+            <label className="brain-scope-pick">
+              <span>Scope</span>
+              <select value={activeDept} onChange={(e) => setDept(e.target.value)} aria-label="Diagnosis scope">
+                <option value="">Whole organisation</option>
+                {departments.map((d) => (
+                  <option key={d.name} value={d.name}>{d.name} ({d.active})</option>
+                ))}
+              </select>
+            </label>
+            {activeDept ? (
+              <span className="brain-scope-note">Diagnosing <strong>{activeDept}</strong> only — health, findings and roadmap are scoped to this department.</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {!hasData ? (

@@ -464,6 +464,10 @@ select, input[type="file"] { font: inherit; }
 .brain-score-caption { color: var(--muted); font-size: 0.88rem; margin-top: 2px; max-width: 84ch; }
 .brain-health-history { margin: 4px 0 16px; max-width: 640px; }
 .brain-health-history .chart-canvas { height: 200px; }
+.brain-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0 2px; }
+.brain-scope-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; font-weight: 700; color: var(--muted); }
+.brain-scope-pick select { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.brain-scope-note { font-size: 0.82rem; color: var(--muted); }
 .brain-score.band-excellent, .brain-score.band-good { border-left-color: #15803d; }
 .brain-score.band-fair, .brain-score.band-at-risk { border-left-color: #b45309; }
 .brain-score.band-critical { border-left-color: #b91c1c; }
