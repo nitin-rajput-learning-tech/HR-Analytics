@@ -71,6 +71,11 @@ export function Reports() {
             <li>
               <a href="#sec-exec">Executive Brief</a>
             </li>
+            {nl.comparison ? (
+              <li>
+                <a href="#sec-comparison">What changed since {nl.comparison.priorLabel}</a>
+              </li>
+            ) : null}
             {nl.brain.findings.length > 0 ? (
               <li>
                 <a href="#sec-brain">HR Brain — Diagnosis</a>
@@ -151,6 +156,36 @@ export function Reports() {
             </div>
           ) : null}
         </section>
+
+        {nl.comparison ? (
+          <section className="nl-comparison" id="sec-comparison">
+            <h2>What changed since {nl.comparison.priorLabel}</h2>
+            <p className="nl-cmp-health">
+              HR Health <strong>{nl.comparison.healthScore}/100</strong>
+              {nl.comparison.healthTrend ? <span className={`sc-trend ${nl.brain.health.trendTone}`}> {nl.comparison.healthTrend}</span> : null}
+              {nl.comparison.healthPrior !== null ? <span className="muted"> (was {nl.comparison.healthPrior})</span> : null}
+            </p>
+            <div className="nl-cmp-grid">
+              <div className="nl-cmp-col">
+                <h3>New this period</h3>
+                {nl.comparison.newFindings.length ? <ul>{nl.comparison.newFindings.map((t, i) => <li key={i}>{t}</li>)}</ul> : <p className="muted">No new issues.</p>}
+              </div>
+              <div className="nl-cmp-col">
+                <h3>Resolved</h3>
+                {nl.comparison.resolvedFindings.length ? <ul>{nl.comparison.resolvedFindings.map((t, i) => <li key={i}>✓ {t}</li>)}</ul> : <p className="muted">Nothing cleared.</p>}
+              </div>
+              <div className="nl-cmp-col">
+                <h3>Improved</h3>
+                {nl.comparison.improved.length ? <ul>{nl.comparison.improved.map((m, i) => <li key={i}>{m.label} <span className="sc-trend good">{m.trend}</span></li>)}</ul> : <p className="muted">—</p>}
+              </div>
+              <div className="nl-cmp-col">
+                <h3>Declined</h3>
+                {nl.comparison.declined.length ? <ul>{nl.comparison.declined.map((m, i) => <li key={i}>{m.label} <span className="sc-trend bad">{m.trend}</span></li>)}</ul> : <p className="muted">—</p>}
+                {nl.comparison.atRisk.length ? <p className="nl-cmp-atrisk">▾ At risk: {nl.comparison.atRisk.join(", ")}</p> : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {nl.brain.findings.length > 0 ? (
           <section className="nl-brain" id="sec-brain">

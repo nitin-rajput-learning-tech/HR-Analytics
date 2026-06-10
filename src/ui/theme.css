@@ -588,6 +588,15 @@ select, input[type="file"] { font: inherit; }
 .brief-cols ul { margin: 0; padding-left: 18px; } .brief-cols li { margin-bottom: 6px; font-size: 0.9rem; }
 .brief-movers { margin-top: 16px; }
 .brief-movers h3 { margin: 0 0 7px; font-size: 0.98rem; }
+.nl-comparison { border: 1px solid var(--border); border-left: 4px solid var(--brand-accent); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 22px; background: var(--surface); }
+.nl-cmp-health { font-size: 0.98rem; margin: 2px 0 12px; }
+.nl-cmp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.nl-cmp-col h3 { margin: 0 0 6px; font-size: 0.9rem; }
+.nl-cmp-col ul { margin: 0; padding-left: 16px; }
+.nl-cmp-col li { font-size: 0.86rem; margin-bottom: 4px; }
+.nl-cmp-atrisk { font-size: 0.82rem; color: #b45309; margin-top: 8px; font-weight: 600; }
+[data-theme="dark"] .nl-cmp-atrisk { color: #fbbf24; }
+@media (max-width: 800px) { .nl-cmp-grid { grid-template-columns: 1fr 1fr; } }
 .brief-movers ul { margin: 0; padding-left: 18px; }
 .brief-movers .mover { margin-bottom: 5px; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .brief-movers .mover.good { color: #15803d; }

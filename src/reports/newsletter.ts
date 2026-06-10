@@ -62,6 +62,21 @@ export interface ExecBrief {
   topActions: ActionItem[];
 }
 
+// UP-8 — a consolidated "what changed since last period" diff: the comparison
+// newsletter's headline. null when there's no prior period to compare to.
+export interface NewsletterComparison {
+  priorLabel: string;
+  healthScore: number;
+  healthPrior: number | null;
+  healthDelta: number | null;
+  healthTrend: string | null;
+  newFindings: string[]; // issues that emerged this period
+  resolvedFindings: string[]; // issues cleared since last period
+  improved: { label: string; trend: string }[]; // KPIs moving the right way
+  declined: { label: string; trend: string }[]; // KPIs moving the wrong way
+  atRisk: string[]; // on-target KPIs trending toward their threshold (UP-4)
+}
+
 export interface Newsletter {
   appName: string;
   title: string;
@@ -69,6 +84,7 @@ export interface Newsletter {
   generatedAtLabel: string;
   execBrief: ExecBrief;
   brain: { health: BrainHealth; findings: BrainFinding[]; roadmap: RoadmapItem[]; maturity: MaturityResult; resolved: { id: string; title: string }[]; periodDigest: string | null };
+  comparison: NewsletterComparison | null;
   scorecard: ScorecardRow[];
   sections: NewsletterSection[];
   actionPlan: ActionItem[];
@@ -377,6 +393,24 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
 
   const brain = buildBrain(store, { targets: opts.targets ?? {}, benchmarks: opts.benchmarks ?? {} });
 
+  // UP-8 comparison diff — consolidate the period-over-period signals already
+  // computed (health delta, new/resolved findings, scorecard trends) into one
+  // "what changed" block. Null when there's no prior period (no health.priorLabel).
+  const comparison: NewsletterComparison | null = brain.health.priorLabel
+    ? {
+        priorLabel: brain.health.priorLabel,
+        healthScore: brain.health.score,
+        healthPrior: brain.health.prior,
+        healthDelta: brain.health.delta,
+        healthTrend: brain.health.trend,
+        newFindings: brain.findings.filter((f) => f.isNew).map((f) => f.title),
+        resolvedFindings: brain.resolved.map((r) => r.title),
+        improved: scorecard.filter((r) => r.trendTone === "good" && r.trend).map((r) => ({ label: r.label, trend: r.trend })),
+        declined: scorecard.filter((r) => r.trendTone === "bad" && r.trend).map((r) => ({ label: r.label, trend: r.trend })),
+        atRisk: scorecard.filter((r) => r.track === "at_risk").map((r) => r.label),
+      }
+    : null;
+
   return {
     appName,
     title: `${appName} — HR Newsletter`,
@@ -384,6 +418,7 @@ export function buildNewsletter(store: DataSource, opts: NewsletterOptions = {})
     generatedAtLabel,
     execBrief,
     brain: { health: brain.health, findings: brain.findings.slice(0, 6), roadmap: brain.roadmap, maturity: brain.maturity, resolved: brain.resolved, periodDigest: periodDigest(brain) },
+    comparison,
     scorecard,
     sections,
     actionPlan,

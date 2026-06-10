@@ -45,6 +45,20 @@ export function buildFactsMarkdown(nl: Newsletter): string {
     push();
   }
 
+  if (nl.comparison) {
+    const c = nl.comparison;
+    push(`## What Changed Since ${c.priorLabel}`);
+    push();
+    push(`**HR Health ${c.healthScore}/100**${c.healthTrend ? ` (${c.healthTrend})` : ""}${c.healthPrior !== null ? ` — was ${c.healthPrior}` : ""}`);
+    push();
+    if (c.newFindings.length) push(`- **New this period:** ${c.newFindings.join("; ")}`);
+    if (c.resolvedFindings.length) push(`- **Resolved:** ${c.resolvedFindings.join("; ")}`);
+    if (c.improved.length) push(`- **Improved:** ${c.improved.map((m) => `${m.label} ${m.trend}`).join("; ")}`);
+    if (c.declined.length) push(`- **Declined:** ${c.declined.map((m) => `${m.label} ${m.trend}`).join("; ")}`);
+    if (c.atRisk.length) push(`- **At risk (on target but slipping):** ${c.atRisk.join("; ")}`);
+    push();
+  }
+
   const scored = nl.scorecard.filter((r) => r.rag !== "none");
   if (scored.length) {
     push("## Scorecard vs Targets");

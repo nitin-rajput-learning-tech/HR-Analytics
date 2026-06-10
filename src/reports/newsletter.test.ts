@@ -138,6 +138,24 @@ describe("buildNewsletter", () => {
     expect(nl.execBrief.movers.some((m) => /Talent Acquisition/.test(m.text) && m.tone === "good")).toBe(true);
   });
 
+  it("builds a period-comparison diff when history exists, and null without it (UP-8)", () => {
+    expect(buildNewsletter(populated(), {}).comparison).toBeNull(); // single period → nothing to compare
+
+    const store = new MemoryStore();
+    const emp = (n: number) => Array.from({ length: n }, (_, i) => ({ employee_number: "E" + i, department: "Tech", employment_status: "Working", date_joined: "2020-01-01" }));
+    store.add(snap("employee_master", "2026-04-30", emp(50), "Apr 2026"));
+    store.add(snap("employee_master", "2026-05-31", emp(50), "May 2026"));
+    const ta = (accepted: number): Row[] => [
+      { requisition_id: "R1", department: "Tech", status: "Filled", open_date: "2026-04-01", applications: 100, shortlisted: 40, interviewed: 12, offers_made: 10, offers_accepted: accepted, joined: accepted, primary_source: "Referral" },
+    ];
+    store.add(snap("ta_requisition", "2026-04-30", ta(6), "2026-04")); // 60%
+    store.add(snap("ta_requisition", "2026-05-31", ta(9), "2026-05")); // 90% → improved
+    const c = buildNewsletter(store, {}).comparison;
+    expect(c).not.toBeNull();
+    expect(c!.priorLabel).toBeTruthy();
+    expect(c!.improved.some((i) => /Offer-Accept Rate/.test(i.label))).toBe(true);
+  });
+
   it("includes a scorecard with RAG vs targets", () => {
     const nl = buildNewsletter(populated(), { targets: { offer_accept: 50 } });
     expect(nl.scorecard.length).toBeGreaterThan(0);
