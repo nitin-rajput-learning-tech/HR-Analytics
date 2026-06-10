@@ -91,6 +91,46 @@ describe("flight-risk cohort finding", () => {
   });
 });
 
+describe("UP-2 expanded rules", () => {
+  it("flags wide manager spans (>=3 managers with 15+ reports)", () => {
+    const store = new MemoryStore();
+    const rows: Row[] = [];
+    for (const m of ["M1", "M2", "M3"]) for (let i = 0; i < 16; i++) rows.push({ employee_number: `${m}-${i}`, full_name: `${m}-${i}`, employment_status: "Working", department: "Tech", reporting_manager: m, date_joined: "2020-01-01" });
+    store.add(snap("2026-05-31", rows));
+    const f = buildBrain(store).findings.find((x) => x.id === "span_of_control");
+    expect(f).toBeTruthy();
+    expect(f!.link?.tab).toBe("managers");
+    expect(f!.remedy.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("flags leadership under-representation when leaders lag the workforce by 10pp+", () => {
+    const store = new MemoryStore();
+    const rows: Row[] = [
+      { employee_number: "L1", full_name: "Boss1", gender: "Male", employment_status: "Working", reporting_manager: "CEO", department: "Tech", date_joined: "2018-01-01" },
+      { employee_number: "L2", full_name: "Boss2", gender: "Male", employment_status: "Working", reporting_manager: "CEO", department: "Tech", date_joined: "2018-01-01" },
+    ];
+    for (let i = 0; i < 12; i++) rows.push({ employee_number: "F" + i, full_name: "F" + i, gender: "Female", employment_status: "Working", reporting_manager: i % 2 ? "Boss1" : "Boss2", department: "Tech", date_joined: "2022-01-01" });
+    for (let i = 0; i < 4; i++) rows.push({ employee_number: "M" + i, full_name: "MM" + i, gender: "Male", employment_status: "Working", reporting_manager: "Boss1", department: "Tech", date_joined: "2022-01-01" });
+    store.add(snap("2026-05-31", rows));
+    const f = buildBrain(store).findings.find((x) => x.id === "leadership_representation");
+    expect(f).toBeTruthy();
+    expect(f!.link?.tab).toBe("representation");
+  });
+
+  it("stays quiet on a balanced, normal-span workforce", () => {
+    const store = new MemoryStore();
+    const rows: Row[] = [];
+    for (const m of ["Anya", "Raj"]) {
+      rows.push({ employee_number: m, full_name: m, gender: m === "Anya" ? "Female" : "Male", employment_status: "Working", reporting_manager: "CEO", department: "Tech", date_joined: "2017-01-01" });
+      for (let i = 0; i < 5; i++) rows.push({ employee_number: `${m}-${i}`, full_name: `${m}-${i}`, gender: i % 2 ? "Female" : "Male", employment_status: "Working", reporting_manager: m, department: "Tech", date_joined: "2021-01-01" });
+    }
+    store.add(snap("2026-05-31", rows));
+    const ids = buildBrain(store).findings.map((f) => f.id);
+    expect(ids).not.toContain("span_of_control");
+    expect(ids).not.toContain("leadership_representation");
+  });
+});
+
 describe("buildBrain", () => {
   it("detects early attrition with a reason and a remedy plan", () => {
     const { findings, summary } = buildBrain(storeWithEarlyExits());

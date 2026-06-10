@@ -71,8 +71,8 @@ const IMPACT_OF: Record<BrainSeverity, Level> = { critical: "High", high: "High"
 const EFFORT_OF: Record<string, Level> = {
   statutory: "Low", source_reconciliation: "Low", review_completion: "Low", emerging_trends: "Low", hr_operations: "Low", compliance_training: "Low",
   below_benchmark: "Medium",
-  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium", ta_throughput: "Medium", flight_risk_cohort: "Medium",
-  pay_gap: "High", org_design: "High", compound_retention: "High",
+  offer_accept: "Medium", ld_coverage: "Medium", regrettable_attrition: "Medium", early_attrition: "Medium", cost_concentration: "Medium", department_hotspots: "Medium", low_engagement: "Medium", performance_management: "Medium", ta_throughput: "Medium", flight_risk_cohort: "Medium", leadership_representation: "Medium",
+  pay_gap: "High", org_design: "High", compound_retention: "High", span_of_control: "High",
 };
 const HORIZON_RANK = { Now: 0, Next: 1, Later: 2 } as const;
 
@@ -102,6 +102,8 @@ export function buildRoadmap(findings: BrainFinding[]): RoadmapItem[] {
 const FINDING_LINKS: Record<string, { page: string; tab?: string }> = {
   compound_retention: { page: "People Analytics", tab: "risk" },
   flight_risk_cohort: { page: "People Analytics", tab: "risk" },
+  span_of_control: { page: "People Analytics", tab: "managers" },
+  leadership_representation: { page: "People Analytics", tab: "representation" },
   department_hotspots: { page: "Function Analytics" },
   statutory: { page: "Function Analytics" },
   regrettable_attrition: { page: "People Analytics", tab: "retention" },
@@ -343,6 +345,53 @@ const RULES: Rule[] = [
         "Remediate the unexplained portion of the gap in the next pay cycle.",
         "Standardise offer bands and require sign-off for out-of-band offers.",
         "Review raise and promotion distributions by gender every cycle.",
+      ],
+    };
+  },
+
+  // Wide manager spans — coaching/retention capacity risk (org design).
+  (ctx) => {
+    const wide = ctx.num("Large Spans (≥15)");
+    if (wide === null || wide < 3) return null; // a couple is normal; 3+ is a pattern
+    return {
+      id: "span_of_control",
+      title: wide === 1 ? "A manager span is very wide" : `${wide} managers have very wide spans`,
+      category: "Org Design",
+      owner: "HR Business Partners",
+      severity: wide >= 8 ? "medium" : "low",
+      confidence: "confirmed",
+      evidence: [`${ctx.display("Large Spans (≥15)")} managers carry 15+ direct reports`],
+      reason:
+        "Spans of 15+ stretch a manager's ability to coach, review and retain. Wide spans correlate with missed 1:1s, slower reviews and higher attrition on those teams — a structural drag rather than an individual one.",
+      remedy: [
+        "Review the widest-span teams and introduce team leads (or split them) where the work allows.",
+        "Protect 1:1 cadence and review completion on the overloaded teams in the meantime.",
+        "Build span into the next org-design and hiring plan so new headcount rebalances load.",
+      ],
+    };
+  },
+
+  // Women under-represented in leadership vs the overall workforce (D&I pipeline).
+  (ctx) => {
+    const lead = ctx.num("Leadership Female");
+    const overall = ctx.num("Female (overall)");
+    if (lead === null || overall === null) return null;
+    const gap = overall - lead; // positive = leadership lags the workforce, in pp
+    if (gap < 10) return null;
+    return {
+      id: "leadership_representation",
+      title: "Women under-represented in leadership",
+      category: "Diversity & Inclusion",
+      owner: "HR Leadership",
+      severity: gap >= 20 ? "medium" : "low",
+      confidence: "confirmed",
+      evidence: [`Leadership ${ctx.display("Leadership Female")} vs ${ctx.display("Female (overall)")} overall (${Math.round(gap)}pp gap)`],
+      reason:
+        "Women are a materially larger share of the workforce than of leadership — usually a progression/succession-pipeline gap rather than hiring alone, which compounds over time as senior roles turn over.",
+      remedy: [
+        "Audit promotion and succession slates for representation at each level.",
+        "Sponsor and develop high-potential women into the leadership pipeline.",
+        "Set and track representation goals for the upcoming promotion cycles.",
       ],
     };
   },
