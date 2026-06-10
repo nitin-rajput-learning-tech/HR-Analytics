@@ -462,6 +462,8 @@ select, input[type="file"] { font: inherit; }
 [data-theme="dark"] .brain-trend.good { color: #4ade80; }
 [data-theme="dark"] .brain-trend.bad { color: #f87171; }
 .brain-score-caption { color: var(--muted); font-size: 0.88rem; margin-top: 2px; max-width: 84ch; }
+.brain-health-history { margin: 4px 0 16px; max-width: 640px; }
+.brain-health-history .chart-canvas { height: 200px; }
 .brain-score.band-excellent, .brain-score.band-good { border-left-color: #15803d; }
 .brain-score.band-fair, .brain-score.band-at-risk { border-left-color: #b45309; }
 .brain-score.band-critical { border-left-color: #b91c1c; }

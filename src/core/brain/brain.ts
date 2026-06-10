@@ -10,6 +10,8 @@ import { buildMaturity, type MaturityResult } from "./maturity";
 import { humanizeMoneyInr } from "../narrative";
 import { priorStoreOf } from "../scorecard";
 import { prettyPeriod } from "../metrics/compare";
+import type { ChartSpec } from "../metrics/base";
+import { periodList, storeAsOf } from "../metrics/timeseries";
 
 export type BrainSeverity = "critical" | "high" | "medium" | "low";
 // "confirmed" = a hard threshold/fact breached (a KNOWN issue);
@@ -738,4 +740,31 @@ export function buildBrain(store: DataSource, opts: { targets?: Record<string, n
   });
 
   return { findings, summary, health, roadmap, maturity: buildMaturity(ctx), resolved };
+}
+
+// HR Health over time (UP-1) — the flagship trend. Recompute the health score at
+// each month we have a roster for (anchored to the employee master, the data spine;
+// functional snapshots carry forward via storeAsOf), turning the store's history
+// into a line. Returns a ChartSpec the dashboard and newsletter both render, or null
+// with fewer than two periods (one point isn't a trend). buildBrain is pure per
+// period; the window is bounded to the most recent 24 months to cap recompute cost.
+export function buildHealthHistory(
+  store: DataSource,
+  opts: { targets?: Record<string, number>; benchmarks?: Record<string, { low: number; high: number }> } = {},
+): ChartSpec | null {
+  const periods = periodList(store, "employee_master").slice(-24);
+  if (periods.length < 2) return null;
+  const labels: string[] = [];
+  const values: number[] = [];
+  for (const asOf of periods) {
+    labels.push(prettyPeriod(asOf));
+    values.push(buildBrain(storeAsOf(store, asOf), opts).health.score);
+  }
+  return {
+    title: "HR Health over time",
+    caption: "HR Health (0–100) recomputed each period from that month's open findings — higher is healthier.",
+    kind: "line",
+    labels,
+    values,
+  };
 }

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useApp } from "../state";
-import { buildBrain, findingScope, type BrainFinding, type RoadmapItem } from "../../core/brain/brain";
+import { Chart } from "../components/Chart";
+import { buildBrain, buildHealthHistory, findingScope, type BrainFinding, type RoadmapItem } from "../../core/brain/brain";
 import { actionFromRoadmap, withStatus, hasOpenActionForFinding, actionSummary, ACTION_STATUSES, ACTION_STATUS_LABEL, type ActionStatus } from "../../core/actions";
 
 const SEV_LABEL: Record<BrainFinding["severity"], string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
@@ -8,9 +9,11 @@ const CONF_LABEL: Record<BrainFinding["confidence"], string> = { confirmed: "Kno
 const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 days", Next: "1–3 months", Later: "3–12 months" };
 
 export function HRBrain() {
-  const { store, version, targets, benchmarks, goTo, actions, setActions } = useApp();
+  const { store, version, targets, benchmarks, branding, goTo, actions, setActions } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const healthHistory = useMemo(() => buildHealthHistory(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
   const newCount = findings.filter((f) => f.isNew).length;
@@ -51,6 +54,11 @@ export function HRBrain() {
               <div className="brain-score-caption">{health.caption}</div>
             </div>
           </div>
+          {healthHistory ? (
+            <div className="brain-health-history">
+              <Chart spec={healthHistory} accent={branding.accent} dark={branding.theme === "dark"} />
+            </div>
+          ) : null}
           {resolved.length > 0 ? (
             <p className="brain-resolved">✓ Resolved since {health.priorLabel ?? "last period"}: {resolved.map((r) => r.title).join(", ")}.</p>
           ) : null}

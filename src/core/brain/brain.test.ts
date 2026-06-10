@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBrain, buildRoadmap, findingScope, periodDigest, type BrainFinding } from "./brain";
+import { buildBrain, buildRoadmap, buildHealthHistory, findingScope, periodDigest, type BrainFinding } from "./brain";
 import { MemoryStore } from "../store/memoryStore";
 import type { Snapshot } from "../store/types";
 import type { Row } from "../ingest/types";
@@ -38,6 +38,35 @@ describe("periodDigest", () => {
 
   it("returns null when there's no prior period", () => {
     expect(periodDigest({ health: health(null), findings: [], resolved: [] })).toBeNull();
+  });
+});
+
+describe("buildHealthHistory", () => {
+  const clean = (): Row[] => Array.from({ length: 20 }, (_, i) => ({ employee_number: "E" + i, full_name: "W" + i, employment_status: "Working", department: "Tech", date_joined: "2020-01-01" }));
+  // a month with 4 first-year exits → a health-denting finding
+  const withExits = (asOf: string): Row[] => [
+    ...clean(),
+    ...Array.from({ length: 4 }, (_, i) => ({ employee_number: "R" + i, full_name: "R" + i, employment_status: "Relieved", department: "Tech", date_joined: "2026-01-01", last_working_day: asOf })),
+  ];
+
+  it("returns a line ChartSpec with one point per roster month, current last", () => {
+    const store = new MemoryStore();
+    store.add(snap("2026-04-30", clean()));
+    store.add(snap("2026-05-31", withExits("2026-05-31")));
+    const spec = buildHealthHistory(store)!;
+    expect(spec.kind).toBe("line");
+    expect(spec.labels).toEqual(["Apr 2026", "May 2026"]);
+    expect(spec.values).toHaveLength(2);
+    expect(spec.values.every((v) => v >= 0 && v <= 100)).toBe(true);
+    // health fell once the early exits appeared
+    expect(spec.values[1]).toBeLessThan(spec.values[0]);
+  });
+
+  it("returns null with fewer than two roster months", () => {
+    const one = new MemoryStore();
+    one.add(snap("2026-05-31", clean()));
+    expect(buildHealthHistory(one)).toBeNull();
+    expect(buildHealthHistory(new MemoryStore())).toBeNull();
   });
 });
 
