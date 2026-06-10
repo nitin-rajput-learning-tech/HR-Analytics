@@ -75,6 +75,7 @@ export function Scorecard() {
         <span className="sc-chip green"><span className="rag-dot green" aria-hidden="true" /> {summary.green} on target</span>
         <span className="sc-chip amber"><span className="rag-dot amber" aria-hidden="true" /> {summary.amber} watch</span>
         <span className="sc-chip red"><span className="rag-dot red" aria-hidden="true" /> {summary.red} off target</span>
+        {summary.atRisk > 0 ? <span className="sc-chip atrisk" title="On target but trending the wrong way">▾ {summary.atRisk} at risk</span> : null}
         <span className="sc-chip none"><span className="rag-dot none" aria-hidden="true" /> {rows.length - summary.tracked} no data</span>
         {hasCustom ? (
           <button type="button" className="sc-reset" onClick={() => setTargets({})}>Reset targets to defaults</button>
@@ -140,6 +141,7 @@ export function Scorecard() {
                   </td>
                   <td>
                     <span className={`rag-dot ${r.rag}`} aria-hidden="true" /> {r.status}
+                    {r.track === "at_risk" ? <span className="sc-atrisk" title="On target but trending the wrong way"> · ▾ at risk</span> : null}
                   </td>
                 </tr>
               ))}

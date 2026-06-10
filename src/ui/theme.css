@@ -653,6 +653,9 @@ select, input[type="file"] { font: inherit; }
 .sc-chip.amber { color: #b45309; }
 .sc-chip.red { color: #b91c1c; }
 .sc-chip.none { color: var(--muted); }
+.sc-chip.atrisk { color: #b45309; border-color: rgba(180,83,9,0.3); font-weight: 800; }
+.sc-atrisk { color: #b45309; font-weight: 700; font-size: 0.82rem; }
+[data-theme="dark"] .sc-chip.atrisk, [data-theme="dark"] .sc-atrisk { color: #fbbf24; }
 .rag-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: middle; flex: none; }
 .rag-dot.green { background: #15803d; }
 .rag-dot.amber { background: #b45309; }
