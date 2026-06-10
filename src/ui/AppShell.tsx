@@ -32,6 +32,14 @@ const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Board Pack", "Data Intake", "Branding", "Guide"] as const;
 type Page = (typeof PAGES)[number];
 
+const NAV_GROUPS: { label: string | null; pages: readonly Page[] }[] = [
+  { label: null,         pages: ["People Analytics", "HR Brain", "Manager Cockpit"] },
+  { label: "Workforce",  pages: ["Directory", "Function Analytics", "Explore"] },
+  { label: "Planning",   pages: ["Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario"] },
+  { label: "Reports",    pages: ["Newsletter", "Board Pack"] },
+  { label: "Tools",      pages: ["Data Intake", "Branding", "Guide"] },
+];
+
 export function AppShell() {
   const app = useApp();
   const page = app.page as Page;
@@ -164,20 +172,25 @@ export function AppShell() {
         <div className="brandbar">{app.branding.appName}</div>
         {app.branding.logoDataUri ? <img src={app.branding.logoDataUri} alt="" style={{ height: 30, margin: "8px 6px" }} /> : null}
         <div className="nav">
-          {PAGES.map((p) => (
-            <a
-              key={p}
-              className={p === page ? "active" : ""}
-              href="#"
-              aria-current={p === page ? "page" : undefined}
-              onClick={(ev) => {
-                ev.preventDefault();
-                setPage(p);
-              }}
-            >
-              <span className="dot" />
-              {p}
-            </a>
+          {NAV_GROUPS.map((group, gi) => (
+            <React.Fragment key={gi}>
+              {group.label ? <div className="nav-group-label">{group.label}</div> : null}
+              {group.pages.map((p) => (
+                <a
+                  key={p}
+                  className={p === page ? "active" : ""}
+                  href="#"
+                  aria-current={p === page ? "page" : undefined}
+                  onClick={(ev) => {
+                    ev.preventDefault();
+                    setPage(p);
+                  }}
+                >
+                  <span className="dot" />
+                  {p}
+                </a>
+              ))}
+            </React.Fragment>
           ))}
         </div>
         <div className="side-foot">

@@ -92,12 +92,22 @@ a { color: var(--brand-accent); }
   text-transform: uppercase;
   margin-top: 3px;
 }
-.sidebar .nav { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+.sidebar .nav {
+  display: flex; flex-direction: column; gap: 2px; margin-top: 8px;
+  flex: 1 1 0; min-height: 0; overflow-y: auto; padding-right: 2px; padding-bottom: 4px;
+}
+.sidebar .nav::-webkit-scrollbar { width: 4px; }
+.sidebar .nav::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+.nav-group-label {
+  color: var(--faint); font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em; padding: 9px 11px 2px;
+}
+.nav-group-label:first-child { padding-top: 2px; }
 .sidebar a {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 11px;
+  padding: 7px 11px;
   border-radius: var(--radius-sm);
   color: var(--text);
   text-decoration: none;
@@ -110,7 +120,7 @@ a { color: var(--brand-accent); }
 .sidebar a.active { background: var(--brand-accent); color: #fff; box-shadow: var(--shadow-sm); }
 .sidebar a .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.55; flex: none; }
 .sidebar hr { border: 0; border-top: 1px solid var(--border); margin: 12px 4px; }
-.sidebar .side-foot { margin-top: auto; }
+.sidebar .side-foot { }
 .sidebar .muted-label { color: var(--faint); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; padding: 4px 6px; }
 
 /* min-width:0 lets the content grid column shrink below its widest child so a wide
