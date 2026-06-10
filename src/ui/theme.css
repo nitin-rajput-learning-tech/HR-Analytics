@@ -498,6 +498,14 @@ select, input[type="file"] { font: inherit; }
 .scn-assumed input { width: 120px; padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; }
 .scn-up { color: #15803d; font-weight: 700; }
 .scn-down { color: #b91c1c; font-weight: 700; }
+.scn-projection { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 12px; }
+.scn-proj-sub { font-size: 0.84rem; margin: 2px 0 10px; max-width: 80ch; }
+.scn-proj-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 12px; }
+.scn-proj-controls label { display: inline-flex; align-items: center; gap: 7px; font-size: 0.84rem; font-weight: 600; color: var(--muted); }
+.scn-proj-controls select, .scn-proj-controls input[type="number"] { padding: 6px 9px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 0.86rem; }
+.scn-proj-controls input[type="number"] { width: 80px; }
+.scn-replace { cursor: pointer; }
+.scn-rate-note { font-size: 0.8rem; }
 [data-theme="dark"] .scn-up { color: #4ade80; }
 [data-theme="dark"] .scn-down { color: #f87171; }
 

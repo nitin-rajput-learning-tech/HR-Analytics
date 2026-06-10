@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import * as N from "../../core/narrative";
-import { activeByDept, costByDeptFromAggregate, computeScenario, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
+import { activeByDept, applyOps, costByDeptFromAggregate, computeScenario, projectScenario, estimateMonthlyAttrition, type ScenarioOp, type ScenarioOpKind } from "../../core/metrics/scenario";
 import { estimateReplacementCost } from "../../core/metrics/cross_functional";
 import { combinedEmployeeSnapshot } from "../../core/metrics/combineEmployees";
+import { Chart } from "../components/Chart";
 import { tableToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 
@@ -17,7 +18,7 @@ const signed = (n: number) => (n >= 0 ? "+" : "−") + Math.abs(n).toLocaleStrin
 const signedMoney = (n: number) => (n >= 0 ? "+" : "−") + N.humanizeMoneyInr(Math.abs(n));
 
 export function Scenario() {
-  const { store, version } = useApp();
+  const { store, version, branding } = useApp();
   const idRef = useRef(0);
   const [ops, setOps] = useState<ScenarioOp[]>([]);
   const [kind, setKind] = useState<ScenarioOpKind>("hire");
@@ -26,6 +27,10 @@ export function Scenario() {
   const [count, setCount] = useState(1);
   const [assumed, setAssumed] = useState(75000);
   const [severanceMonths, setSeveranceMonths] = useState(2);
+  // v2 forward projection controls.
+  const [months, setMonths] = useState(12);
+  const [attritionOverride, setAttritionOverride] = useState<number | null>(null); // monthly %, null = data default
+  const [replace, setReplace] = useState(true);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const base = useMemo(() => activeByDept(combinedEmployeeSnapshot(store)?.rows ?? []), [store, version]);
@@ -43,6 +48,16 @@ export function Scenario() {
   const result = useMemo(
     () => computeScenario(base, ops, costByDept.size ? costByDept : null, assumed, costPerHire, severanceMonths),
     [base, ops, costByDept, assumed, costPerHire, severanceMonths],
+  );
+
+  // v2 forward projection: where this plan lands over a horizon under attrition.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const snapForRate = useMemo(() => combinedEmployeeSnapshot(store), [store, version]);
+  const dataRatePct = useMemo(() => Math.round(estimateMonthlyAttrition(snapForRate?.rows ?? [], snapForRate?.asOf ?? null) * 1000) / 10, [snapForRate]);
+  const effRatePct = attritionOverride ?? dataRatePct;
+  const projection = useMemo(
+    () => projectScenario(applyOps(base, ops), { months, monthlyAttritionRate: effRatePct / 100, replaceAttrition: replace, scenarioMonthlyCost: result.scenarioCost, costPerHire }),
+    [base, ops, months, effRatePct, replace, result.scenarioCost, costPerHire],
   );
 
   if (base.size === 0) {
@@ -236,6 +251,57 @@ export function Scenario() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="scn-projection">
+        <div className="mt-head"><h4>Forward projection</h4></div>
+        <p className="muted scn-proj-sub">Where this plan lands over time once expected attrition is applied — natural run-off, or held flat by backfilling (which surfaces the recurring recruitment cost of churn).</p>
+        <div className="scn-proj-controls no-print">
+          <label>Horizon
+            <select value={months} onChange={(e) => setMonths(Number(e.target.value))} aria-label="Projection horizon">
+              {[6, 12, 18, 24, 36].map((m) => <option key={m} value={m}>{m} months</option>)}
+            </select>
+          </label>
+          <label>Monthly attrition %
+            <input type="number" min={0} max={20} step={0.1} value={effRatePct} onChange={(e) => setAttritionOverride(Number(e.target.value))} aria-label="Monthly attrition rate percent" />
+          </label>
+          {attritionOverride !== null ? (
+            <button className="link-btn" onClick={() => setAttritionOverride(null)}>reset to data ({dataRatePct}%)</button>
+          ) : (
+            <span className="muted scn-rate-note">defaulted from your data</span>
+          )}
+          <label className="scn-replace"><input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} /> Backfill attrition (hold headcount)</label>
+        </div>
+        <Chart
+          spec={{
+            title: `Projected headcount over ${months} months`,
+            caption: replace ? "Headcount held flat by backfilling expected attrition." : "Headcount under natural run-off (attrition not replaced).",
+            kind: "line",
+            labels: projection.points.map((p) => `M${p.month}`),
+            values: projection.points.map((p) => p.headcount),
+          }}
+          accent={branding.accent}
+          dark={branding.theme === "dark"}
+        />
+        <div className="kpis">
+          <div className="kpi">
+            <div className="label">Projected Headcount (M{months})</div>
+            <div className="value">{N.humanizeInt(projection.endHeadcount)}</div>
+            <div className="hint">{replace ? "held flat via backfill" : `from ${N.humanizeInt(result.scenarioHeadcount)} today`}</div>
+          </div>
+          <div className="kpi">
+            <div className="label">Expected Attrition ({months}mo)</div>
+            <div className="value">{N.humanizeInt(projection.cumulativeExits)}</div>
+            <div className="hint">at {effRatePct}% / month</div>
+          </div>
+          {replace ? (
+            <div className="kpi">
+              <div className="label">Backfill Recruitment Cost</div>
+              <div className="value">{projection.backfillCost === null ? "—" : N.humanizeMoneyInr(projection.backfillCost)}</div>
+              <div className="hint">{projection.backfillCost === null ? "load TA cost / payroll to price" : `${N.humanizeInt(projection.cumulativeBackfills)} backfills × cost/hire`}</div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
