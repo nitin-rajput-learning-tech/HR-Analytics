@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { MemoryStore } from "../core/store/memoryStore";
 import { applyBranding, DEFAULT_BRANDING, type Branding } from "../branding/branding";
 import { toast } from "./toast";
@@ -10,6 +10,7 @@ import type { Filters } from "../core/filters";
 import type { SavedView, AuditEntry } from "../workspace/workspace";
 import type { Snapshot } from "../core/store/types";
 import type { Action } from "../core/actions";
+import { effectiveBands, getPack, DEFAULT_PACK_ID, type BenchmarkPack } from "../core/benchmarkPacks";
 
 interface AppState {
   store: MemoryStore;
@@ -52,9 +53,17 @@ interface AppState {
   // Scorecard KPI targets (management-by-objective); persisted with the workspace.
   targets: Record<string, number>;
   setTargets(t: Record<string, number>): void;
-  // Edited benchmark bands per KPI (override the illustrative defaults); persisted.
+  // Edited benchmark bands per KPI (override the active pack's bands); persisted.
   benchmarks: Record<string, { low: number; high: number }>;
   setBenchmarks(b: Record<string, { low: number; high: number }>): void;
+  // Active benchmark pack (built-in id or a loaded custom pack's id) + the loaded
+  // custom pack, if any; both persisted. `effectiveBenchmarks` is what every builder
+  // should use — the pack's bands with the user's per-KPI edits layered on top.
+  benchmarkPackId: string;
+  setBenchmarkPackId(id: string): void;
+  customBenchmarkPack: BenchmarkPack | null;
+  setCustomBenchmarkPack(p: BenchmarkPack | null): void;
+  effectiveBenchmarks: Record<string, { low: number; high: number }>;
   // Tracked HR actions / commitments (from the Brain roadmap or manual); persisted.
   actions: Action[];
   setActions: React.Dispatch<React.SetStateAction<Action[]>>;
@@ -85,7 +94,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [targets, setTargets] = useState<Record<string, number>>({});
   const [benchmarks, setBenchmarks] = useState<Record<string, { low: number; high: number }>>({});
+  const [benchmarkPackId, setBenchmarkPackId] = useState<string>(DEFAULT_PACK_ID);
+  const [customBenchmarkPack, setCustomBenchmarkPack] = useState<BenchmarkPack | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
+  const effectiveBenchmarks = useMemo(
+    () => effectiveBands(getPack(benchmarkPackId, customBenchmarkPack), benchmarks),
+    [benchmarkPackId, customBenchmarkPack, benchmarks],
+  );
 
   const logAudit = useCallback((action: string, detail?: string) => {
     setAuditLog((l) => [...l, { ts: new Date().toISOString(), action, ...(detail ? { detail } : {}) }].slice(-AUDIT_CAP));
@@ -150,6 +165,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setAuditLog(r.auditLog);
       setTargets(r.targets);
       setBenchmarks(r.benchmarks);
+      setBenchmarkPackId(r.benchmarkPackId);
+      setCustomBenchmarkPack(r.customBenchmarkPack);
       setActions(r.actions);
     },
     [setStore, setBranding],
@@ -194,13 +211,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated.current || mode === "demo") return;
     const id = window.setTimeout(() => {
       try {
-        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets, benchmarks, actions));
+        void persistWorkspace(saveWorkspace(store, branding, new Date().toISOString(), savedViews, auditLog, targets, benchmarks, actions, benchmarkPackId, customBenchmarkPack));
       } catch {
         /* persistence is best-effort */
       }
     }, 800);
     return () => window.clearTimeout(id);
-  }, [store, version, branding, savedViews, auditLog, targets, benchmarks, actions, mode]);
+  }, [store, version, branding, savedViews, auditLog, targets, benchmarks, actions, benchmarkPackId, customBenchmarkPack, mode]);
 
   // Once the user has their own data, ask the browser to keep it durable so the
   // local database isn't evicted under storage pressure. Idempotent; no-ops
@@ -222,6 +239,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setAuditLog([]);
         setTargets({});
         setBenchmarks({});
+        setBenchmarkPackId(DEFAULT_PACK_ID);
+        setCustomBenchmarkPack(null);
         setActions([]);
         setMode("live");
       } else {
@@ -240,6 +259,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     loadDemo();
     setTargets({});
     setBenchmarks({});
+    setBenchmarkPackId(DEFAULT_PACK_ID);
+    setCustomBenchmarkPack(null);
     setActions([]);
     setPeopleFilters({});
     toast("Your data was cleared — showing demo data");
@@ -247,7 +268,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets, benchmarks, setBenchmarks, actions, setActions }}
+      value={{ store, version, branding, bump, setStore, setBranding, page, setPage, peopleFilters, setPeopleFilters, drillToPeople, peopleTab, setPeopleTab, goTo, savedViews, setSavedViews, saveView, applyView, deleteView, auditLog, setAuditLog, logAudit, mode, ready, commitSnapshot, markLive, clearData, targets, setTargets, benchmarks, setBenchmarks, benchmarkPackId, setBenchmarkPackId, customBenchmarkPack, setCustomBenchmarkPack, effectiveBenchmarks, actions, setActions }}
     >
       {children}
     </Ctx.Provider>

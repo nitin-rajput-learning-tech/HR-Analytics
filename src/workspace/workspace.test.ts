@@ -85,6 +85,18 @@ describe("workspace versioning & migration", () => {
     expect(loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING)).actions).toEqual([]);
   });
 
+  it("round-trips the benchmark pack id + custom pack, defaulting to general/null when absent", () => {
+    const store = new MemoryStore();
+    const custom = { id: "custom", name: "Our 2025 survey", source: "AON 2025", year: 2025, illustrative: false, bands: { pay_gap: { low: 0, high: 3 } } };
+    const restored = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING, "now", [], [], {}, {}, [], "custom", custom));
+    expect(restored.benchmarkPackId).toBe("custom");
+    expect(restored.customBenchmarkPack?.name).toBe("Our 2025 survey");
+    expect(restored.customBenchmarkPack?.bands.pay_gap).toEqual({ low: 0, high: 3 });
+    const bare = loadWorkspace(saveWorkspace(store, DEFAULT_BRANDING));
+    expect(bare.benchmarkPackId).toBe("general");
+    expect(bare.customBenchmarkPack).toBeNull();
+  });
+
   it("migrates a v1 file (no audit log) forward, defaulting auditLog to []", () => {
     const v1 = rawWorkspace({
       format: "hr-analytics-workspace",

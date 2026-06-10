@@ -9,11 +9,11 @@ const CONF_LABEL: Record<BrainFinding["confidence"], string> = { confirmed: "Kno
 const HORIZON_HINT: Record<"Now" | "Next" | "Later", string> = { Now: "0–30 days", Next: "1–3 months", Later: "3–12 months" };
 
 export function HRBrain() {
-  const { store, version, targets, benchmarks, branding, goTo, actions, setActions } = useApp();
+  const { store, version, targets, effectiveBenchmarks, branding, goTo, actions, setActions } = useApp();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
+  const { findings, summary, health, roadmap, maturity, resolved } = useMemo(() => buildBrain(store, { targets, benchmarks: effectiveBenchmarks }), [store, version, targets, effectiveBenchmarks]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const healthHistory = useMemo(() => buildHealthHistory(store, { targets, benchmarks }), [store, version, targets, benchmarks]);
+  const healthHistory = useMemo(() => buildHealthHistory(store, { targets, benchmarks: effectiveBenchmarks }), [store, version, targets, effectiveBenchmarks]);
   const hasData = !!store.getLatest("employee_master");
   const bandClass = health.band.toLowerCase().replace(/\s+/g, "-");
   const newCount = findings.filter((f) => f.isNew).length;

@@ -1,13 +1,35 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useApp } from "../state";
 import { buildScorecard, scorecardSummary } from "../../core/scorecard";
+import { BUILTIN_PACKS, getPack, provenanceLine, parseBenchmarkPack } from "../../core/benchmarkPacks";
+import { toast } from "../toast";
 
 export function Scorecard() {
-  const { store, version, targets, setTargets, benchmarks, setBenchmarks } = useApp();
+  const { store, version, targets, setTargets, benchmarks, setBenchmarks, effectiveBenchmarks, benchmarkPackId, setBenchmarkPackId, customBenchmarkPack, setCustomBenchmarkPack } = useApp();
   const [editBench, setEditBench] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => buildScorecard(store, targets, benchmarks), [store, version, targets, benchmarks]);
+  const rows = useMemo(() => buildScorecard(store, targets, effectiveBenchmarks), [store, version, targets, effectiveBenchmarks]);
   const summary = scorecardSummary(rows);
+  const activePack = getPack(benchmarkPackId, customBenchmarkPack);
+
+  async function onPackFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    try {
+      const { pack, error } = parseBenchmarkPack(await file.text());
+      if (error || !pack) {
+        toast(error ?? "Could not read pack", "error");
+        return;
+      }
+      setCustomBenchmarkPack(pack);
+      setBenchmarkPackId(pack.id);
+      toast(`Loaded benchmark pack “${pack.name}”`, "success");
+    } catch {
+      toast("Could not read the file", "error");
+    }
+  }
 
   const setTarget = (id: string, v: string) => {
     const n = Number(v);
@@ -30,6 +52,23 @@ export function Scorecard() {
           Headline KPIs against your targets — red / amber / green status, plus the change since last period. Edit any target
           inline; it saves with your workspace.
         </p>
+      </div>
+
+      <div className="sc-pack">
+        <label className="sc-pack-pick">
+          <span>Benchmark pack</span>
+          <select value={benchmarkPackId} onChange={(e) => setBenchmarkPackId(e.target.value)} aria-label="Benchmark pack">
+            {BUILTIN_PACKS.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+            {customBenchmarkPack ? <option value={customBenchmarkPack.id}>{customBenchmarkPack.name} (loaded)</option> : null}
+          </select>
+        </label>
+        <button type="button" className="sc-reset" onClick={() => fileRef.current?.click()}>Load custom pack…</button>
+        <input ref={fileRef} type="file" accept=".json,application/json" onChange={onPackFile} style={{ display: "none" }} aria-hidden="true" />
+        <span className={`sc-pack-prov${activePack.illustrative ? " illustrative" : ""}`}>
+          {activePack.illustrative ? "Illustrative — " : ""}{provenanceLine(activePack)}
+        </span>
       </div>
 
       <div className="sc-summary" role="status">
@@ -113,9 +152,17 @@ export function Scorecard() {
         Targets are stored in your workspace (auto-saved on this device and included when you save/export).{" "}
         {summary.red > 0 ? "Red KPIs are where to focus this period." : summary.tracked > 0 ? "All tracked KPIs are at or near target." : "Upload data to populate the scorecard."}
       </p>
-      <p className="muted" style={{ fontSize: ".8rem", marginTop: 4, maxWidth: "78ch" }}>
-        Benchmark ranges are <strong>illustrative</strong> general references — a starting point to compare against, not a sourced
-        survey. Adjust them for your sector and region.
+      <p className="muted" style={{ fontSize: ".8rem", marginTop: 4, maxWidth: "82ch" }}>
+        {activePack.illustrative ? (
+          <>
+            Benchmarks from <strong>{activePack.name}</strong> are <strong>illustrative</strong> — a starting point, not a sourced survey.
+            {activePack.note ? ` ${activePack.note}` : ""} Pick a sector pack above, edit any band inline, or <strong>Load custom pack…</strong> to use your own sourced figures (Mercer/AON/internal).
+          </>
+        ) : (
+          <>
+            Benchmarks from <strong>{activePack.name}</strong> — {provenanceLine(activePack)}.{activePack.note ? ` ${activePack.note}` : ""} Edit any band inline to fine-tune.
+          </>
+        )}
       </p>
     </div>
   );
