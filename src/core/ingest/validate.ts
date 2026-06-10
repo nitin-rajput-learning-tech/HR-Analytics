@@ -6,7 +6,7 @@
 import type { DatasetSchema } from "../datasets";
 import { coerce } from "./coerce";
 
-export type IssueKind = "missing_required" | "invalid_enum" | "bad_type" | "orphan_fk";
+export type IssueKind = "missing_required" | "invalid_enum" | "bad_type" | "orphan_fk" | "duplicate_key";
 
 // Fields that reference an employee in the master (foreign keys).
 const EMPLOYEE_FK_FIELDS = ["employee_number", "assigned_employee_number"];
@@ -106,6 +106,27 @@ export function checkReferentialIntegrity(
         issues.push({ row: i + 1, field: f.name, label: f.label, value: truncate(v), kind: "orphan_fk", message: `${f.label} "${truncate(v)}" is not in the employee master` });
       }
     }
+  });
+  return issues;
+}
+
+// Duplicate primary keys — a common export defect (e.g. an employee exported twice)
+// that silently skews every count and join. Flags the 2nd+ occurrence of each
+// composite key, only when all key columns are present (an incomplete key is a
+// missing_required concern instead). No-op for schemas without a key.
+export function checkDuplicateKeys(schema: DatasetSchema, rawRows: Record<string, unknown>[], present: Set<string>): RowIssue[] {
+  const keys = schema.keyFields.filter((k) => present.has(k));
+  if (keys.length === 0) return [];
+  const label = keys.map((k) => schema.field(k)?.label ?? k).join(" + ");
+  const firstSeen = new Map<string, number>();
+  const issues: RowIssue[] = [];
+  rawRows.forEach((raw, i) => {
+    const parts = keys.map((k) => (raw[k] == null ? "" : String(raw[k]).trim()));
+    if (parts.some((p) => p === "")) return; // incomplete key → covered by missing_required
+    const composite = parts.join(" · ");
+    const first = firstSeen.get(composite);
+    if (first === undefined) firstSeen.set(composite, i + 1);
+    else issues.push({ row: i + 1, field: keys[0], label, value: truncate(composite), kind: "duplicate_key", message: `Duplicate ${label} "${truncate(composite)}" (first seen at row ${first})` });
   });
   return issues;
 }

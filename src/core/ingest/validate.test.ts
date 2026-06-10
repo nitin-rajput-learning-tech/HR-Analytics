@@ -1,8 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { validateRows, issuesToCsv, checkReferentialIntegrity } from "./validate";
-import { TA_REQUISITION, PMS_REVIEW, ADMIN_ASSET } from "../datasets";
+import { validateRows, issuesToCsv, checkReferentialIntegrity, checkDuplicateKeys } from "./validate";
+import { TA_REQUISITION, PMS_REVIEW, ADMIN_ASSET, EMPLOYEE_MASTER } from "../datasets";
 
 const present = new Set(TA_REQUISITION.columnNames);
+
+describe("checkDuplicateKeys (FIX-4)", () => {
+  it("flags the 2nd+ occurrence of a duplicate primary key", () => {
+    const cols = new Set(EMPLOYEE_MASTER.columnNames);
+    const rows = [{ employee_number: "E1" }, { employee_number: "E2" }, { employee_number: "E1" }, { employee_number: "E1" }];
+    const issues = checkDuplicateKeys(EMPLOYEE_MASTER, rows, cols);
+    expect(issues).toHaveLength(2); // rows 3 and 4 (E1 repeats); E2 unique
+    expect(issues[0].kind).toBe("duplicate_key");
+    expect(issues[0].row).toBe(3);
+    expect(issues[0].message).toMatch(/first seen at row 1/);
+  });
+
+  it("uses the composite key for multi-field keys (same emp + cycle is a dup; same emp, different cycle is not)", () => {
+    const cols = new Set(["employee_number", "cycle"]);
+    const rows = [{ employee_number: "E1", cycle: "H1" }, { employee_number: "E1", cycle: "H2" }, { employee_number: "E1", cycle: "H1" }];
+    const issues = checkDuplicateKeys(PMS_REVIEW, rows, cols); // PMS key = (employee_number, cycle)
+    expect(issues).toHaveLength(1); // only the 3rd row (E1/H1 repeats)
+    expect(issues[0].row).toBe(3);
+  });
+
+  it("ignores rows with an incomplete key (covered by missing_required) and unkeyed schemas", () => {
+    const cols = new Set(EMPLOYEE_MASTER.columnNames);
+    expect(checkDuplicateKeys(EMPLOYEE_MASTER, [{ employee_number: "" }, { employee_number: "" }], cols)).toHaveLength(0);
+    // key column absent from the file → no dup check (compatibility concern, not per-row)
+    expect(checkDuplicateKeys(EMPLOYEE_MASTER, [{ full_name: "A" }, { full_name: "A" }], new Set(["full_name"]))).toHaveLength(0);
+  });
+});
 
 describe("validateRows", () => {
   it("flags a missing required field", () => {

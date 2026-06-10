@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import { DatasetSchema, normalizeHeader } from "../datasets";
 import { coerce } from "./coerce";
 import { parsePeriod, resolveMonthDayYear } from "./period";
-import { validateRows, checkReferentialIntegrity } from "./validate";
+import { validateRows, checkReferentialIntegrity, checkDuplicateKeys } from "./validate";
 import type { Row, SnapshotCandidate } from "./types";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -101,7 +101,8 @@ export async function parseWorkbook(
   }
   const { issues: valIssues } = validateRows(schema, rawRows, available);
   const refIssues = checkReferentialIntegrity(schema, rawRows, knownEmployeeIds);
-  const issues = [...valIssues, ...refIssues].sort((a, b) => a.row - b.row);
+  const dupIssues = checkDuplicateKeys(schema, rawRows, available);
+  const issues = [...valIssues, ...refIssues, ...dupIssues].sort((a, b) => a.row - b.row);
   const rowsWithIssues = new Set(issues.map((i) => i.row)).size;
 
   // Fields filled from schema defaults count as available (so they show in the
