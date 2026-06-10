@@ -210,6 +210,20 @@ if (empLatest && pmsSnap) {
   store.add({ ...pmsSnap, rows: [...activeWithPromo, ...leaverReviews] });
 }
 
+// FIX-7 (demo realism — a resolved finding): show the HR Brain's progress narrative
+// on first open. The functional generator hard-codes LWF "Pending" (and sometimes TDS
+// "Late") every month, so the statutory-compliance finding ("Statutory remittances not
+// fully on time") fires in EVERY period — including the prior one. Clear the LATEST
+// month's statutory filings to 100% on-time (all "Paid", with an on-time paid_date) so
+// the finding that was open last period is gone this period. The Brain then surfaces it
+// under "Resolved since <prior month>" — demonstrating that the tool recognises fixed
+// problems, not just flags them. Deterministic: earlier months keep the hard-coded LWF
+// gap, so the prior period always still trips the rule.
+const statLatest = store.getLatest("payroll_statutory");
+if (statLatest) {
+  store.add({ ...statLatest, rows: statLatest.rows.map((r) => ({ ...r, status: "Paid", paid_date: String(r["paid_date"] ?? "") || String(r["due_date"] ?? "") || statLatest.asOf })) });
+}
+
 // Neutralise the brand wordmark / footer too (Airpay -> Acme).
 const branding = { ...ws.branding };
 for (const k of ["appName", "footer"]) {
