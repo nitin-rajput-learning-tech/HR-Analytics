@@ -38,6 +38,9 @@ jobs:
       - name: Accessibility gate (WCAG AA contrast)
         run: npm run check:a11y
 
+      - name: Layout overflow guard
+        run: npm run check:overflow
+
       - name: Generate SBOM (CycloneDX)
         run: npm sbom --sbom-format cyclonedx > sbom.cyclonedx.json
 
