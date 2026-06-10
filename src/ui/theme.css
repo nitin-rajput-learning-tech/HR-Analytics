@@ -702,6 +702,18 @@ select, input[type="file"] { font: inherit; }
 .cockpit-flags h3 { margin: 6px 0; font-size: 0.92rem; }
 .cockpit-flags ul { margin: 0 0 6px; padding-left: 18px; }
 .cockpit-flags li { font-size: 0.86rem; margin: 3px 0; color: var(--ink); }
+.cmp-badge { display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-strong); white-space: nowrap; }
+.cmp-badge.overdue { color: #b91c1c; border-color: rgba(185,28,28,0.25); background: rgba(185,28,28,0.07); }
+.cmp-badge.due_soon { color: #b45309; border-color: rgba(180,83,9,0.25); background: rgba(180,83,9,0.07); }
+.cmp-badge.upcoming { color: var(--muted); }
+.cmp-badge.done { color: #15803d; border-color: rgba(21,128,61,0.25); background: rgba(21,128,61,0.07); }
+.cmp-when-over { color: #b91c1c; font-weight: 700; }
+.cmp-done { margin-top: 14px; }
+.cmp-done summary { cursor: pointer; font-size: 0.86rem; font-weight: 600; color: var(--muted); padding: 4px 0; }
+.cmp-clear { color: #15803d; font-weight: 600; margin-top: 12px; }
+[data-theme="dark"] .cmp-badge.overdue, [data-theme="dark"] .cmp-when-over { color: #f87171; }
+[data-theme="dark"] .cmp-badge.due_soon { color: #fbbf24; }
+[data-theme="dark"] .cmp-badge.done { color: #4ade80; }
 
 @page { margin: 14mm; }
 @media print {
