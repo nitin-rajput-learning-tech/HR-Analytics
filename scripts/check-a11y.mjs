@@ -90,7 +90,27 @@ for (const b of badges) {
   if (ratio < AA) failures.push(`.${b.rule} (${b.hex}) on #fff = ${ratio.toFixed(2)}:1 (< ${AA})`);
 }
 
-const checked = TEXT_PAIRS.reduce((n, [, bgs]) => n + bgs.length, 0) * 2 + badges.length;
+// Status TEXT colours (RAG / deltas / at-risk / compliance badges / lineage) are
+// scattered as literals across rules; gate them as a palette against the surfaces
+// they render on, in both themes — the same silent-regression risk as the tokens.
+const STATUS = {
+  light: { green: "#15803d", amber: "#b45309", red: "#b91c1c" },
+  dark: { green: "#4ade80", amber: "#fbbf24", red: "#f87171" },
+};
+let statusChecks = 0;
+for (const theme of ["light", "dark"]) {
+  const v = theme === "light" ? lightVars : darkVars;
+  const surfaces = ["surface", "surface-2"].map((s) => [s, resolve(s, v)]).filter(([, hex]) => hex);
+  for (const [name, hex] of Object.entries(STATUS[theme])) {
+    for (const [sName, sHex] of surfaces) {
+      statusChecks += 1;
+      const ratio = contrast(hex, sHex);
+      if (ratio < AA) failures.push(`${theme}: status ${name} ${hex} on --${sName} = ${ratio.toFixed(2)}:1 (< ${AA})`);
+    }
+  }
+}
+
+const checked = TEXT_PAIRS.reduce((n, [, bgs]) => n + bgs.length, 0) * 2 + badges.length + statusChecks;
 if (failures.length) {
   console.error(`a11y contrast: ${failures.length} FAILED of ${checked} checks (WCAG AA ${AA}:1)`);
   for (const f of failures) console.error("  ✗ " + f);
