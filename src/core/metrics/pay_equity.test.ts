@@ -48,4 +48,31 @@ describe("buildPayEquity", () => {
     const payroll = ["A", "B", "C"].map((n) => pay(n, 90000));
     expect(buildPayEquity({ employeeRows: rows, payrollRows: payroll }).hasData).toBe(false);
   });
+
+  it("adds pay quartiles and flags a glass ceiling when women cluster in lower pay", () => {
+    const d = buildPayEquity(fixture()); // Tech women ~89k (lowest), Tech men ~109k (highest)
+    const chart = d.charts.find((c) => /share by pay quartile/i.test(c.title));
+    expect(chart).toBeTruthy();
+    expect(chart!.values).toHaveLength(4);
+    expect(chart!.values[0]).toBeGreaterThan(chart!.values[3]); // more women in the lowest band than the top
+    expect(d.kpis.some((k) => k.label === "Top-Quartile Women")).toBe(true);
+    expect(d.watchouts.some((w) => /top pay quartile/i.test(w.title))).toBe(true);
+  });
+
+  it("computes a like-for-like gap within a job title (controlled comparison)", () => {
+    const employeeRows: Row[] = [];
+    const payrollRows: Row[] = [];
+    const add = (n: string, g: string, gross: number) => {
+      employeeRows.push({ employee_number: n, gender: g, department: "Tech", job_title: "Engineer", employment_status: "Working" });
+      payrollRows.push(pay(n, gross));
+    };
+    ["F1", "F2", "F3"].forEach((n, i) => add(n, "Female", 80000 + i * 1000));
+    ["M1", "M2", "M3"].forEach((n, i) => add(n, "Male", 110000 + i * 1000));
+    const d = buildPayEquity({ employeeRows, payrollRows });
+    const table = d.tables.find((t) => /like-for-like/i.test(t.title));
+    expect(table).toBeTruthy();
+    expect(table!.rows.some((r) => String(r[0]) === "Engineer")).toBe(true);
+    expect(d.kpis.some((k) => k.label === "Roles > 5% Gap")).toBe(true);
+    expect(d.watchouts.some((w) => /like-for-like pay gap/i.test(w.title))).toBe(true);
+  });
 });
