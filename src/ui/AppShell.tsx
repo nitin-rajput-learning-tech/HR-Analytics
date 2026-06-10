@@ -6,6 +6,7 @@ import { HRBrain } from "./pages/HRBrain";
 import { Cockpit } from "./pages/Cockpit";
 import { Directory } from "./pages/Directory";
 import { FunctionAnalytics } from "./pages/FunctionAnalytics";
+import { Explore } from "./pages/Explore";
 import { Scenario } from "./pages/Scenario";
 import { Scorecard } from "./pages/Scorecard";
 import { Compliance } from "./pages/Compliance";
@@ -26,7 +27,7 @@ import { loadPersisted } from "../workspace/autosave";
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
-const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Data Intake", "Branding"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -247,6 +248,7 @@ export function AppShell() {
         {page === "Manager Cockpit" && <Cockpit />}
         {page === "Directory" && <Directory />}
         {page === "Function Analytics" && <FunctionAnalytics />}
+        {page === "Explore" && <Explore />}
         {page === "Scorecard" && <Scorecard />}
         {page === "Compliance" && <Compliance />}
         {page === "Headcount Plan" && <HeadcountPlan />}

@@ -731,6 +731,10 @@ select, input[type="file"] { font: inherit; }
 .cmp-done { margin-top: 14px; }
 .cmp-done summary { cursor: pointer; font-size: 0.86rem; font-weight: 600; color: var(--muted); padding: 4px 0; }
 .cmp-clear { color: #15803d; font-weight: 600; margin-top: 12px; }
+.explore-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 6px 0 14px; }
+.explore-controls label { display: inline-flex; align-items: center; gap: 7px; font-size: 0.84rem; font-weight: 700; color: var(--muted); }
+.explore-controls select { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.explore-controls .spacer { flex: 1; }
 [data-theme="dark"] .cmp-badge.overdue, [data-theme="dark"] .cmp-when-over { color: #f87171; }
 [data-theme="dark"] .cmp-badge.due_soon { color: #fbbf24; }
 [data-theme="dark"] .cmp-badge.done { color: #4ade80; }
