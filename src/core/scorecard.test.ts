@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ragFor, buildScorecard } from "./scorecard";
+import { ragFor, buildScorecard, scorecardSummary } from "./scorecard";
 import { MemoryStore } from "./store/memoryStore";
 import type { Snapshot } from "./store/types";
 import type { Row } from "./ingest/types";
@@ -78,5 +78,49 @@ describe("buildScorecard", () => {
     const offer = buildScorecard(store, {}).find((r) => r.id === "offer_accept");
     expect(offer?.prior).toBe(null);
     expect(offer?.trend).toBe("");
+  });
+});
+
+describe("goal trajectory (UP-4)", () => {
+  const emp = (n: number) => Array.from({ length: n }, (_, i) => ({ employee_number: "E" + i, department: "Tech", employment_status: "Working", date_joined: "2020-01-01" }));
+  const ta = (made: number, acc: number): Row => ({ requisition_id: "R", status: "Filled", offers_made: made, offers_accepted: acc });
+
+  it("flags a below-target KPI as off_track", () => {
+    const s = new MemoryStore();
+    s.add(snap("employee_master", "2026-05-31", emp(20)));
+    s.add(snap("ta_requisition", "2026-05-31", [ta(10, 5)])); // 50% < 80 target
+    const offer = buildScorecard(s, {}).find((r) => r.id === "offer_accept")!;
+    expect(offer.rag).not.toBe("green");
+    expect(offer.track).toBe("off_track");
+  });
+
+  it("flags a green-but-slipping KPI as at_risk (the future-red RAG misses)", () => {
+    const s = new MemoryStore();
+    s.add(snap("employee_master", "2026-04-30", emp(20)));
+    s.add(snap("employee_master", "2026-05-31", emp(20)));
+    s.add(snap("ta_requisition", "2026-04-30", [ta(10, 10)])); // 100% green
+    s.add(snap("ta_requisition", "2026-05-31", [ta(10, 9)])); // 90% still green but −10pp
+    const offer = buildScorecard(s, {}).find((r) => r.id === "offer_accept")!;
+    expect(offer.rag).toBe("green");
+    expect(offer.trendTone).toBe("bad");
+    expect(offer.track).toBe("at_risk");
+  });
+
+  it("treats a green, improving KPI as on_track", () => {
+    const s = new MemoryStore();
+    s.add(snap("employee_master", "2026-04-30", emp(20)));
+    s.add(snap("employee_master", "2026-05-31", emp(20)));
+    s.add(snap("ta_requisition", "2026-04-30", [ta(10, 8)])); // 80% green
+    s.add(snap("ta_requisition", "2026-05-31", [ta(10, 10)])); // 100% green, improving
+    expect(buildScorecard(s, {}).find((r) => r.id === "offer_accept")!.track).toBe("on_track");
+  });
+
+  it("summary partitions tracked KPIs into off-track / at-risk / on-track", () => {
+    const s = new MemoryStore();
+    s.add(snap("employee_master", "2026-05-31", emp(20)));
+    s.add(snap("ta_requisition", "2026-05-31", [ta(10, 5)]));
+    const sum = scorecardSummary(buildScorecard(s, {}));
+    expect(sum.offTrack).toBeGreaterThanOrEqual(1);
+    expect(sum.offTrack + sum.atRisk + sum.onTrack).toBe(sum.tracked);
   });
 });

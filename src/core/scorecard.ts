@@ -17,6 +17,10 @@ import { MemoryStore } from "./store/memoryStore";
 import type { MetricKPI } from "./metrics/base";
 
 export type Rag = "green" | "amber" | "red" | "none";
+// Goal trajectory (UP-4): level (RAG) crossed with momentum (trend toward/away from
+// the goal). "at_risk" is the leading signal RAG alone misses — a KPI still meeting
+// its target but slipping toward it.
+export type Track = "on_track" | "at_risk" | "off_track" | "none";
 
 export interface ScorecardRow {
   id: string;
@@ -36,6 +40,7 @@ export interface ScorecardRow {
   benchmark: string; // typical industry range, e.g. "12–18%" ("—" if none)
   benchmarkPos: BenchPos; // where the value sits vs the typical band
   benchmarkBand: BenchmarkBand | null; // raw effective band (for editing); null if none
+  track: Track; // goal trajectory: on-track / at-risk (green but slipping) / off-track
 }
 
 interface Def {
@@ -76,6 +81,14 @@ function statusText(rag: Rag, higherIsBetter: boolean): string {
   if (rag === "green") return "On target";
   const dir = higherIsBetter ? "below" : "above";
   return rag === "amber" ? `Just ${dir} target` : `${dir[0].toUpperCase()}${dir.slice(1)} target`;
+}
+
+// Goal trajectory from level + momentum. Off-target ⇒ off-track; on-target but
+// trending the wrong way ⇒ at-risk (a future-red the RAG can't see yet).
+function trackOf(rag: Rag, trendTone: "good" | "bad" | "neutral"): Track {
+  if (rag === "none") return "none";
+  if (rag === "red" || rag === "amber") return "off_track";
+  return trendTone === "bad" ? "at_risk" : "on_track";
 }
 
 // Collect every scorecard-relevant KPI from a store (People + functional + pay
@@ -141,15 +154,23 @@ export function buildScorecard(store: DataSource, targets: Record<string, number
     }
 
     const band = benchmarks[def.id] ?? DEFAULT_BENCHMARKS[def.id];
-    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone, benchmark: formatBand(band, def.unit), benchmarkPos: benchmarkPosition(value, band, def.higherIsBetter), benchmarkBand: band ?? null };
+    return { id: def.id, label: def.label, group: def.group, value, display: kpi?.value ?? "—", unit: def.unit, target, higherIsBetter: def.higherIsBetter, rag, status: statusText(rag, def.higherIsBetter), prior: priorValue, delta, trend, trendTone, benchmark: formatBand(band, def.unit), benchmarkPos: benchmarkPosition(value, band, def.higherIsBetter), benchmarkBand: band ?? null, track: trackOf(rag, trendTone) };
   });
 }
 
-export function scorecardSummary(rows: ScorecardRow[]): { green: number; amber: number; red: number; tracked: number } {
+export function scorecardSummary(rows: ScorecardRow[]): { green: number; amber: number; red: number; tracked: number; offTrack: number; atRisk: number; onTrack: number } {
   const green = rows.filter((r) => r.rag === "green").length;
   const amber = rows.filter((r) => r.rag === "amber").length;
   const red = rows.filter((r) => r.rag === "red").length;
-  return { green, amber, red, tracked: green + amber + red };
+  return {
+    green,
+    amber,
+    red,
+    tracked: green + amber + red,
+    offTrack: rows.filter((r) => r.track === "off_track").length,
+    atRisk: rows.filter((r) => r.track === "at_risk").length,
+    onTrack: rows.filter((r) => r.track === "on_track").length,
+  };
 }
 
 export const DEFAULT_TARGETS: Record<string, number> = Object.fromEntries(DEFS.map((d) => [d.id, d.defaultTarget]));
