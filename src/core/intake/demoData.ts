@@ -202,6 +202,18 @@ export function generateFunctionalDemo(employeeRows: Row[], asOf: string): DemoS
   }
   out.push({ kind: "engagement_survey", asOf, periodLabel: period, rows: engagement });
 
+  // --- Headcount plan (planned/budget vs actual per department). Plan sits a touch
+  // above or below actual so hiring-vs-plan variance is visible; budget a bit above
+  // plan so there's realistic headroom.
+  const planRows: Row[] = [];
+  for (const d of depts) {
+    const actualN = active.filter((r) => (str(r["department"]) || "Unspecified") === d).length;
+    const planned = Math.max(1, actualN + int(-2, 4));
+    const budget = planned + int(0, 3);
+    planRows.push({ period: month, department: d, sub_department: "", planned_hc: planned, budget_hc: budget });
+  }
+  out.push({ kind: "headcount_plan", asOf, periodLabel: month, rows: planRows });
+
   return out;
 }
 

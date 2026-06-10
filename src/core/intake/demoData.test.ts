@@ -29,7 +29,7 @@ describe("generateFunctionalDemo", () => {
 
   it("produces all functional domains", () => {
     expect(snaps.map((s) => s.kind).sort()).toEqual(
-      ["admin_asset", "admin_contract", "admin_lifecycle", "engagement_survey", "ld_enrollment", "ld_program", "payroll_aggregate", "payroll_record", "payroll_statutory", "pms_review", "ta_requisition"].sort(),
+      ["admin_asset", "admin_contract", "admin_lifecycle", "engagement_survey", "headcount_plan", "ld_enrollment", "ld_program", "payroll_aggregate", "payroll_record", "payroll_statutory", "pms_review", "ta_requisition"].sort(),
     );
   });
 

@@ -156,7 +156,7 @@ const seededMoves = seedInternalMoves();
 const MONTHLY = new Set([
   "ta_requisition", "payroll_aggregate", "payroll_record", "payroll_statutory",
   "ld_program", "ld_enrollment", "admin_asset", "admin_contract", "admin_lifecycle",
-  "engagement_survey",
+  "engagement_survey", "headcount_plan",
 ]);
 const current = generateFunctionalDemo(emp.rows, emp.asOf).filter((s) => MONTHLY.has(s.kind));
 const prior = generatePriorFunctionalMonth(emp.rows, emp.asOf);
