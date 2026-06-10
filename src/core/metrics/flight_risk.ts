@@ -130,3 +130,82 @@ export function extractFlightRiskFeatures(input: FlightRiskInput): FlightRiskExt
 
   return { features, available: { pms: havePms, ld: haveLd, review: haveReview, pay: havePay } };
 }
+
+// ----------------------------------------------------------------- s2: scoring
+
+export type RiskBand = "Low" | "Moderate" | "Elevated" | "High";
+
+export interface RiskFactor {
+  key: string;
+  label: string;
+  // This factor's share of the final 0–1 score (weight × signal-risk, renormalised
+  // over the signals available for this person). Factors with no risk are omitted.
+  contribution: number;
+  detail: string;
+}
+
+export interface FlightRiskScore {
+  employee_number: string;
+  name: string;
+  department: string;
+  score: number; // 0–100
+  band: RiskBand;
+  // A high performer at Elevated+ risk — the people you can least afford to lose.
+  regrettable: boolean;
+  factors: RiskFactor[]; // contributing signals, strongest first
+}
+
+// Base weights per signal dimension. Renormalised over the dimensions actually
+// available for each employee, so a workspace with only the master + PMS still
+// produces a defensible score from those two signals.
+const DIM_WEIGHTS = { tenure: 0.2, performance: 0.25, review: 0.15, training: 0.15, pay: 0.25 } as const;
+
+// Attrition risk by tenure band — the classic curve peaks in the 1–3 year window
+// (past onboarding, growth expectations unmet, not yet anchored). Deterministic.
+function tenureRisk(years: number): number {
+  if (years < 1) return 0.5;
+  if (years < 3) return 0.8;
+  if (years < 5) return 0.45;
+  return 0.25;
+}
+const tenureDetail = (y: number): string =>
+  y < 1 ? `Under a year (${y.toFixed(1)}y) — onboarding window` : y < 3 ? `${y.toFixed(1)} years — peak-attrition window` : y < 5 ? `${y.toFixed(1)} years` : `${y.toFixed(1)} years — long-tenured`;
+
+function bandOf(score: number): RiskBand {
+  return score >= 70 ? "High" : score >= 50 ? "Elevated" : score >= 30 ? "Moderate" : "Low";
+}
+
+interface Dim { key: string; label: string; weight: number; risk: number; detail: string }
+
+function dimsFor(f: EmpFeatures): Dim[] {
+  const dims: Dim[] = [];
+  if (f.tenureYears !== null) dims.push({ key: "tenure", label: "Tenure", weight: DIM_WEIGHTS.tenure, risk: tenureRisk(f.tenureYears), detail: tenureDetail(f.tenureYears) });
+  if (f.perf !== null) dims.push({ key: "performance", label: "Performance", weight: DIM_WEIGHTS.performance, risk: f.onPip ? 1 : f.perf === "low" ? 0.7 : 0, detail: f.onPip ? "On a performance improvement plan" : f.perf === "low" ? "Low recent rating" : "Performance not a risk factor" });
+  if (f.reviewMissing !== null) dims.push({ key: "review", label: "Manager review", weight: DIM_WEIGHTS.review, risk: f.reviewMissing ? 1 : 0, detail: f.reviewMissing ? "Latest manager review not completed" : "Manager review completed" });
+  if (f.trained !== null) dims.push({ key: "training", label: "Development", weight: DIM_WEIGHTS.training, risk: f.trained ? 0 : 1, detail: f.trained ? "Recent L&D participation" : "No recent L&D participation" });
+  if (f.payStale !== null) dims.push({ key: "pay", label: "Compensation", weight: DIM_WEIGHTS.pay, risk: f.payStale ? 1 : 0, detail: f.payStale ? "No pay revision in 18+ months" : "Pay revised within 18 months" });
+  return dims;
+}
+
+export function scoreOne(f: EmpFeatures): FlightRiskScore {
+  const dims = dimsFor(f);
+  const wTotal = dims.reduce((s, d) => s + d.weight, 0) || 1;
+  let score01 = 0;
+  for (const d of dims) score01 += (d.weight / wTotal) * d.risk;
+  const score = Math.round(score01 * 100);
+  const factors: RiskFactor[] = dims
+    .filter((d) => d.risk > 0)
+    .map((d) => ({ key: d.key, label: d.label, contribution: Math.round((d.weight / wTotal) * d.risk * 100) / 100, detail: d.detail }))
+    .sort((a, b) => b.contribution - a.contribution);
+  return { employee_number: f.employee_number, name: f.name, department: f.department, score, band: bandOf(score), regrettable: f.perf === "high" && score >= 50, factors };
+}
+
+// Score every extracted employee, highest risk first.
+export function scoreFlightRisk(extract: FlightRiskExtract): FlightRiskScore[] {
+  return extract.features.map(scoreOne).sort((a, b) => b.score - a.score);
+}
+
+// Convenience: extract + score in one call.
+export function flightRisk(input: FlightRiskInput): FlightRiskScore[] {
+  return scoreFlightRisk(extractFlightRiskFeatures(input));
+}

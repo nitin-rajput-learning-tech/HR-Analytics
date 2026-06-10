@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractFlightRiskFeatures } from "./flight_risk";
+import { extractFlightRiskFeatures, scoreOne, flightRisk, type EmpFeatures } from "./flight_risk";
 import type { Row } from "../ingest/types";
 
 const ASOF = "2026-05-31";
@@ -86,5 +86,53 @@ describe("extractFlightRiskFeatures", () => {
     expect(ex.features[0].reviewMissing).toBeNull();
     expect(ex.features[0].trained).toBeNull();
     expect(ex.features[0].onPip).toBe(false);
+  });
+});
+
+const feat = (over: Partial<EmpFeatures>): EmpFeatures => ({
+  employee_number: "E", name: "E", department: "Tech", tenureYears: 2, onPip: false, perf: "mid", reviewMissing: false, trained: true, payStale: false, ...over,
+});
+
+describe("scoreOne / flightRisk", () => {
+  it("ranks a PIP'd, unreviewed, untrained early-tenure employee as High, PIP leading", () => {
+    const s = scoreOne(feat({ tenureYears: 1.5, onPip: true, perf: "low", reviewMissing: true, trained: false, payStale: null }));
+    expect(s.band).toBe("High");
+    expect(s.score).toBeGreaterThanOrEqual(70);
+    expect(s.factors[0].key).toBe("performance");
+    expect(s.factors[0].detail).toMatch(/improvement plan/i);
+    // factor contributions roughly sum to the 0–1 score
+    const sum = s.factors.reduce((a, f) => a + f.contribution, 0);
+    expect(Math.round(sum * 100)).toBeCloseTo(s.score, -1);
+  });
+
+  it("scores an all-green long-tenured high performer as Low with no driving factors", () => {
+    const s = scoreOne(feat({ tenureYears: 6, perf: "high", reviewMissing: false, trained: true, payStale: false }));
+    expect(s.band).toBe("Low");
+    expect(s.regrettable).toBe(false);
+    // only tenure carries a (small) baseline risk; everything else is 0 and omitted
+    expect(s.factors.every((f) => f.key === "tenure")).toBe(true);
+  });
+
+  it("flags a high performer with stale pay + no development as regrettable", () => {
+    const s = scoreOne(feat({ tenureYears: 2, perf: "high", reviewMissing: true, trained: false, payStale: true }));
+    expect(s.score).toBeGreaterThanOrEqual(50);
+    expect(s.regrettable).toBe(true);
+    // performance contributes 0 for a high performer — the risk comes from the rest
+    expect(s.factors.some((f) => f.key === "performance")).toBe(false);
+    expect(s.factors.map((f) => f.key).sort()).toEqual(["pay", "review", "tenure", "training"]);
+  });
+
+  it("renormalises weights when signals are missing (master + tenure only)", () => {
+    const s = scoreOne(feat({ tenureYears: 2, perf: null, reviewMissing: null, trained: null, payStale: null }));
+    // only tenure available → score is exactly its band risk (0.8 → 80)
+    expect(s.score).toBe(80);
+    expect(s.factors).toHaveLength(1);
+    expect(s.factors[0].key).toBe("tenure");
+  });
+
+  it("flightRisk sorts the cohort highest-risk first", () => {
+    const scores = flightRisk(input());
+    expect(scores.map((s) => s.employee_number)).toEqual(["E1", "E3", "E2"]);
+    for (let i = 1; i < scores.length; i++) expect(scores[i - 1].score).toBeGreaterThanOrEqual(scores[i].score);
   });
 });
