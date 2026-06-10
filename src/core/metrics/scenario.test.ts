@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { activeByDept, costByDeptFromAggregate, applyOps, computeScenario, type ScenarioOp } from "./scenario";
+import { activeByDept, costByDeptFromAggregate, applyOps, computeScenario, projectScenario, estimateMonthlyAttrition, DEFAULT_MONTHLY_ATTRITION, type ScenarioOp } from "./scenario";
 import type { Row } from "../ingest/types";
 
 const op = (kind: ScenarioOp["kind"], dept: string, count: number, toDept?: string): ScenarioOp => ({ id: kind + dept, kind, dept, count, ...(toDept ? { toDept } : {}) });
@@ -109,5 +109,52 @@ describe("scenario engine", () => {
     const r = computeScenario(activeByDept(rows), [op("cut", "Tech", 2)], new Map([["Tech", 100000]]), null); // severanceMonths defaults to 0
     expect(r.cutCount).toBe(2);
     expect(r.oneTimeExitCost).toBeNull();
+  });
+});
+
+describe("projectScenario (v2 forward projection)", () => {
+  const scen = new Map([["Tech", 60], ["Sales", 40]]); // h0 = 100
+
+  it("projects natural run-off when attrition is not replaced", () => {
+    const p = projectScenario(scen, { months: 12, monthlyAttritionRate: 0.02, replaceAttrition: false, scenarioMonthlyCost: 1_000_000, costPerHire: 100000 });
+    expect(p.points).toHaveLength(13); // month 0..12
+    expect(p.points[0].headcount).toBe(100);
+    expect(p.points[0].cost).toBe(1_000_000);
+    expect(p.endHeadcount).toBeLessThan(100);
+    expect(p.endHeadcount).toBeGreaterThan(70);
+    expect(p.cumulativeExits).toBeGreaterThan(0);
+    expect(p.cumulativeBackfills).toBe(0);
+    expect(p.backfillCost).toBeNull();
+    expect(p.points[12].cost!).toBeLessThan(p.points[0].cost!); // run-rate falls with headcount
+  });
+
+  it("holds headcount flat when attrition is backfilled, accruing recruitment cost", () => {
+    const p = projectScenario(scen, { months: 12, monthlyAttritionRate: 0.02, replaceAttrition: true, scenarioMonthlyCost: 1_000_000, costPerHire: 100000 });
+    expect(p.endHeadcount).toBe(100);
+    expect(p.points.every((pt) => pt.headcount === 100)).toBe(true);
+    expect(p.points.every((pt) => pt.cost === 1_000_000)).toBe(true); // run-rate flat
+    expect(p.cumulativeBackfills).toBeGreaterThan(0);
+    expect(p.backfillCost).toBe(p.cumulativeBackfills * 100000);
+  });
+
+  it("returns null costs without a cost basis", () => {
+    const p = projectScenario(scen, { months: 6, monthlyAttritionRate: 0.02, replaceAttrition: false, scenarioMonthlyCost: null, costPerHire: null });
+    expect(p.points.every((pt) => pt.cost === null)).toBe(true);
+    expect(p.backfillCost).toBeNull();
+  });
+});
+
+describe("estimateMonthlyAttrition", () => {
+  it("derives a monthly rate from trailing-12m relieved over active", () => {
+    const r: Row[] = [
+      ...Array.from({ length: 10 }, (_, i) => ({ employee_number: "A" + i, employment_status: "Working" })),
+      { employee_number: "R1", employment_status: "Relieved", last_working_day: "2026-03-01" },
+    ];
+    expect(estimateMonthlyAttrition(r, "2026-05-31")).toBeCloseTo(0.1 / 12, 4); // 1/10 annual ÷ 12
+  });
+
+  it("falls back to the default with no data or no recent exits", () => {
+    expect(estimateMonthlyAttrition([], "2026-05-31")).toBe(DEFAULT_MONTHLY_ATTRITION);
+    expect(estimateMonthlyAttrition([{ employee_number: "A", employment_status: "Working" }], "2026-05-31")).toBe(DEFAULT_MONTHLY_ATTRITION);
   });
 });

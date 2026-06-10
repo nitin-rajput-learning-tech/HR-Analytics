@@ -45,6 +45,12 @@ const num = (v: unknown): number => {
   const n = typeof v === "number" ? v : Number(str(v).replace(/[, ]/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
+const dayMs = (v: unknown): number | null => {
+  const s = str(v);
+  if (!s) return null;
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+};
 
 // Active headcount by department from an employee master.
 export function activeByDept(rows: Row[]): Map<string, number> {
@@ -168,5 +174,85 @@ export function computeScenario(
     oneTimeExitCost,
     year1CashImpact,
     depts,
+  };
+}
+
+// --------------------------------------------------------- v2: forward projection
+
+// Fallback when there's no data to derive an attrition rate from (~16.6% / year).
+export const DEFAULT_MONTHLY_ATTRITION = 0.015;
+
+// Data-driven default monthly attrition: trailing-12-month relieved over active,
+// annualised, divided by 12. Clamped to a sane band; falls back to the default
+// when the master can't support an estimate. Pure.
+export function estimateMonthlyAttrition(rows: Row[] | null | undefined, asOf: string | null): number {
+  if (!rows || !rows.length) return DEFAULT_MONTHLY_ATTRITION;
+  const refMs = dayMs(asOf);
+  const active = rows.filter((r) => str(r["employment_status"]) === "Working").length;
+  if (active === 0) return DEFAULT_MONTHLY_ATTRITION;
+  const recentRelieved = rows.filter((r) => {
+    if (str(r["employment_status"]) !== "Relieved") return false;
+    const lwd = dayMs(r["last_working_day"]);
+    return refMs === null || lwd === null ? true : refMs - lwd <= 365 * 86_400_000 && lwd <= refMs;
+  }).length;
+  if (recentRelieved === 0) return DEFAULT_MONTHLY_ATTRITION;
+  const annual = recentRelieved / active; // approximate annual attrition proportion
+  return Math.min(0.2, Math.max(0.001, annual / 12));
+}
+
+export interface ProjectionPoint {
+  month: number; // 0 = scenario start
+  headcount: number; // rounded for display
+  cost: number | null; // monthly run-rate at that headcount, INR
+  cumulativeExits: number; // attrition since start (rounded)
+  cumulativeBackfills: number; // backfill hires since start (rounded; 0 if not replacing)
+}
+export interface Projection {
+  points: ProjectionPoint[];
+  monthlyAttritionRate: number;
+  replaceAttrition: boolean;
+  endHeadcount: number;
+  cumulativeExits: number;
+  cumulativeBackfills: number;
+  backfillCost: number | null; // cumulative recruitment cost of backfilling churn
+}
+
+// Project a scenario forward `months` under expected attrition. Two modes:
+//   replaceAttrition = false → headcount declines as people leave (natural run-off)
+//   replaceAttrition = true  → headcount held flat by backfilling; cost stays level
+//     but recruitment spend (backfillCost) accrues — the recurring price of churn.
+// Cost scales with headcount from the scenario's run-rate (so it honours whatever
+// cost basis computeScenario used). Deterministic — fractional headcount internally,
+// rounded only for display.
+export function projectScenario(
+  scenarioByDept: Map<string, number>,
+  opts: { months: number; monthlyAttritionRate: number; replaceAttrition: boolean; scenarioMonthlyCost: number | null; costPerHire: number | null },
+): Projection {
+  const months = Math.max(0, Math.floor(opts.months || 0));
+  const rate = Math.min(0.5, Math.max(0, opts.monthlyAttritionRate || 0));
+  const h0 = [...scenarioByDept.values()].reduce((s, v) => s + v, 0);
+  const baseCost = opts.scenarioMonthlyCost;
+  const costOf = (h: number): number | null => (baseCost === null || h0 === 0 ? (baseCost === null ? null : 0) : baseCost * (h / h0));
+
+  const points: ProjectionPoint[] = [{ month: 0, headcount: Math.round(h0), cost: costOf(h0), cumulativeExits: 0, cumulativeBackfills: 0 }];
+  let h = h0;
+  let cumExits = 0;
+  let cumBackfills = 0;
+  for (let m = 1; m <= months; m++) {
+    const exits = h * rate;
+    cumExits += exits;
+    if (opts.replaceAttrition) cumBackfills += exits; // headcount held flat
+    else h = Math.max(0, h - exits);
+    points.push({ month: m, headcount: Math.round(h), cost: costOf(h), cumulativeExits: Math.round(cumExits), cumulativeBackfills: Math.round(cumBackfills) });
+  }
+  const backfillCost = opts.replaceAttrition && opts.costPerHire != null ? Math.round(cumBackfills) * opts.costPerHire : null;
+  return {
+    points,
+    monthlyAttritionRate: rate,
+    replaceAttrition: opts.replaceAttrition,
+    endHeadcount: Math.round(h),
+    cumulativeExits: Math.round(cumExits),
+    cumulativeBackfills: Math.round(cumBackfills),
+    backfillCost,
   };
 }
