@@ -48,10 +48,16 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
   const empty = (msg: string): DomainMetrics => ({ kind: KIND, label: LABEL, hasData: false, blurb: msg, kpis: [], charts: [], tables: [], watchouts: [] });
 
   const grossByEmp = new Map<string, number>();
+  const varByEmp = new Map<string, number>();
+  const otHoursByEmp = new Map<string, number>();
+  let haveVariable = false;
+  let haveOt = false;
   for (const r of input.payrollRows ?? []) {
     const id = str(r["employee_number"]);
     const g = toNum(r["gross_monthly"]) ?? (toNum(r["ctc_annual"]) !== null ? (toNum(r["ctc_annual"]) as number) / 12 : null);
     if (id && g !== null && g > 0) grossByEmp.set(id, g);
+    if (id && "variable_pay_paid" in r) { haveVariable = true; const v = toNum(r["variable_pay_paid"]); if (v !== null) varByEmp.set(id, v); }
+    if (id && "overtime_hours" in r) { haveOt = true; const h = toNum(r["overtime_hours"]); if (h !== null) otHoursByEmp.set(id, h); }
   }
   if (grossByEmp.size === 0) {
     return empty("Compensation analytics needs per-employee pay. Upload a Payroll — Per-Employee Detail (payroll_record) file; the department aggregate can't reveal a distribution.");
@@ -61,12 +67,13 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
   const people = input.employeeRows
     .filter(isWorking)
     .map((r) => {
-      const gross = grossByEmp.get(str(r["employee_number"])) ?? null;
+      const id = str(r["employee_number"]);
+      const gross = grossByEmp.get(id) ?? null;
       const j = dayMs(r["date_joined"]);
       const tenureDays = refMs !== null && j !== null ? Math.floor((refMs - j) / 86_400_000) : null;
-      return { dept: str(r["department"]) || "Unspecified", gross, tenureDays };
+      return { dept: str(r["department"]) || "Unspecified", gross, tenureDays, variable: varByEmp.get(id) ?? 0, otHours: otHoursByEmp.get(id) ?? 0 };
     })
-    .filter((p): p is { dept: string; gross: number; tenureDays: number | null } => p.gross !== null);
+    .filter((p): p is { dept: string; gross: number; tenureDays: number | null; variable: number; otHours: number } => p.gross !== null);
 
   if (people.length === 0) return empty("No active employees with pay data to analyse.");
 
@@ -86,6 +93,18 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
     { label: "Pay Dispersion", value: `${dispersion.toFixed(1)}×`, hint: "P90 / P10 spread" },
     { label: "Top-10% Pay Share", value: N.formatPct(top10share * 100), hint: "of total monthly payroll" },
   ];
+
+  // Total-rewards mix: variable pay and overtime (fields the distribution above ignores).
+  const otStaff = people.filter((p) => p.otHours > 0);
+  if (haveVariable) {
+    const totVar = people.reduce((s, p) => s + p.variable, 0);
+    kpis.push({ label: "Variable Pay Mix", value: N.formatPct(total > 0 ? (totVar / total) * 100 : 0), hint: "variable as % of gross" });
+  }
+  if (haveOt) {
+    const load = people.length ? (otStaff.length / people.length) * 100 : 0;
+    const avgOt = otStaff.length ? otStaff.reduce((s, p) => s + p.otHours, 0) / otStaff.length : 0;
+    kpis.push({ label: "Overtime Load", value: N.formatPct(load), hint: otStaff.length ? `${avgOt.toFixed(0)}h avg among ${otStaff.length}` : "no overtime logged" });
+  }
 
   // Median pay by department (≥3 to be meaningful).
   const byDept = new Map<string, number[]>();
@@ -111,6 +130,12 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
   if (bandMed.some((b) => b.n > 0)) {
     charts.push({ title: "Pay progression by tenure", caption: "Median monthly gross by tenure band — flat bars signal pay compression.", kind: "bar", labels: TENURE_ORDER, values: bandMed.map((b) => Math.round(b.med)) });
   }
+  if (haveOt && otStaff.length) {
+    const otByDept = new Map<string, number>();
+    for (const p of people) if (p.otHours > 0) otByDept.set(p.dept, (otByDept.get(p.dept) ?? 0) + p.otHours);
+    const otRows = [...otByDept.entries()].map(([dept, h]) => ({ dept, h })).sort((a, b) => b.h - a.h);
+    if (otRows.length) charts.push({ title: "Overtime hours by department", caption: "Total monthly overtime hours — concentration signals over-reliance or burnout risk.", kind: "barh", labels: otRows.slice(0, 12).map((r) => r.dept), values: otRows.slice(0, 12).map((r) => Math.round(r.h)), drill: "department" });
+  }
 
   const tables: MetricTable[] = deptMed.length
     ? [{ title: "Pay by department", caption: "Median + P10–P90 monthly gross (departments with ≥3 staff).", columns: ["Department", "Staff", "Median", "P10", "P90"], rows: deptMed.map((d) => [d.dept, d.n, money(d.med), money(d.p10), money(d.p90)] as (string | number)[]) }]
@@ -125,6 +150,21 @@ export function buildCompensation(input: CompensationInput): DomainMetrics {
       actionHint: "Check for off-band salaries and ensure pay ranges are defined and applied consistently.",
       owner: "Compensation",
     });
+  }
+  // Over-reliance on overtime — sustained OT in a team is a cost + burnout signal.
+  if (haveOt) {
+    const deptOt = new Map<string, { hours: number; n: number }>();
+    for (const p of people) { const e = deptOt.get(p.dept) ?? { hours: 0, n: 0 }; e.hours += p.otHours; e.n += 1; deptOt.set(p.dept, e); }
+    const worst = [...deptOt.entries()].filter(([, e]) => e.n >= 5).map(([dept, e]) => ({ dept, perHead: e.hours / e.n, total: e.hours })).sort((a, b) => b.perHead - a.perHead)[0];
+    if (worst && worst.perHead >= 8) {
+      watchouts.push({
+        severity: worst.perHead >= 15 ? "high" : "medium",
+        title: `High overtime in ${worst.dept}`,
+        detail: `${worst.dept} averages ${worst.perHead.toFixed(0)} overtime hours per head this month (${Math.round(worst.total)}h total) — sustained reliance on overtime.`,
+        actionHint: "Check staffing levels and workload distribution; persistent overtime drives cost and burnout-led attrition.",
+        owner: "HR Business Partners",
+      });
+    }
   }
   const early = bandMed.find((b) => b.band === "<6 months" || b.band === "6-12 months");
   const senior = bandMed.find((b) => b.band === "5+ years");
