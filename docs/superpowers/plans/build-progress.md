@@ -14,7 +14,7 @@
 - [x] **FIX-1 Ingestion robustness** — ✅ s1 header normalisation · ✅ s2 widened alias coverage (SAP/Workday/ADP) · ↪ s3 mapping report folded into BUILD-1
 - [x] **BUILD-1 Column-mapping importer** — ✅ s1 engine · ✅ s2a parser override · ✅ s2b mapping UI + preview · ✅ s3 saved profiles (auto-apply on re-upload)
 - [x] **BUILD-2 Action-tracking loop** — ✅ s1a model · ✅ s1b persistence + state · ✅ s2 UI (track from roadmap + status panel) · ✅ s3 newsletter + facts-pack integration
-- [ ] **UP-1 Longitudinal trends** — s1 timeseries builder · s2 sparkline component + KPI cards · s3 health-history chart
+- [x] **UP-1 Longitudinal trends** — ✅ s1 timeseries builder · ✅ s2 sparkline component + KPI cards · ✅ s3 health-history chart
 - [ ] **UP-7 Flight-risk scoring** — s1 feature extraction · s2 weighted explainable score · s3 Brain cohort finding
 - [ ] **BUILD-7 Benchmark pack** — s1 loadable pack format + provenance · s2 Scorecard pack picker
 - [ ] **BUILD-3 Manager/HRBP cockpit** — s1 manager scoping · s2 cockpit page
@@ -38,6 +38,7 @@
 
 ## Quick wins (slot in opportunistically)
 - [x] FIX-2b Branding-page overflow (minmax(0,1fr) so the form column shrinks; was +34px at 1024)
+- [ ] DEMO-HIST Deepen demo to ~6 months of history (amplifies UP-1 sparklines + health chart; today the demo ships 2 periods so trends are 2-point lines). Touch `scripts/build-sample-workspace.mjs` to emit several prior months, then `npm run embed-demo`.
 - [ ] FIX-2 Overflow regression guard
 - [ ] FIX-3 Period-diff edge cases
 - [ ] FIX-4 Bad-data resilience
@@ -46,6 +47,9 @@
 - [ ] FIX-7 Demo realism (resolved finding)
 
 ## Log
+- **UP-1 s1** — `src/core/metrics/timeseries.ts`: pure period-series foundation — `periodList(store, kind?)`, `storeAsOf(store, asOf)` (reconstruct the workspace as of a date, snapshots carried forward), `buildSeries(store, valueAt, kind?)`, `compactSeries`. No Date.now. 6 tests. 293 tests, build 2.77 MB.
+- **UP-1 s2** — KPI sparklines on every functional card. `MetricKPI.spark?`, pure `attachKpiSparklines(current, history)` (match by label across per-period recomputes, same-unit points, ≥2 to attach, preserves delta), wired into `buildDomainCompared` (dashboard + newsletter both pick it up), `sparklineGeometry` + `Sparkline.tsx` (accent-coloured, not green/red). **Browser-verified**: TA cards show flat mid-lines for unchanged KPIs + a rising line/dot for Offer-Accept (+6.3pp); 0 console errors. 301 tests, build 2.78 MB.
+- **UP-1 s3** — `buildHealthHistory(store, opts)` recomputes HR Health at each roster month → a line ChartSpec; rendered on HR Brain under the score card via the existing Chart (themed). null <2 periods, capped at 24 months. **Browser-confirmed**: chart title+caption present in the live DOM, console clean (CDP screenshot timed out — tooling, not app). 303 tests, build 2.78 MB. **UP-1 COMPLETE.** Added DEMO-HIST quick win (demo ships 2 periods → 2-point lines; deepen for richer trends). Next: UP-7 (flight-risk scoring).
 - **BUILD-2 s1a** — `src/core/actions.ts`: Action model (status open/in_progress/done, owner, due, findingId link) + pure helpers `actionSummary` (counts + overdue), `actionFromRoadmap`, `withStatus`, `hasOpenActionForFinding`. 4 tests. 283 tests, build 2.77 MB. Next: s1b workspace persistence + state threading.
 - **BUILD-2 s1b** — `actions` now persists in the workspace (additive optional field, `saveWorkspace`/`loadWorkspace`, defaults []) and is threaded through `state.tsx` (state + `setActions`, restore on load, reset on demo→live and clearData, included in autosave). Round-trip test added. 284 tests, build 2.77 MB. Next: s2 actions UI panel on HR Brain (browser-verify).
 - **BUILD-2 s2** — HR Brain: "+ Track" on each roadmap item creates a tracked action (deduped via `hasOpenActionForFinding`, shows "✓ Tracked"); a "Tracked actions" panel with per-row status select (Open/In progress/Done), due-date input, remove, and a live open/in-progress/done/overdue summary. **Browser-verified**: 16 track buttons on the demo; tracked an item → panel row + "1 open"; set Done → summary updated; 0 console errors. 284 tests, build 2.77 MB. Next: s3 newsletter integration (open actions + committed-vs-done in the board pack).
