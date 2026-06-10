@@ -679,6 +679,17 @@ select, input[type="file"] { font: inherit; }
 .sc-pack-pick select { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 .sc-pack-prov { font-size: 0.8rem; color: var(--muted); }
 .sc-pack-prov.illustrative { color: var(--faint); font-style: italic; }
+.cockpit-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 4px 0 14px; }
+.cockpit-mode { display: inline-flex; gap: 6px; }
+.cockpit-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; font-weight: 700; color: var(--muted); }
+.cockpit-pick select { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.cockpit-depts { display: flex; flex-wrap: wrap; gap: 6px; }
+.cockpit-depts .chip { font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+.cockpit-depts .chip.on { color: #fff; background: var(--brand-accent); border-color: var(--brand-accent); }
+.cockpit-flags { margin: 14px 0; border: 1px solid var(--border); border-left: 4px solid var(--brand-accent); border-radius: var(--radius); background: var(--surface); padding: 8px 16px; }
+.cockpit-flags h3 { margin: 6px 0; font-size: 0.92rem; }
+.cockpit-flags ul { margin: 0 0 6px; padding-left: 18px; }
+.cockpit-flags li { font-size: 0.86rem; margin: 3px 0; color: var(--ink); }
 
 @page { margin: 14mm; }
 @media print {
