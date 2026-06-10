@@ -140,6 +140,26 @@ export function decoratePeopleDeltas(
   });
 }
 
+// Attach an inline-sparkline series to each current KPI from per-period recomputed
+// KPI lists (oldest → newest, the current period last). For each KPI we match by
+// label across periods, parse each period's formatted value, and keep the points
+// whose unit matches the current value's unit — so a card's number and its trend
+// always speak the same unit. Needs ≥2 comparable points or the KPI is left bare
+// (a single dot isn't a trend). Pure; preserves any delta/deltaTone already set.
+export function attachKpiSparklines(current: MetricKPI[], history: MetricKPI[][]): MetricKPI[] {
+  if (history.length < 2) return current;
+  return current.map((k) => {
+    const cur = parseKpiValue(k.value);
+    if (!cur) return k;
+    const pts: number[] = [];
+    for (const periodKpis of history) {
+      const pv = parseKpiValue(periodKpis.find((p) => p.label === k.label)?.value);
+      if (pv && pv.unit === cur.unit) pts.push(pv.n);
+    }
+    return pts.length >= 2 ? { ...k, spark: pts } : k;
+  });
+}
+
 // Decorate a functional domain's KPI cards with deltas vs the prior period's
 // metrics (same domain, built from the prior snapshot). Charts/tables/watch-outs
 // are left as the current period's.

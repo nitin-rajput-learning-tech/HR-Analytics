@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { periodList, storeAsOf, buildSeries, compactSeries } from "./timeseries";
+import { periodList, storeAsOf, buildSeries, compactSeries, sparklineGeometry } from "./timeseries";
 import { MemoryStore } from "../store/memoryStore";
 import type { Snapshot } from "../store/types";
 import type { Row } from "../ingest/types";
@@ -83,5 +83,25 @@ describe("timeseries", () => {
     ]);
     // a single point can't form a line
     expect(compactSeries([{ period: "a", value: 5 }])).toEqual([]);
+  });
+
+  it("sparklineGeometry maps values across the box, last point at the end", () => {
+    const g = sparklineGeometry([0, 5, 10], 64, 18, 2);
+    expect(g.line).toBe("M2,16 L32,9 L62,2");
+    expect(g.lastX).toBe(62);
+    expect(g.lastY).toBe(2);
+    expect(g.rising).toBe(true);
+  });
+
+  it("sparklineGeometry centres a flat series and marks it non-rising when it falls", () => {
+    const flat = sparklineGeometry([7, 7, 7], 64, 18, 2);
+    expect(flat.line).toBe("M2,9 L32,9 L62,9"); // mid-line at (h-2pad)/2 + pad = 9
+    expect(flat.rising).toBe(true); // last >= first
+    expect(sparklineGeometry([10, 5], 20, 10, 1).rising).toBe(false);
+  });
+
+  it("sparklineGeometry returns empty for <2 points", () => {
+    expect(sparklineGeometry([5]).line).toBe("");
+    expect(sparklineGeometry([]).line).toBe("");
   });
 });

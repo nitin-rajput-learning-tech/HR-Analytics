@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MemoryStore } from "../store/memoryStore";
-import { DOMAIN_ORDER, DOMAIN_LABELS, buildDomain, buildAll, availableDomains } from "./index";
+import { DOMAIN_ORDER, DOMAIN_LABELS, buildDomain, buildAll, buildDomainCompared, availableDomains } from "./index";
 import type { Row } from "../ingest/types";
 
 function snap(kind: string, asOf: string, rows: Row[]) {
@@ -35,5 +35,22 @@ describe("domain registry", () => {
     store.add(snap("ta_requisition", "2026-05-01", [{ requisition_id: "R1", department: "Tech", job_title: "SDE", status: "Open", open_date: "2026-04-01", applications: 50 }]));
     const d = buildDomain(store, "talent_acquisition");
     expect(d.hasData).toBe(true);
+  });
+
+  it("buildDomainCompared attaches a KPI sparkline when the domain has multiple periods", () => {
+    const req = (id: string, made: number, accepted: number): Row => ({
+      requisition_id: id, department: "Tech", status: "Filled", open_date: "2026-03-01",
+      applications: 100, shortlisted: 40, interviewed: 12, offers_made: made, offers_accepted: accepted, joined: accepted, primary_source: "Referral",
+    });
+    const store = new MemoryStore();
+    store.add(snap("ta_requisition", "2026-04-30", [req("R1", 10, 7)])); // 70%
+    store.add(snap("ta_requisition", "2026-05-31", [req("R1", 10, 9)])); // 90%
+    const d = buildDomainCompared(store, "talent_acquisition");
+    const offer = d.kpis.find((k) => k.label === "Offer-Accept Rate");
+    expect(offer?.spark).toEqual([70, 90]);
+    // single-period store → no sparkline (a lone point isn't a trend)
+    const one = new MemoryStore();
+    one.add(snap("ta_requisition", "2026-05-31", [req("R1", 10, 9)]));
+    expect(buildDomainCompared(one, "talent_acquisition").kpis.find((k) => k.label === "Offer-Accept Rate")?.spark).toBeUndefined();
   });
 });

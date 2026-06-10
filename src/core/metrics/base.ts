@@ -12,6 +12,10 @@ export interface MetricKPI {
   // Sentiment of the delta vs the prior period, for colour only ("good" = green,
   // "bad" = red, "neutral" = muted). Set by the period-comparison decorator.
   deltaTone?: "good" | "bad" | "neutral";
+  // Optional historical series (oldest → newest, current value last) for an inline
+  // sparkline. Attached by attachKpiSparklines from per-period recomputation; only
+  // present when ≥2 comparable points exist. Same unit as `value`.
+  spark?: number[];
 }
 
 export interface MetricTable {

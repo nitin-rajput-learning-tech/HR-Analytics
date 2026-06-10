@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Chart } from "./Chart";
+import { Sparkline } from "./Sparkline";
 import { tableToCsv } from "../../core/filters";
 import { downloadBlob } from "../download";
 import type { DomainMetrics, MetricKPI, MetricTable, MetricWatchout } from "../../core/metrics/base";
@@ -10,6 +11,7 @@ export function KpiCard({ kpi }: { kpi: MetricKPI }) {
       <div className="label">{kpi.label}</div>
       <div className="value">{kpi.value}</div>
       {kpi.delta ? <div className={`delta ${kpi.deltaTone ?? "neutral"}`}>{kpi.delta}</div> : null}
+      {kpi.spark && kpi.spark.length >= 2 ? <Sparkline values={kpi.spark} label={kpi.label} /> : null}
       {kpi.hint ? <div className="hint">{kpi.hint}</div> : null}
     </div>
   );

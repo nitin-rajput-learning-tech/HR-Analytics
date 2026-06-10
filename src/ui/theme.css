@@ -143,6 +143,7 @@ a { color: var(--brand-accent); }
 .kpi .delta.neutral { color: var(--muted); font-weight: 600; }
 [data-theme="dark"] .kpi .delta.good { color: #4ade80; }
 [data-theme="dark"] .kpi .delta.bad { color: #f87171; }
+.kpi .spark { display: block; margin-top: 7px; color: var(--accent); opacity: 0.85; }
 
 /* tabs */
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 14px; }

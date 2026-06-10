@@ -6,7 +6,8 @@ import type { DataSource } from "../store/types";
 import type { Row } from "../ingest/types";
 import { MemoryStore } from "../store/memoryStore";
 import { DomainMetrics } from "./base";
-import { decorateDomainDeltas, prettyPeriod } from "./compare";
+import { decorateDomainDeltas, prettyPeriod, attachKpiSparklines } from "./compare";
+import { storeAsOf } from "./timeseries";
 import * as ta from "./talent_acquisition";
 import * as pms from "./pms";
 import * as payroll from "./payroll";
@@ -85,10 +86,12 @@ export function buildAll(store: DataSource, opts: { activeHeadcount?: number } =
 // one upload shows no deltas — graceful). Mirrors the People delta pattern.
 export function buildDomainCompared(store: DataSource, key: DomainKey, opts: { activeHeadcount?: number } = {}): DomainMetrics {
   const current = buildDomain(store, key, opts);
+  const kinds = DOMAIN_REGISTRY[key].requiredKinds;
+  // Prior-period deltas: the second-latest snapshot of each of the domain's kinds.
   const prior = new MemoryStore();
   let priorLabel = "";
   let hasPrior = false;
-  for (const kind of DOMAIN_REGISTRY[key].requiredKinds) {
+  for (const kind of kinds) {
     const snaps = store.listByKind(kind); // ascending by asOf
     if (snaps.length >= 2) {
       const priorSnap = snaps[snaps.length - 2];
@@ -97,8 +100,15 @@ export function buildDomainCompared(store: DataSource, key: DomainKey, opts: { a
       if (!priorLabel) priorLabel = prettyPeriod(priorSnap.periodLabel ?? priorSnap.asOf);
     }
   }
-  if (!hasPrior) return current;
-  return decorateDomainDeltas(current, buildDomain(prior, key, opts), priorLabel);
+  const compared = hasPrior ? decorateDomainDeltas(current, buildDomain(prior, key, opts), priorLabel) : current;
+  // Sparklines: recompute the domain at every period it has data for (snapshots
+  // carried forward via storeAsOf) and attach each KPI's history. No-op with <2 periods.
+  const periods = new Set<string>();
+  for (const kind of kinds) for (const s of store.listByKind(kind)) if (s.asOf) periods.add(s.asOf);
+  const sorted = [...periods].sort();
+  if (sorted.length < 2) return compared;
+  const history = sorted.map((asOf) => buildDomain(storeAsOf(store, asOf), key, opts).kpis);
+  return { ...compared, kpis: attachKpiSparklines(compared.kpis, history) };
 }
 
 // Domains with at least one of their dataset kinds loaded — lets callers skip

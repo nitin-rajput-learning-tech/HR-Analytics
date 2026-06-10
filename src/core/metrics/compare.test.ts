@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseKpiValue, deltaText, toneFor, decoratePeopleDeltas, decorateDomainDeltas, prettyPeriod } from "./compare";
+import { parseKpiValue, deltaText, toneFor, decoratePeopleDeltas, decorateDomainDeltas, prettyPeriod, attachKpiSparklines } from "./compare";
 import type { PeopleSection } from "./people";
 import type { MetricKPI, DomainMetrics } from "./base";
 
@@ -130,6 +130,42 @@ describe("decorateDomainDeltas", () => {
   it("returns the current domain unchanged when there is no prior", () => {
     const current = domain([{ label: "Offer-Accept Rate", value: "78.0%" }]);
     expect(decorateDomainDeltas(current, null, "Apr 2026").kpis[0].delta).toBeUndefined();
+  });
+});
+
+describe("attachKpiSparklines", () => {
+  it("attaches a same-unit series matched by label, current value last", () => {
+    const history = [
+      [{ label: "Active Headcount", value: "100" }],
+      [{ label: "Active Headcount", value: "110" }],
+      [{ label: "Active Headcount", value: "120" }],
+    ];
+    const [k] = attachKpiSparklines([{ label: "Active Headcount", value: "120" }], history);
+    expect(k.spark).toEqual([100, 110, 120]);
+  });
+
+  it("keeps only points whose unit matches the current value", () => {
+    const history = [
+      [{ label: "X", value: "5" }], // count
+      [{ label: "X", value: "90.0%" }], // pct — dropped (unit mismatch)
+      [{ label: "X", value: "7" }], // count
+    ];
+    expect(attachKpiSparklines([{ label: "X", value: "7" }], history)[0].spark).toEqual([5, 7]);
+  });
+
+  it("leaves a KPI bare with <2 comparable points or <2 periods", () => {
+    expect(attachKpiSparklines([{ label: "X", value: "7" }], [[{ label: "X", value: "7" }]])[0].spark).toBeUndefined();
+    const oneNumeric = [[{ label: "X", value: "n/a" }], [{ label: "X", value: "7" }]];
+    expect(attachKpiSparklines([{ label: "X", value: "7" }], oneNumeric)[0].spark).toBeUndefined();
+  });
+
+  it("preserves an existing delta/deltaTone while adding the spark", () => {
+    const cur: MetricKPI[] = [{ label: "X", value: "7", delta: "▲ +2 vs Apr", deltaTone: "good" }];
+    const h = [[{ label: "X", value: "5" }], [{ label: "X", value: "7" }]];
+    const [k] = attachKpiSparklines(cur, h);
+    expect(k.spark).toEqual([5, 7]);
+    expect(k.delta).toBe("▲ +2 vs Apr");
+    expect(k.deltaTone).toBe("good");
   });
 });
 
