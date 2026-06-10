@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HR Analytics — User Guide</title>
+<style>
+  :root {
+    --ink: #0f172a; --body: #1f2937; --muted: #56627a; --faint: #7c869a;
+    --primary: #1f2937; --accent: #2563eb; --accent-soft: #eef3ff;
+    --line: #d9dee8; --line-soft: #eaeef5;
+    --good: #15803d; --warn: #b45309; --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, Helvetica, Arial, sans-serif;
+    color: var(--body); font-size: 10.6pt; line-height: 1.5; margin: 0;
+    background: #fff;
+  }
+  h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; }
+  h2 { font-size: 19pt; margin: 0 0 2px; letter-spacing: -0.01em; }
+  h3 { font-size: 13pt; margin: 22px 0 6px; }
+  h4 { font-size: 11pt; margin: 16px 0 4px; }
+  p { margin: 7px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: var(--ink); }
+  ul, ol { margin: 7px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { background: var(--line-soft); padding: 1px 5px; border-radius: 4px; font-size: 9.2pt; font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+  .muted { color: var(--muted); }
+  /* anchored sections clear any sticky offset when scrolled to */
+  section[id], h3[id] { scroll-margin-top: 16px; }
+
+  @page {
+    size: A4; margin: 18mm 16mm 16mm;
+    @top-center { content: "HR Analytics — User Guide"; font-size: 8pt; color: #8a93a6; }
+    @bottom-center { content: "Generated locally · your data never leaves this browser"; font-size: 8pt; color: #8a93a6; }
+    @bottom-right { content: counter(page); font-size: 8pt; color: #8a93a6; }
+  }
+  @page :first { margin: 0; @top-center { content: ""; } @bottom-center { content: ""; } @bottom-right { content: ""; } }
+
+  section.page { break-before: page; padding: 2px 4px 0; }
+  section.page:first-of-type { break-before: auto; }
+  .kicker { text-transform: uppercase; letter-spacing: 0.12em; font-size: 8.5pt; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .lead { font-size: 11.4pt; color: var(--body); }
+
+  /* cover */
+  .cover { height: 297mm; padding: 34mm 22mm 22mm; background: linear-gradient(150deg, #0b1f4d 0%, #1d4ed8 64%, #2563eb 100%); color: #fff; display: flex; flex-direction: column; }
+  .cover .brandline { text-transform: uppercase; letter-spacing: 0.28em; font-size: 10pt; font-weight: 700; opacity: 0.85; }
+  .cover h1 { color: #fff; font-size: 40pt; line-height: 1.05; margin: 16px 0 10px; max-width: 17ch; }
+  .cover .sub { font-size: 14pt; opacity: 0.92; max-width: 48ch; line-height: 1.45; }
+  .cover .spacer { flex: 1; }
+  .cover .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 26px; }
+  .cover .pill { border: 1px solid rgba(255,255,255,0.45); border-radius: 999px; padding: 5px 13px; font-size: 9.5pt; font-weight: 600; }
+  .cover .meta { border-top: 1px solid rgba(255,255,255,0.3); padding-top: 14px; font-size: 9.5pt; opacity: 0.9; display: flex; justify-content: space-between; }
+
+  /* callouts */
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: #fbfcfe; border-radius: 6px; padding: 11px 15px; margin: 12px 0; break-inside: avoid; }
+  .box.good { border-left-color: var(--good); }
+  .box.warn { border-left-color: var(--warn); }
+  .box .box-h { font-weight: 800; color: var(--ink); font-size: 10pt; margin-bottom: 3px; }
+  .box.small { font-size: 9.6pt; }
+
+  table.t { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.4pt; break-inside: avoid; }
+  table.t th { background: var(--accent); color: #fff; text-align: left; padding: 7px 9px; font-size: 8.6pt; text-transform: uppercase; letter-spacing: 0.04em; }
+  table.t td { border-bottom: 1px solid var(--line-soft); padding: 6px 9px; vertical-align: top; }
+  table.t tr:nth-child(even) td { background: #f7f9fc; }
+  table.t code { font-size: 8.8pt; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .feat { border: 1px solid var(--line); border-radius: 7px; padding: 10px 13px; break-inside: avoid; }
+  .feat h4 { margin: 0 0 3px; }
+  .feat .how { font-size: 9.4pt; }
+
+  .toc-list { list-style: none; padding: 0; margin: 14px 0; }
+  .toc-list li { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px dotted var(--line); padding: 7px 0; font-size: 11pt; gap: 10px; }
+  .toc-list .n { color: var(--accent); font-weight: 800; width: 26px; flex: none; }
+  .toc-list a.t2 { flex: 1; color: var(--ink); font-weight: 600; }
+  .toc-list .pg { color: var(--faint); font-size: 9pt; }
+
+  .step { display: flex; gap: 12px; margin: 9px 0; break-inside: avoid; }
+  .step .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 10pt; }
+  .step .b { flex: 1; }
+  .step .b b { color: var(--ink); }
+
+  /* workflow walkthrough cards (Action / Look for / Common mistakes) */
+  .walk { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0; overflow: hidden; break-inside: avoid; }
+  .walk .wh { background: var(--accent-soft); padding: 8px 13px; font-weight: 800; color: var(--ink); border-bottom: 1px solid var(--line); }
+  .walk .wb { padding: 4px 13px 10px; }
+  .walk .wb .row { margin: 8px 0 0; font-size: 9.8pt; }
+  .walk .wb .lab { font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; font-size: 7.8pt; display: inline-block; padding: 1px 6px; border-radius: 4px; margin-right: 7px; vertical-align: 1px; }
+  .walk .lab.act { background: #dbeafe; color: #1e40af; }
+  .walk .lab.look { background: #dcfce7; color: #166534; }
+  .walk .lab.miss { background: #fee2e2; color: #991b1b; }
+
+  .tag { display: inline-block; font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px; }
+  .tag.now { background: #dcfce7; color: #166534; } .tag.next { background: #fef9c3; color: #854d0e; } .tag.later { background: #e2e8f0; color: #475569; }
+  .sev { display: inline-block; font-size: 7.8pt; font-weight: 800; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; }
+  .sev.crit { background: #fee2e2; color: #991b1b; } .sev.high { background: #ffedd5; color: #9a3412; } .sev.med { background: #fef9c3; color: #854d0e; } .sev.low { background: #e2e8f0; color: #475569; }
+  kbd { font-family: ui-monospace, Consolas, monospace; font-size: 8.6pt; background: #f1f5f9; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--ink); }
+  hr.soft { border: 0; border-top: 1px solid var(--line-soft); margin: 16px 0; }
+  .small { font-size: 9.3pt; }
+  .backtop { font-size: 8pt; color: var(--faint); }
+
+  @media print {
+    html, body { background: #fff; }
+    a { color: var(--ink); }
+    .backtop, .no-print { display: none !important; }
+    table.t th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover { height: 297mm; }
+  }
+  /* on-screen (in-app iframe) niceties */
+  @media screen {
+    body { max-width: 1000px; margin: 0 auto; padding: 0 18px 60px; }
+    .cover { height: auto; min-height: 60vh; border-radius: 0 0 12px 12px; margin: 0 -18px 8px; }
+    section.page { border-top: 1px solid var(--line-soft); padding-top: 22px; margin-top: 8px; }
+    section.page:first-of-type { border-top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover" id="cover">
+  <div class="brandline">Workforce Analytics</div>
+  <h1>HR Analytics — User Guide</h1>
+  <div class="sub">How to run the platform end to end: load your data, read the workforce analytics and the on-device HR Brain, model scenarios, and publish a board pack — all on your own machine.</div>
+  <div class="spacer"></div>
+  <div class="pills">
+    <span class="pill">100% offline</span>
+    <span class="pill">No AI service · no data leaves the device</span>
+    <span class="pill">Single self-contained file</span>
+    <span class="pill">White-label</span>
+  </div>
+  <div class="meta">
+    <span><strong>User Guide &amp; Feature Reference</strong> · for everyone who operates the tool</span>
+    <span>v2 · 2026-06-10</span>
+  </div>
+</div>
+
+<!-- ============ CONTENTS ============ -->
+<section class="page" id="sec-contents">
+  <div class="kicker">Contents</div>
+  <h2>What's in this guide</h2>
+  <p class="muted">Tap any entry to jump to it. Every page, setting, keyboard shortcut, data format and validation rule the tool actually has is documented here — and this guide is regenerated from the code, so it stays in sync.</p>
+  <ul class="toc-list">
+    <li><span class="n">1</span><a class="t2" href="#sec-overview">Overview — what it is and why it's different</a><span class="pg">▸</span></li>
+    <li><span class="n">2</span><a class="t2" href="#sec-getting-started">Getting started — your first five minutes</a><span class="pg">▸</span></li>
+    <li><span class="n">3</span><a class="t2" href="#sec-workflow">The monthly workflow — a guided walkthrough</a><span class="pg">▸</span></li>
+    <li><span class="n">4</span><a class="t2" href="#sec-people">People Analytics — the workforce dashboard</a><span class="pg">▸</span></li>
+    <li><span class="n">5</span><a class="t2" href="#sec-brain">HR Brain — the on-device diagnosis</a><span class="pg">▸</span></li>
+    <li><span class="n">6</span><a class="t2" href="#sec-cockpit">Manager Cockpit &amp; Directory</a><span class="pg">▸</span></li>
+    <li><span class="n">7</span><a class="t2" href="#sec-function">Function Analytics — the HR functions</a><span class="pg">▸</span></li>
+    <li><span class="n">8</span><a class="t2" href="#sec-scorecard">Scorecard — targets &amp; benchmarks</a><span class="pg">▸</span></li>
+    <li><span class="n">9</span><a class="t2" href="#sec-ops">Compliance, Headcount Plan &amp; Entity Rollup</a><span class="pg">▸</span></li>
+    <li><span class="n">10</span><a class="t2" href="#sec-explore">Explore — the ad-hoc pivot builder</a><span class="pg">▸</span></li>
+    <li><span class="n">11</span><a class="t2" href="#sec-scenario">Scenario Planner — model hires, cuts &amp; cost</a><span class="pg">▸</span></li>
+    <li><span class="n">12</span><a class="t2" href="#sec-reports">Newsletter &amp; Board Pack</a><span class="pg">▸</span></li>
+    <li><span class="n">13</span><a class="t2" href="#sec-intake">Data Intake &amp; the data model</a><span class="pg">▸</span></li>
+    <li><span class="n">14</span><a class="t2" href="#sec-branding">Branding &amp; the workspace</a><span class="pg">▸</span></li>
+    <li><span class="n">15</span><a class="t2" href="#sec-reference">Reference — pages, shortcuts, settings, datasets, rules, statuses, exports</a><span class="pg">▸</span></li>
+    <li><span class="n">16</span><a class="t2" href="#sec-troubleshooting">Troubleshooting &amp; FAQ</a><span class="pg">▸</span></li>
+    <li><span class="n">17</span><a class="t2" href="#sec-glossary">Glossary</a><span class="pg">▸</span></li>
+  </ul>
+  <div class="box small">
+    <div class="box-h">A note on demo mode</div>
+    The tool ships populated with a <strong>sample organisation ("Acme")</strong> so you can explore before loading anything. It is never saved. Your own logo, colours and name apply throughout (the platform is white-label), and your real data replaces the sample the moment you upload it — staying on this device.
+  </div>
+</section>
+
+<!-- ============ 1. OVERVIEW ============ -->
+<section class="page" id="sec-overview">
+  <div class="kicker">1 · Overview</div>
+  <h2>One place to see, diagnose and act on the people function</h2>
+  <p class="lead">HR Analytics turns the workbooks your teams already produce — the employee master (e.g. a Keka export), recruitment trackers, payroll registers, the L&amp;D log — into a single, board-ready view of the workforce. It then goes further than a dashboard: a built-in <strong>HR Brain</strong> reads every domain, flags the issues that matter, explains the likely cause, and proposes a remedy — all computed on your own device.</p>
+
+  <div class="grid2">
+    <div class="feat"><h4>See</h4><div class="how muted">A unified dashboard across People, Talent Acquisition, Performance, Payroll, L&amp;D, HR Operations and Engagement — headcount, attrition, diversity, cost, funnel, completion, compliance.</div></div>
+    <div class="feat"><h4>Diagnose</h4><div class="how muted">The HR Brain inspects all domains and surfaces issues, each with evidence, a likely root cause and a remedy — plus an HR Health score and a period-over-period trend.</div></div>
+    <div class="feat"><h4>Decide</h4><div class="how muted">A prioritised Now / Next / Later roadmap with impact, effort and the rupee value at stake — and a Scenario Planner to cost hiring and restructuring before you commit.</div></div>
+    <div class="feat"><h4>Report</h4><div class="how muted">A one-click Newsletter and Board Pack — polished, print-ready, with an executive brief, a scorecard, the diagnosis and a prioritised action plan.</div></div>
+  </div>
+
+  <h3>What makes it different</h3>
+  <ul>
+    <li><strong>It runs entirely on your machine.</strong> No server, no cloud, no AI service. Sensitive people data never leaves the device.</li>
+    <li><strong>It recommends, not just reports.</strong> The HR Brain is a deterministic, transparent rules engine: every finding shows the exact evidence and logic behind it — decision support you can audit, not a black box.</li>
+    <li><strong>It works with the data you already have</strong> and degrades gracefully — start with the employee master alone and switch on each function as its feed comes online.</li>
+    <li><strong>It is white-label and board-ready</strong> out of the box, and the whole app is a single file you can email or host behind your own SSO.</li>
+  </ul>
+
+  <div class="box">
+    <div class="box-h">The honest framing</div>
+    The HR Brain is a sophisticated set of HR heuristics, not an oracle. Benchmarks are illustrative reference bands until you calibrate them to your sector; cost-per-hire and severance figures are estimates. Every recommendation is a starting point for a human decision — and the tool always shows its working.
+  </div>
+
+  <h3>How it handles your data</h3>
+  <table class="t">
+    <thead><tr><th>Concern</th><th>How the platform handles it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Data residency</strong></td><td>All processing is in-browser, on your device. No data is ever transmitted anywhere.</td></tr>
+      <tr><td><strong>Persistence</strong></td><td>Your working data auto-saves to this browser. You can also export one compressed workspace file (<code>.json.gz</code>) to move between machines.</td></tr>
+      <tr><td><strong>Security</strong></td><td>Optional passphrase encryption (AES-256-GCM) on the saved workspace (<code>.enc.gz</code>). No accounts, no credentials, no telemetry.</td></tr>
+      <tr><td><strong>AI / external services</strong></td><td>None. The HR Brain's narrative and recommendations are generated by local, deterministic rules.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 2. GETTING STARTED ============ -->
+<section class="page" id="sec-getting-started">
+  <div class="kicker">2 · Getting started</div>
+  <h2>Your first five minutes</h2>
+  <p class="lead">Open the file in any modern browser. You land in <strong>demo mode</strong> on the sample "Acme" organisation, with every page already populated — explore freely; nothing is saved until you load your own data.</p>
+
+  <div class="step"><div class="num">1</div><div class="b"><b>Explore the demo.</b> Click through <strong>People Analytics</strong> and <strong>HR Brain</strong> to see what a fully-loaded workspace looks like. The amber banner at the top reminds you you're in demo mode.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Load your own data.</b> Click <em>"Upload your data →"</em> on the demo banner (or open <strong>Data Intake</strong>). Start with the <strong>Employee Master</strong> — it's the spine every other domain joins to. Your first import replaces the demo and switches the tool to <strong>live mode</strong>, saved on this device.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Brand it (optional).</b> On <strong>Branding</strong>, set your app name, colours, logo and footer. These travel with your saved workspace.</div></div>
+  <div class="step"><div class="num">4</div><div class="b"><b>Save a backup.</b> Use <em>Save workspace</em> in the sidebar to download a <code>.json.gz</code> (tick <em>Encrypt with passphrase</em> for a protected <code>.enc.gz</code>). The tool also auto-saves to this browser between visits.</div></div>
+
+  <div class="box good small">
+    <div class="box-h">Demo vs. live mode</div>
+    <strong>Demo mode</strong> is the shipped sample — never persisted. The first upload or workspace load switches you to <strong>live mode</strong>, which auto-saves to this browser. The sidebar shows <em>"↻ Saved on this device"</em> in live mode. To return to the demo, use <em>Clear my data</em> (back up first — it cannot be undone).
+  </div>
+
+  <h3>Finding your way around</h3>
+  <p>The left sidebar lists every page. The <strong>command palette</strong> (<kbd>Ctrl</kbd>+<kbd>K</kbd> / <kbd>⌘</kbd>+<kbd>K</kbd>) jumps to pages, toggles the theme, saves the workspace and applies saved views. Press <kbd>?</kbd> anywhere to open this guide.</p>
+</section>
+
+<!-- ============ 3. WORKFLOW WALKTHROUGH ============ -->
+<section class="page" id="sec-workflow">
+  <div class="kicker">3 · The monthly workflow</div>
+  <h2>A guided walkthrough</h2>
+  <p class="lead">The canonical path each month after close. For each step: what to <strong>do</strong>, what to <strong>look for</strong>, and the <strong>common mistakes</strong> to avoid.</p>
+
+  <div class="walk">
+    <div class="wh">Step 1 — Refresh the data</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> On <strong>Data Intake</strong>, re-upload each team's workbook for the new month — Employee Master first, then any functional feeds (TA, Performance, Payroll, L&amp;D, Admin, Engagement, Headcount Plan).</div>
+      <div class="row"><span class="lab look">Look for</span> The confirmation of rows loaded and the detected as-of period; prior months are kept so dashboards show month-over-month deltas.</div>
+      <div class="row"><span class="lab miss">Avoid</span> A filename with no date — the period can't be detected. Include a date (e.g. <code>…2026-05.xlsx</code>) or set the as-of override before uploading.</div>
+    </div>
+  </div>
+
+  <div class="walk">
+    <div class="wh">Step 2 — Read People Analytics</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> Open <strong>People Analytics</strong>; scan the Overview, then Attrition &amp; Risk. Use the filter bar to focus a department or entity.</div>
+      <div class="row"><span class="lab look">Look for</span> KPI cards with a coloured trend chip versus last period, and the Watch-outs banner at the top.</div>
+      <div class="row"><span class="lab miss">Avoid</span> Reading a single month in isolation — the trend chip (needs ≥2 snapshots) is the exec-relevant signal.</div>
+    </div>
+  </div>
+
+  <div class="walk">
+    <div class="wh">Step 3 — Get the diagnosis from HR Brain</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> Open <strong>HR Brain</strong>. Read the HR Health score and trend, scan the <strong>NEW</strong> findings, then work the <strong>Now</strong> column of the roadmap with its named owners.</div>
+      <div class="row"><span class="lab look">Look for</span> Each finding's evidence, likely reason and remedy; the <em>"Resolved since last period"</em> line that shows progress.</div>
+      <div class="row"><span class="lab miss">Avoid</span> Treating a <em>Likely</em>/<em>Possible</em> finding as fact — confidence is labelled; confirm before acting on inferred signals.</div>
+    </div>
+  </div>
+
+  <div class="walk">
+    <div class="wh">Step 4 — Drill into a hotspot</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> From any finding click <em>"View the evidence →"</em>, or click a department bar/row anywhere — it filters <strong>People Analytics</strong> to that group.</div>
+      <div class="row"><span class="lab look">Look for</span> The filter chip showing the active drill-down; the risk table naming each driver (no black box).</div>
+      <div class="row"><span class="lab miss">Avoid</span> Forgetting to clear the filter — use <em>Reset People filters</em> (in the palette) before reading the whole org again.</div>
+    </div>
+  </div>
+
+  <div class="walk">
+    <div class="wh">Step 5 — Publish the board pack</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> Open <strong>Newsletter</strong> (or <strong>Board Pack</strong>) — both build automatically. Click <em>Print / Save as PDF</em>, or <em>Download facts pack (.md)</em> for email/Slack.</div>
+      <div class="row"><span class="lab look">Look for</span> The "What changed since &lt;last period&gt;" comparison block; one function per page, with cards and tables that don't split across pages.</div>
+      <div class="row"><span class="lab miss">Avoid</span> Printing the whole app — use the page's own <em>Print / Save as PDF</em> button so only the report prints.</div>
+    </div>
+  </div>
+
+  <div class="walk">
+    <div class="wh">Step 6 — Save the workspace</div>
+    <div class="wb">
+      <div class="row"><span class="lab act">Do</span> Click <em>Save workspace</em> in the sidebar (tick <em>Encrypt with passphrase</em> if moving between machines).</div>
+      <div class="row"><span class="lab look">Look for</span> The toast confirming the save and the employee count; the sidebar's "Saved on this device · durable" note.</div>
+      <div class="row"><span class="lab miss">Avoid</span> Relying only on browser storage on a shared/locked-down machine — export a <code>.json.gz</code> backup if the sidebar warns local data may be cleared.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. PEOPLE ANALYTICS ============ -->
+<section class="page" id="sec-people">
+  <div class="kicker">4 · People Analytics</div>
+  <h2>The workforce dashboard</h2>
+  <p class="lead">A complete read of your active workforce, organised into tabs. Every chart and table can be filtered, drilled into, and exported.</p>
+  <table class="t">
+    <thead><tr><th>Tab group</th><th>Tabs &amp; what they answer</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Workforce</strong></td><td>Overview, Headcount, Tenure, Geography, Managers (span of control), Quality (first-year / 90-day exits), Sources (feed reconciliation)</td></tr>
+      <tr><td><strong>Diversity</strong></td><td>Diversity (gender mix by level &amp; department), Representation (leadership vs overall), Pay Equity (gap by department, 5% flag, remediation simulator)</td></tr>
+      <tr><td><strong>Attrition &amp; Risk</strong></td><td>Attrition (rate, trend, by department, exit timing), Retention (cohort survival), Risk (per-employee 0–100 flight-risk score with named drivers; regrettable risk)</td></tr>
+      <tr><td><strong>Movement &amp; Org</strong></td><td>Movement (joiners/leavers/transfers), Mobility (promotion velocity, role changes), Org Health (layers, spans, management ratio)</td></tr>
+      <tr><td><strong>Pay &amp; Cost</strong></td><td>Compensation (median, P10–P90 dispersion, compression), Workforce Cost (cost/head, variable/overtime mix, single-team concentration)</td></tr>
+    </tbody>
+  </table>
+  <h3>Universal controls</h3>
+  <ul>
+    <li><strong>Filter bar</strong> — narrow to a department, entity, manager, location, level, etc.; every KPI and chart updates instantly.</li>
+    <li><strong>Drill-down</strong> — click any chart bar or table row to filter People Analytics to that value (works from other pages too).</li>
+    <li><strong>Saved views</strong> — save a filter combination as a named view; re-apply it from the command palette.</li>
+    <li><strong>Period deltas</strong> — with ≥2 snapshots, KPI cards show the change vs the prior period, coloured for good/bad direction.</li>
+    <li><strong>Export</strong> — <em>Export filtered roster</em> downloads the current selection as CSV; charts download as PNG.</li>
+  </ul>
+</section>
+
+<!-- ============ 5. HR BRAIN ============ -->
+<section class="page" id="sec-brain">
+  <div class="kicker">5 · HR Brain — the flagship</div>
+  <h2>An on-device diagnosis</h2>
+  <p class="lead">HR Brain reads every domain at once and produces a CHRO-grade diagnosis: an <strong>HR Health score</strong> with period-over-period direction, ranked <strong>findings</strong> (each with evidence, likely cause and a remedy), a prioritised <strong>roadmap</strong>, and an <strong>HR maturity</strong> assessment. Fully local and deterministic.</p>
+  <table class="t">
+    <thead><tr><th>Element</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HR Health score</strong> (0–100)</td><td>Falls as material issues accumulate — a critical issue costs far more than a minor one. Bands: Excellent ≥85, Good 70–84, Fair 50–69, At&nbsp;Risk 30–49, Critical &lt;30.</td></tr>
+      <tr><td><strong>Trend chip</strong> (e.g. ▲ +5)</td><td>Direction versus the prior period — computed by re-running the diagnosis on last period's data.</td></tr>
+      <tr><td><strong>Summary chips</strong></td><td>Counts by severity and confidence, plus "N new this period".</td></tr>
+      <tr><td><strong>Finding cards</strong></td><td>Each issue, ranked by severity, with evidence, a likely reason, a remedy plan, the accountable owner, and a "View the evidence →" deep-link.</td></tr>
+      <tr><td><strong>Scope selector</strong></td><td>Diagnose the whole organisation or a single department.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Known vs. emerging · new vs. resolved</h4>
+  <p>Each finding is tagged by confidence — <strong>Confirmed</strong> (a threshold breached), <strong>Likely</strong> or <strong>Possible</strong> (inferred or early-warning). Findings that appeared this period carry a <strong>NEW</strong> badge; issues that cleared since last period are listed as <strong>Resolved</strong> — so the page shows progress, not just problems.</p>
+
+  <h3>The action roadmap</h3>
+  <p>Every finding is placed on an impact × effort grid and sorted into three horizons: quick wins and anything critical go <span class="tag now">Now</span>; high-impact major initiatives go <span class="tag next">Next</span>; low-impact or high-effort items go <span class="tag later">Later</span>. The top retention initiative carries an estimated <strong>rupee value at stake</strong> (annual attrition replacement cost) so the business case is explicit.</p>
+
+  <h3>HR maturity</h3>
+  <p>Nine capability dimensions — Talent Acquisition, Performance, Reward &amp; Pay Equity, Retention, Engagement, Diversity &amp; Inclusion, Learning &amp; Development, Org Design, and HR Operations &amp; Compliance — each scored 1–5 (Ad-hoc → Optimised) from your data, with a transparent basis and a "to advance" hint.</p>
+
+  <div class="box small"><div class="box-h">In a monthly review</div>
+  Start at the health trend (are we improving?), scan the NEW badges (what just emerged?), then work the <strong>Now</strong> column with the named owners. Re-check next month — the trend and new/resolved markers tell you whether the actions are landing.</div>
+</section>
+
+<!-- ============ 6. COCKPIT & DIRECTORY ============ -->
+<section class="page" id="sec-cockpit">
+  <div class="kicker">6 · Manager Cockpit &amp; Directory</div>
+  <h2>A scoped brief for a manager or HRBP</h2>
+  <p class="lead">The <strong>Manager Cockpit</strong> narrows the whole analytic engine to one team — for a 1:1, a skip-level, or an HRBP's portfolio.</p>
+  <div class="step"><div class="num">1</div><div class="b"><b>Choose a scope.</b> <em>By manager</em> (one manager's direct reports) or <em>By department</em> (an HRBP's one-or-more departments).</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Read the brief.</b> Team headcount, average tenure, high/elevated-risk counts, regrettable-risk (top performers at risk), reviews pending and pending exits.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Act on the risk table.</b> Each at-risk person's score is the sum of named drivers (tenure, team churn, manager load, pay position, performance) — ★ marks a regrettable risk.</div></div>
+  <div class="box small"><div class="box-h">Risk is scored on the full roster, then filtered</div>
+  So a person's score reflects organisation-wide context (e.g. their team's churn), not just the people inside the current scope.</div>
+
+  <h3>The Directory</h3>
+  <p>A searchable, filterable, sortable roster of the full employee population, with CSV export — the operational lookup that complements the analytical views. Use it to confirm an individual record or pull a filtered list.</p>
+</section>
+
+<!-- ============ 7. FUNCTION ANALYTICS ============ -->
+<section class="page" id="sec-function">
+  <div class="kicker">7 · Function Analytics</div>
+  <h2>The HR functions, in depth</h2>
+  <p class="lead">A dedicated tab per function. Each shows that team's KPIs, charts, tables and watch-outs, and fills in automatically as its feed comes online. Click a department bar to drill into People Analytics.</p>
+  <table class="t">
+    <thead><tr><th>Function</th><th>Headline metrics &amp; watch-outs</th></tr></thead>
+    <tbody>
+      <tr><td>Talent Acquisition</td><td>Funnel conversion, offer-accept rate, ageing requisitions (&gt;90 days), cost per hire, source mix</td></tr>
+      <tr><td>Performance (PMS)</td><td>Review completion, rating distribution, 9-box, promotions recommended, PIP population &amp; outcomes</td></tr>
+      <tr><td>Payroll &amp; Cost</td><td>Cost per head, overtime %, variable %, statutory on-time %, payroll errors</td></tr>
+      <tr><td>Learning &amp; Development</td><td>Completion rate, coverage %, mandatory/compliance completion, training hours, spend per learner</td></tr>
+      <tr><td>HR Admin</td><td>Assets allocated/returned/lost, contract-renewal pipeline, on/off-boarding checklist completion, asset recovery</td></tr>
+      <tr><td>Engagement</td><td>eNPS, driver scores (manager, growth, compensation, work-life balance), promoter/passive/detractor mix</td></tr>
+      <tr><td>Cross-Functional</td><td>Compound risk by department, attrition economics, regrettable attrition</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Functions with no data yet show an "awaiting first upload" placeholder.</p>
+</section>
+
+<!-- ============ 8. SCORECARD ============ -->
+<section class="page" id="sec-scorecard">
+  <div class="kicker">8 · Scorecard</div>
+  <h2>Targets &amp; industry benchmarks</h2>
+  <p class="lead">Your headline KPIs as a RAG (red/amber/green) scorecard against targets you set, with period-over-period movement and an industry benchmark band for context.</p>
+  <div class="step"><div class="num">1</div><div class="b"><b>Set targets.</b> Edit any KPI's target inline; the status recomputes immediately and persists with your workspace.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Calibrate benchmarks.</b> The tool ships illustrative bands; choose a <strong>benchmark pack</strong> or click <em>Edit benchmarks</em> to enter sourced figures for your sector and region.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Read the status.</b> Each KPI is <em>On target</em>, <em>Just below target</em>, <em>Below target</em>, or <em>No data</em> — and a track marker flags KPIs that are green but <em>trending</em> the wrong way (<em>at risk</em>).</div></div>
+  <div class="box small warn"><div class="box-h">Honesty by design</div>The default benchmark bands are general reference ranges, not a sourced survey — the tool labels them as such, and the Brain treats "below benchmark" as a <em>likely</em>, not confirmed, signal until you supply real peer data.</div>
+</section>
+
+<!-- ============ 9. OPS / PLANNING TRIO ============ -->
+<section class="page" id="sec-ops">
+  <div class="kicker">9 · Compliance · Headcount Plan · Entity Rollup</div>
+  <h2>Operations &amp; planning views</h2>
+
+  <h3 id="sub-compliance">Compliance Calendar</h3>
+  <p>A dated calendar of statutory remittances (PF / ESI / PT / TDS / LWF) and vendor/AMC contract renewals, classified <strong>Overdue</strong>, <strong>Due soon</strong> (within 30 days), <strong>Upcoming</strong> and <strong>Settled</strong>. Built from the <em>Payroll — Statutory Compliance</em> and <em>HR Admin — Contracts &amp; AMC</em> feeds. The open-obligations table sorts by urgency with owner and amount.</p>
+
+  <h3 id="sub-headcount">Headcount Plan</h3>
+  <p>Active headcount versus the approved plan and budget, by department: fill rate, open-to-plan, over-plan, budget headroom, and — with payroll aggregate loaded — cost-vs-budget variance. Needs the <em>Planning — Headcount Plan</em> feed. Click a department to drill into People Analytics.</p>
+
+  <h3 id="sub-entity">Entity Rollup</h3>
+  <p>A group view across legal entities: headcount, average tenure, departments and cost/head per entity, with consolidated group totals and a concentration watch-out. Click an entity to drill into People Analytics filtered to it.</p>
+</section>
+
+<!-- ============ 10. EXPLORE ============ -->
+<section class="page" id="sec-explore">
+  <div class="kicker">10 · Explore</div>
+  <h2>The ad-hoc pivot builder</h2>
+  <p class="lead">Answer a question the dashboards don't already chart. Pick a dimension to group by, a measure, and an aggregation — get a chart and a table instantly.</p>
+  <div class="step"><div class="num">1</div><div class="b"><b>Group by</b> any employee dimension — department, manager, role, city, gender, tenure band, legal entity.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Choose a measure</b> (headcount, average tenure, etc.) and an <b>aggregation</b> (count, average, min, max).</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Read &amp; export.</b> A bar chart (top groups) plus a full table; click a bar to drill into People Analytics, or export the table to CSV.</div></div>
+</section>
+
+<!-- ============ 11. SCENARIO ============ -->
+<section class="page" id="sec-scenario">
+  <div class="kicker">11 · Scenario Planner</div>
+  <h2>Model hires, cuts &amp; restructures — with the full cost</h2>
+  <p class="lead">A what-if sandbox for proposals. Build a plan from hire / cut / move operations and watch headcount and cost recompute instantly — including the upfront one-time costs a board paper needs.</p>
+  <table class="t">
+    <thead><tr><th>Output</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Active headcount</strong></td><td>Resulting headcount and the change vs baseline, by department.</td></tr>
+      <tr><td><strong>Monthly &amp; annualised cost</strong></td><td>The ongoing run-rate change, using real per-department payroll cost (or an assumption you set).</td></tr>
+      <tr><td><strong>One-time hiring cost</strong></td><td>Upfront recruitment spend = external hires × cost-per-hire.</td></tr>
+      <tr><td><strong>One-time exit cost</strong></td><td>Severance = months of pay × the cost of the roles cut (an editable assumption).</td></tr>
+      <tr><td><strong>Year-1 cash impact</strong></td><td>Run-rate ×12 plus one-time costs — for a restructuring it nets the saving against severance, showing the payback.</td></tr>
+      <tr><td><strong>Forward projection</strong></td><td>A 12-month headcount/cost projection under an attrition rate you can override (run-off vs backfill).</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Export the whole scenario — operations, summary and per-department impact — to CSV to attach to a proposal.</p>
+</section>
+
+<!-- ============ 12. NEWSLETTER & BOARD PACK ============ -->
+<section class="page" id="sec-reports">
+  <div class="kicker">12 · Newsletter &amp; Board Pack</div>
+  <h2>The automated board pack</h2>
+  <p class="lead">One click assembles a polished, print-ready deliverable for the CHRO and function heads — generated from your live data in seconds. Two formats share the same engine.</p>
+  <table class="t">
+    <thead><tr><th>Output</th><th>Best for</th><th>Contains</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Newsletter</strong></td><td>Monthly circulation</td><td>CHRO executive brief, "what changed since last period", HR Brain diagnosis, scorecard, one section per function, and a prioritised action plan.</td></tr>
+      <tr><td><strong>Board Pack</strong></td><td>A board meeting</td><td>A slide-style deck: cover with health &amp; headline KPIs, what changed, top risks &amp; "Now" actions, scorecard RAG, and key function dashboards.</td></tr>
+    </tbody>
+  </table>
+  <div class="step"><div class="num">1</div><div class="b"><b>Open the tab</b> — it builds automatically from whatever data is loaded.</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Print to PDF</b> — the layout is print-optimised (one function per page; cards and tables never split). Use the page's <em>Print / Save as PDF</em> button.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Or export the facts pack</b> (Newsletter) — a plain-Markdown version to paste into email or Slack.</div></div>
+</section>
+
+<!-- ============ 13. DATA INTAKE ============ -->
+<section class="page" id="sec-intake">
+  <div class="kicker">13 · Data Intake</div>
+  <h2>Getting your data in</h2>
+  <p class="lead">Data Intake is where each team loads its workbook. The tool provides a standard template per domain, reads the as-of date automatically, validates as it goes, and lets you map columns by hand if an export's headers differ.</p>
+  <div class="step"><div class="num">1</div><div class="b"><b>Pick the domain</b> from the dropdown (grouped by team).</div></div>
+  <div class="step"><div class="num">2</div><div class="b"><b>Download the template</b> if needed — it includes a Data sheet, a Data Dictionary and a README with the exact columns and the join key.</div></div>
+  <div class="step"><div class="num">3</div><div class="b"><b>Upload the .xlsx / .csv.</b> Headers are matched tolerantly (case- and separator-insensitive). If something doesn't auto-map, the guided mapper lets you assign columns; your mapping is saved for next time.</div></div>
+  <div class="step"><div class="num">4</div><div class="b"><b>Review the preview &amp; commit.</b> Row-level issues are flagged (and downloadable as CSV). Fix at source or import anyway — flagged rows still load.</div></div>
+  <div class="box good small"><div class="box-h">Built for real exports</div>
+  Keka "All Employees" exports work as-is — banner and footer rows and the "Generated on …" as-of date are handled automatically. An active-roster export with no status column counts everyone as Working.</div>
+
+  <h3>The data model — domains the suite ingests</h3>
+  <p class="small muted">14 dataset kinds. The employee master is the spine; the rest join to it on <code>employee_number</code>. Many domains offer an aggregate-only variant for teams that can't share row-level detail.</p>
+  <table class="t">
+    <thead><tr><th>Dataset</th><th>Team</th><th>Period</th><th>Key field(s)</th></tr></thead>
+    <tbody>
+      <tr><td>Employee Master</td><td>Core People</td><td>As-of</td><td><code>employee_number</code></td></tr>
+      <tr><td>Talent Acquisition — Requisitions</td><td>Talent Acquisition</td><td>Month</td><td><code>requisition_id</code></td></tr>
+      <tr><td>Talent Acquisition — Monthly Aggregate</td><td>Talent Acquisition</td><td>Month</td><td><code>month, department</code></td></tr>
+      <tr><td>Performance — Review Cycle</td><td>Performance</td><td>Cycle</td><td><code>employee_number, cycle</code></td></tr>
+      <tr><td>Payroll — Per-Employee Detail</td><td>Payroll</td><td>Month</td><td><code>employee_number, pay_month</code></td></tr>
+      <tr><td>Payroll — Department Aggregate</td><td>Payroll</td><td>Month</td><td><code>pay_month, department, legal_entity</code></td></tr>
+      <tr><td>Payroll — Statutory Compliance</td><td>Payroll</td><td>Month</td><td><code>pay_month, statutory_type</code></td></tr>
+      <tr><td>L&amp;D — Programs</td><td>L&amp;D</td><td>Month</td><td><code>program_id</code></td></tr>
+      <tr><td>L&amp;D — Enrollments</td><td>L&amp;D</td><td>Month</td><td><code>employee_number, program_id</code></td></tr>
+      <tr><td>HR Admin — Assets</td><td>HR Admin</td><td>As-of</td><td><code>asset_id</code></td></tr>
+      <tr><td>HR Admin — Contracts &amp; AMC</td><td>HR Admin</td><td>As-of</td><td><code>contract_id</code></td></tr>
+      <tr><td>HR Admin — Onboarding/Offboarding</td><td>HR Admin</td><td>Month</td><td><code>employee_number, type</code></td></tr>
+      <tr><td>Engagement — Survey</td><td>Engagement</td><td>Month</td><td><code>survey_period, department</code></td></tr>
+      <tr><td>Planning — Headcount Plan</td><td>Planning</td><td>Month</td><td><code>period, department, sub_department</code></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">A ready-made sample intake pack (one workbook per domain) ships in <code>sample-data/intake-pack/</code> for practice uploads.</p>
+</section>
+
+<!-- ============ 14. BRANDING & WORKSPACE ============ -->
+<section class="page" id="sec-branding">
+  <div class="kicker">14 · Branding &amp; the workspace</div>
+  <h2>Make it yours, then save it</h2>
+  <p class="lead">The <strong>Branding</strong> page white-labels the whole tool; everything you set travels with your saved workspace.</p>
+  <table class="t">
+    <thead><tr><th>Setting</th><th>Options / default</th></tr></thead>
+    <tbody>
+      <tr><td>App name</td><td>Any text · default <code>HR Analytics</code></td></tr>
+      <tr><td>Primary colour</td><td>Hex / picker · default <code>#1f2937</code></td></tr>
+      <tr><td>Accent colour</td><td>Hex / picker · default <code>#2563eb</code></td></tr>
+      <tr><td>Footer text</td><td>Any text · default "Generated locally — your data never leaves this browser."</td></tr>
+      <tr><td>Theme</td><td>Light · Dark (default Light)</td></tr>
+      <tr><td>Font</td><td>System sans · Serif · Humanist · Monospace (default System sans)</td></tr>
+      <tr><td>Logo</td><td>Image upload (PNG/JPG/SVG…) or none</td></tr>
+      <tr><td>Presets</td><td>Indigo · Emerald · Violet · Rose · Amber · Ocean</td></tr>
+      <tr><td>Benchmark pack</td><td>Built-in packs + custom uploaded pack (used by the Scorecard)</td></tr>
+    </tbody>
+  </table>
+  <p>You can <strong>Export theme</strong> to a <code>brand-theme.json</code>, <strong>Import theme</strong>, or <strong>Reset to default</strong>.</p>
+  <h3>Saving &amp; moving your workspace</h3>
+  <ul>
+    <li><strong>Auto-save</strong> — in live mode the workspace saves to this browser automatically (durable on an <code>http(s)://</code> origin).</li>
+    <li><strong>Manual save</strong> — <em>Save workspace</em> downloads a compressed <code>.json.gz</code> containing data, branding, saved views, targets, benchmarks, tracked actions and the audit log.</li>
+    <li><strong>Encryption</strong> — tick <em>Encrypt with passphrase</em> for an AES-256-GCM <code>.enc.gz</code>; loading it prompts for the passphrase.</li>
+    <li><strong>Load</strong> — use the sidebar file picker to open a <code>.json.gz</code>/<code>.enc.gz</code> on any machine.</li>
+  </ul>
+</section>
+
+<!-- ============ 15. REFERENCE ============ -->
+<section class="page" id="sec-reference">
+  <div class="kicker">15 · Reference</div>
+  <h2>Pages, shortcuts, settings, rules &amp; statuses</h2>
+
+  <h3 id="ref-pages">Pages &amp; navigation</h3>
+  <table class="t">
+    <thead><tr><th>#</th><th>Page</th><th>What it's for</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>People Analytics</td><td>The workforce dashboard (headcount, diversity, attrition, risk, pay, movement, org health)</td></tr>
+      <tr><td>2</td><td>HR Brain</td><td>Auto-diagnosis: health score, findings, roadmap, maturity</td></tr>
+      <tr><td>3</td><td>Manager Cockpit</td><td>A scoped brief for a manager or HRBP</td></tr>
+      <tr><td>4</td><td>Directory</td><td>Searchable full employee roster</td></tr>
+      <tr><td>5</td><td>Function Analytics</td><td>Per-function dashboards + Cross-Functional</td></tr>
+      <tr><td>6</td><td>Explore</td><td>Ad-hoc pivot builder</td></tr>
+      <tr><td>7</td><td>Scorecard</td><td>RAG KPIs vs targets &amp; benchmarks</td></tr>
+      <tr><td>8</td><td>Compliance</td><td>Statutory &amp; contract-renewal calendar</td></tr>
+      <tr><td>9</td><td>Headcount Plan</td><td>Actual vs plan vs budget</td></tr>
+      <tr><td>10</td><td>Entity Rollup</td><td>Group view across legal entities</td></tr>
+      <tr><td>11</td><td>Scenario</td><td>What-if hire/cut/move planner</td></tr>
+      <tr><td>12</td><td>Newsletter</td><td>The monthly CHRO board pack</td></tr>
+      <tr><td>13</td><td>Board Pack</td><td>A board-meeting slide deck</td></tr>
+      <tr><td>14</td><td>Data Intake</td><td>Upload, map and validate each domain's workbook</td></tr>
+      <tr><td>15</td><td>Branding</td><td>White-label controls</td></tr>
+      <tr><td>16</td><td>Guide</td><td>This in-app user guide</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="ref-shortcuts">Keyboard shortcuts</h3>
+  <table class="t">
+    <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd> / <kbd>⌘</kbd>+<kbd>K</kbd></td><td>Open / close the command palette</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Open this user guide</td></tr>
+      <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Move between results in the palette</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Run the highlighted command</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Close the palette or a dialog</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Command palette commands: Go to a page · Switch light/dark theme · Save workspace · Reset People filters · Apply a saved view · Open user guide.</p>
+
+  <h3 id="ref-validation">Data-intake validation rules</h3>
+  <table class="t">
+    <thead><tr><th>Issue</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Missing required</strong></td><td>A required field is blank in this row.</td></tr>
+      <tr><td><strong>Invalid enum</strong></td><td>A value isn't one of the allowed options for that field.</td></tr>
+      <tr><td><strong>Bad type</strong></td><td>A value isn't a valid number/date for that field.</td></tr>
+      <tr><td><strong>Orphan FK</strong></td><td>An <code>employee_number</code> isn't present in the employee master.</td></tr>
+      <tr><td><strong>Duplicate key</strong></td><td>The row's key was already seen earlier in the file (points to the first occurrence).</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Issues are advisory — flagged rows still import. Download them as CSV (<code>Row, Field, Issue, Value, Detail</code>) to hand back to the data owner.</p>
+
+  <h3 id="ref-status">Status values you'll see</h3>
+  <table class="t">
+    <thead><tr><th>Where</th><th>Values</th></tr></thead>
+    <tbody>
+      <tr><td>Scorecard status (RAG)</td><td>On target (green) · Just below (amber) · Below (red) · No data</td></tr>
+      <tr><td>Scorecard track</td><td>On track · At risk (green but trending down) · Off track</td></tr>
+      <tr><td>Tracked action</td><td>Open · In progress · Done</td></tr>
+      <tr><td>Compliance item</td><td>Overdue · Due soon · Upcoming · Settled</td></tr>
+      <tr><td>Requisition status</td><td>Open · On-hold · Filled · Cancelled</td></tr>
+      <tr><td>Payroll status</td><td>Paid · Held · Error</td></tr>
+      <tr><td>Statutory status</td><td>Paid · Pending · Late</td></tr>
+      <tr><td>Enrollment status</td><td>Enrolled · In-progress · Completed · Dropped</td></tr>
+      <tr><td>Asset status</td><td>Allocated · Returned · Lost · In-stock</td></tr>
+      <tr><td>Contract renewal</td><td>Auto · In-progress · Pending · Cancelled</td></tr>
+      <tr><td>PIP outcome</td><td>Open · Successful · Exited</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="ref-exports">Exports</h3>
+  <table class="t">
+    <thead><tr><th>From</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>People Analytics / Directory</td><td>Filtered roster → CSV; any chart → PNG</td></tr>
+      <tr><td>Explore</td><td>Pivot table → CSV</td></tr>
+      <tr><td>Scenario</td><td>Scenario plan → CSV</td></tr>
+      <tr><td>Data Intake</td><td>Validation issues → CSV</td></tr>
+      <tr><td>Newsletter</td><td>Print / Save as PDF · Facts pack → Markdown</td></tr>
+      <tr><td>Board Pack</td><td>Print / Save as PDF</td></tr>
+      <tr><td>Sidebar</td><td>Workspace → <code>.json.gz</code> (or encrypted <code>.enc.gz</code>)</td></tr>
+      <tr><td>Branding</td><td>Theme → <code>brand-theme.json</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="ref-findings">What the HR Brain looks for</h3>
+  <p class="small muted">The diagnosis is a transparent rules engine. Findings (severity in brackets) include:</p>
+  <table class="t">
+    <thead><tr><th>Finding</th><th>Owner</th><th>Sev</th></tr></thead>
+    <tbody>
+      <tr><td>Compounding retention risk</td><td>CHRO</td><td><span class="sev crit">critical</span></td></tr>
+      <tr><td>Department hotspot(s)</td><td>HRBP</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Statutory remittances not fully on time</td><td>Payroll</td><td><span class="sev crit">critical</span></td></tr>
+      <tr><td>Losing high performers (regrettable attrition)</td><td>HRBP</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Flight-risk cohort includes top performers</td><td>HRBP</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>High first-year attrition</td><td>Talent Acquisition</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Gender pay gap above threshold</td><td>Total Rewards</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Wide manager span(s) of control</td><td>HRBP</td><td><span class="sev med">medium</span></td></tr>
+      <tr><td>Women under-represented in leadership</td><td>HR Leadership</td><td><span class="sev med">medium</span></td></tr>
+      <tr><td>Performance reviews incomplete</td><td>HR Operations</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Offers being declined at an elevated rate</td><td>Talent Acquisition</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Hiring throughput needs attention</td><td>Talent Acquisition</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Low / incomplete learning &amp; compliance training</td><td>L&amp;D</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Low employee engagement (eNPS)</td><td>HR Leadership</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Organisation structure carrying drag</td><td>Org Design</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Workforce cost concentrated in one team</td><td>Finance / HR</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>HR operations risks (contracts &amp; assets)</td><td>HR Admin</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Employee feeds disagree — headcount needs reconciling</td><td>HR Operations</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>KPI(s) below industry norm</td><td>CHRO</td><td><span class="sev high">high</span></td></tr>
+      <tr><td>Metrics trending the wrong way (early warning)</td><td>CHRO</td><td><span class="sev low">low</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Severities adapt to the data; a finding only appears when its rule's threshold is met.</p>
+</section>
+
+<!-- ============ 16. TROUBLESHOOTING ============ -->
+<section class="page" id="sec-troubleshooting">
+  <div class="kicker">16 · Troubleshooting &amp; FAQ</div>
+  <h2>When something looks off</h2>
+  <table class="t">
+    <thead><tr><th>Symptom</th><th>Cause &amp; fix</th></tr></thead>
+    <tbody>
+      <tr><td>A page says "No employee data yet"</td><td>Upload the <strong>Employee Master</strong> on Data Intake — it's the spine. Functional pages also need their own feed.</td></tr>
+      <tr><td>The period / as-of wasn't detected</td><td>The filename has no date. Re-name it with a date (e.g. <code>…2026-05.xlsx</code>) or set the <em>as-of date override</em> before uploading.</td></tr>
+      <tr><td>Columns didn't map on import</td><td>Your export's headers differ from the template. Use the guided column mapper to assign them; the mapping is saved for next time.</td></tr>
+      <tr><td>"Orphan FK" / "Duplicate key" warnings</td><td>An <code>employee_number</code> isn't in the master, or a key repeats. Rows still import; fix at source for clean joins.</td></tr>
+      <tr><td>No trend chips / Movement empty</td><td>Trends need ≥2 monthly snapshots. Upload a second month (prior months are kept automatically).</td></tr>
+      <tr><td>Attrition shows an odd value on an unchanged roster</td><td>With zero movement between two identical snapshots, annualised attrition reads 0% (not an error).</td></tr>
+      <tr><td>A workspace won't open</td><td>Encrypted (<code>.enc.gz</code>) workspaces prompt for the passphrase — there's no recovery if it's lost. Check you picked a <code>.gz</code>/<code>.json</code> file.</td></tr>
+      <tr><td>My data disappeared</td><td>Auto-save uses this browser's storage; clearing site data or a locked-down browser can wipe it. Keep a saved <code>.json.gz</code> backup; the sidebar warns when storage isn't durable.</td></tr>
+      <tr><td>The printed PDF looks wrong</td><td>Use the report page's own <em>Print / Save as PDF</em> button (not the whole app), and enable "Background graphics" in the browser print dialog.</td></tr>
+      <tr><td>Benchmarks look generic</td><td>They're illustrative until you choose a benchmark pack or enter sourced figures via <em>Edit benchmarks</em> on the Scorecard.</td></tr>
+    </tbody>
+  </table>
+  <div class="box small good"><div class="box-h">Nothing leaves your device</div>
+  If a page is blank or a number looks wrong, you can always export the workspace, clear your data to return to the demo, and re-import — no data is ever sent anywhere, so there's no remote state to get stuck.</div>
+</section>
+
+<!-- ============ 17. GLOSSARY ============ -->
+<section class="page" id="sec-glossary">
+  <div class="kicker">17 · Glossary</div>
+  <h2>Terms used in this guide</h2>
+  <table class="t">
+    <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+    <tbody>
+      <tr><td>HR Health score</td><td>0–100 overall measure; falls as open issues accumulate, weighted by severity.</td></tr>
+      <tr><td>Finding confidence</td><td>Confirmed (threshold breached) · Likely (inferred) · Possible (early warning).</td></tr>
+      <tr><td>Regrettable attrition</td><td>Exits of high-rated / high-potential people.</td></tr>
+      <tr><td>Flight risk</td><td>A per-employee 0–100 score built from named drivers (tenure, team churn, manager load, pay position, performance).</td></tr>
+      <tr><td>eNPS</td><td>Employee Net Promoter Score — promoters minus detractors.</td></tr>
+      <tr><td>9-box</td><td>Performance × potential grid used in talent reviews.</td></tr>
+      <tr><td>Value at stake</td><td>Estimated annual attrition replacement cost attached to the top retention initiative.</td></tr>
+      <tr><td>Snapshot</td><td>One period's upload of a dataset; multiple snapshots enable month-over-month trends.</td></tr>
+      <tr><td>Workspace</td><td>The single file holding all your data, branding, targets, benchmarks, views and actions.</td></tr>
+      <tr><td>Demo / live mode</td><td>Demo is the shipped sample (never saved); live is your own data (auto-saved on this device).</td></tr>
+    </tbody>
+  </table>
+  <hr class="soft" />
+  <p class="small muted">HR Analytics — User Guide · v2 · 2026-06-10. This guide is generated from the application source and regenerated when user-facing features change. All analytics, recommendations and figures shown in the tool are computed locally; your own data and branding replace the sample on first use. Recommendations are decision support, not automated action — every finding shows the evidence and logic behind it.</p>
+  <p class="small muted" style="text-align:center; margin-top:14px;">— End of guide —</p>
+</section>
+
+</body>
+</html>

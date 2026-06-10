@@ -17,6 +17,8 @@
     "sample-workspace": "node scripts/build-sample-workspace.mjs",
     "intake-pack": "node scripts/gen-intake-pack.mjs",
     "embed-demo": "node scripts/embed-demo.mjs",
+    "embed-guidebook": "node scripts/embed-guidebook.mjs",
+    "guidebook:check": "node scripts/guidebook-check.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "dev": "vite",
     "preview": "vite preview",

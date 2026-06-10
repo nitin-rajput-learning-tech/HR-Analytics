@@ -61,6 +61,7 @@ export function CommandPalette({ onSaveWorkspace }: { onSaveWorkspace: () => voi
     });
     list.push({ id: "save", title: "Save workspace", hint: "Workspace", keywords: "download export gz backup", run: onSaveWorkspace });
     list.push({ id: "reset", title: "Reset People filters", hint: "Filters", keywords: "clear remove all", run: () => app.setPeopleFilters({}) });
+    list.push({ id: "guide", title: "Open user guide", hint: "Help", keywords: "help guide manual docs documentation how to question mark", run: () => app.setPage("Guide") });
     for (const v of app.savedViews) {
       list.push({ id: `view:${v.id}`, title: `Apply view: ${v.name}`, hint: "Saved view", keywords: "filter preset", run: () => app.applyView(v.id) });
     }

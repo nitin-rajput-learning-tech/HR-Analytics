@@ -16,6 +16,7 @@ import { Reports } from "./pages/Reports";
 import { BoardPack } from "./pages/BoardPack";
 import { DataIntake } from "./pages/DataIntake";
 import { BrandingPage } from "./pages/Branding";
+import { Guide } from "./pages/Guide";
 import { CommandPalette } from "./components/CommandPalette";
 import { useFocusTrap } from "./useFocusTrap";
 import { downloadBlob } from "./download";
@@ -28,7 +29,7 @@ import { loadPersisted } from "../workspace/autosave";
 const isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform);
 const CMDK_LABEL = isMac ? "⌘K" : "Ctrl K";
 
-const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Board Pack", "Data Intake", "Branding"] as const;
+const PAGES = ["People Analytics", "HR Brain", "Manager Cockpit", "Directory", "Function Analytics", "Explore", "Scorecard", "Compliance", "Headcount Plan", "Entity Rollup", "Scenario", "Newsletter", "Board Pack", "Data Intake", "Branding", "Guide"] as const;
 type Page = (typeof PAGES)[number];
 
 export function AppShell() {
@@ -68,6 +69,20 @@ export function AppShell() {
     const t = window.setTimeout(() => { void read(); }, 1300);
     return () => { cancelled = true; window.clearTimeout(t); };
   }, [app.mode, app.version]);
+
+  // Press "?" anywhere (outside a text field) to open the in-app user guide.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t?.isContentEditable) return;
+      e.preventDefault();
+      setPage("Guide");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setPage]);
 
   async function onSave() {
     if (encrypt && !passphrase.trim()) {
@@ -239,9 +254,14 @@ export function AppShell() {
               🔬 <strong>Demo mode</strong> — you're exploring a sample organisation, and nothing here is saved. Upload your
               own data to begin; it stays on this device and is kept across refreshes.
             </span>
-            <button className="primary" onClick={() => setPage("Data Intake")}>
-              Upload your data →
-            </button>
+            <span style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <button className="primary" onClick={() => setPage("Data Intake")}>
+                Upload your data →
+              </button>
+              <button className="link-btn" onClick={() => setPage("Guide")}>
+                New here? Read the guide
+              </button>
+            </span>
           </div>
         ) : null}
         {page === "People Analytics" && <People />}
@@ -259,6 +279,7 @@ export function AppShell() {
         {page === "Board Pack" && <BoardPack />}
         {page === "Data Intake" && <DataIntake />}
         {page === "Branding" && <BrandingPage />}
+        {page === "Guide" && <Guide />}
         <footer className="no-print" style={{ marginTop: 32, color: "var(--faint)", fontSize: ".82rem" }}>
           {app.branding.footer}
         </footer>
